@@ -1,0 +1,92 @@
+---
+- name: Arch Linux Desktop Automation with Hyprland
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars_prompt:
+    - name: username
+      prompt: "Enter your username"
+      private: false
+    - name: user_password
+      prompt: "Enter user password"
+      private: true
+      encrypt: sha512_crypt
+      confirm: true
+      salt_size: 7
+    - name: user_email
+      prompt: "Enter your email for Git configuration"
+      private: false
+    - name: wifi_ssid
+      prompt: "Enter WiFi SSID (optional)"
+      private: false
+      default: ""
+    - name: wifi_password
+      prompt: "Enter WiFi password (optional)"
+      private: true
+      default: ""
+
+  vars:
+    ansible_user: "{{ username }}"
+    create_user: true
+
+  pre_tasks:
+    - name: Update pacman cache
+      pacman:
+        update_cache: true
+      changed_when: false
+
+    - name: Create user account
+      user:
+        name: "{{ username }}"
+        password: "{{ user_password }}"
+        groups: wheel,audio,video,storage,optical,network,power
+        shell: /bin/bash
+        create_home: true
+        state: present
+      when: create_user | bool
+
+    - name: Configure sudo access
+      lineinfile:
+        path: /etc/sudoers
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL:ALL) ALL"
+        validate: "/usr/sbin/visudo -cf %s"
+
+  roles:
+    - system_base
+    - system_security
+    - desktop_hyprland
+    - desktop_applications
+    - power_management
+    - user_dotfiles
+
+  post_tasks:
+    - name: Setup ansible-pull cron job
+      cron:
+        name: "ansible-pull"
+        minute: "0"
+        hour: "*/6"
+        user: ansible
+        job: "ansible-pull -U git@github.com:LyeosMaouli/lm_archlinux_desktop.git -d /opt/ansible-pull ansible/local.yml --extra-vars 'create_user=false' > /var/log/ansible-pull.log 2>&1"
+        state: present
+
+    - name: Enable and start essential services
+      systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - sddm
+        - NetworkManager
+        - bluetooth
+        - systemd-timesyncd
+        - fstrim.timer
+
+    - name: Final system configuration message
+      debug:
+        msg: |
+          System configuration complete!
+          Please reboot the system to ensure all changes take effect.
+          Your desktop environment will be available after reboot.

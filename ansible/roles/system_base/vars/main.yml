@@ -1,0 +1,31 @@
+---
+base_packages:
+  - base-devel
+  - linux-headers
+  - linux-firmware
+  - networkmanager
+  - wireless_tools
+  - wpa_supplicant
+  - intel-ucode
+  - mesa
+  - xf86-video-intel
+  - libva-intel-driver
+  - intel-media-driver
+  - vulkan-intel
+  - pipewire
+  - pipewire-pulse
+  - pipewire-alsa
+  - pipewire-jack
+  - wireplumber
+  - bluez
+  - bluez-utils
+  - ntfs-3g
+  - unzip
+  - p7zip
+  - htop
+  - neofetch
+  - git
+  - curl
+  - wget
+  - vim
+  - nano

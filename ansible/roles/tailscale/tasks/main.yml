@@ -1,0 +1,46 @@
+# roles/tailscale/tasks/main.yml
+---
+- name: Install Tailscale
+  pacman:
+    name: tailscale
+    state: present
+    update_cache: true
+
+- name: Create Tailscale environment configuration
+  template:
+    src: tailscaled.conf.j2
+    dest: /etc/default/tailscaled
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart tailscaled
+
+- name: Configure NetworkManager for Tailscale
+  copy:
+    content: |
+      [keyfile]
+      unmanaged-devices=interface-name:tailscale0
+    dest: /etc/NetworkManager/conf.d/99-tailscale.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart NetworkManager
+
+- name: Enable and start Tailscale daemon
+  systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Configure Tailscale authentication
+  command: >
+    tailscale up
+    --auth-key="{{ tailscale_auth_key }}"
+    --advertise-tags="tag:server,tag:arch-phoenix"
+    --accept-routes=true
+    --accept-dns=false
+    --ssh
+  when: tailscale_auth_key is defined
+  register: tailscale_result
+  changed_when: "'Success' in tailscale_result.stdout"

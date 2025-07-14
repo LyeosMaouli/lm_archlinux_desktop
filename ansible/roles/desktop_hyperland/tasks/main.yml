@@ -1,0 +1,20 @@
+---
+- name: Install Hyprland and dependencies
+  pacman:
+    name: "{{ hyprland_packages }}"
+    state: present
+
+- name: Install AUR packages for Hyprland
+  include_tasks: aur-packages.yml
+
+- name: Configure SDDM
+  include_tasks: sddm.yml
+
+- name: Setup Hyprland configuration
+  include_tasks: hyprland-config.yml
+
+- name: Configure Waybar
+  include_tasks: waybar.yml
+
+- name: Install and configure additional tools
+  include_tasks: desktop-tools.yml

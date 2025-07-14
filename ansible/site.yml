@@ -1,0 +1,51 @@
+# site.yml - Main playbook
+---
+- name: Arch Linux Desktop Configuration for arch-phoenix
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars:
+    ansible_pull_mode: true
+    hostname: arch-phoenix
+    main_user: LyeosMaouli
+
+  pre_tasks:
+    - name: Update package cache
+      pacman:
+        update_cache: true
+      tags: always
+
+    - name: Install required collections
+      command: ansible-galaxy collection install kewlfft.aur
+      delegate_to: localhost
+      run_once: true
+      tags: always
+
+  roles:
+    - role: common
+      tags: ["common", "base"]
+    - role: ssh_keys
+      tags: ["ssh", "security"]
+    - role: tailscale
+      tags: ["tailscale", "network"]
+    - role: packages
+      tags: ["packages", "software"]
+    - role: users
+      tags: ["users", "accounts"]
+    - role: boot_config
+      tags: ["boot", "system"]
+
+  post_tasks:
+    - name: Set hostname
+      hostname:
+        name: "{{ hostname }}"
+      tags: system
+
+    - name: Update hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: "127.0.0.1 {{ hostname }}"
+        backup: yes
+      tags: system

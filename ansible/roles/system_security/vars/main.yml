@@ -1,0 +1,18 @@
+---
+security_packages:
+  - ufw
+  - fail2ban
+  - rkhunter
+  - lynis
+  - firejail
+  - apparmor
+  - audit
+
+fail2ban_services:
+  - name: sshd
+    enabled: true
+    port: ssh
+    filter: sshd
+    logpath: /var/log/auth.log
+    maxretry: 3
+    bantime: 600

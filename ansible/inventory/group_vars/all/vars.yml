@@ -1,0 +1,25 @@
+---
+# System configuration
+hostname: arch-desktop
+timezone: America/New_York
+locale: en_US.UTF-8
+
+# User configuration
+create_user: true
+install_development_tools: true
+install_multimedia: true
+install_aur_helper: true
+
+# Desktop environment
+desktop_environment: hyprland
+enable_hibernation: true
+configure_systemd_boot: true
+
+# Network configuration
+enable_networkmanager: true
+enable_bluetooth: true
+
+# Security configuration
+enable_firewall: true
+enable_fail2ban: true
+configure_ssh_hardening: true
