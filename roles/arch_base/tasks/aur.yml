@@ -1,0 +1,44 @@
+---
+- name: Install base-devel for AUR building
+  pacman:
+    name: 
+      - base-devel
+      - git
+    state: present
+
+- name: Create AUR builder user
+  user:
+    name: aur_builder
+    create_home: true
+    group: wheel
+    system: true
+
+- name: Allow AUR builder to run pacman without password
+  lineinfile:
+    path: /etc/sudoers.d/11-install-aur_builder
+    line: "aur_builder ALL=(ALL) NOPASSWD: /usr/bin/pacman"
+    create: true
+    mode: "0644"
+    validate: "visudo -cf %s"
+
+- name: Install yay AUR helper
+  become: true
+  become_user: aur_builder
+  shell: |
+    cd /tmp
+    if [ ! -f /usr/bin/yay ]; then
+      git clone https://aur.archlinux.org/yay.git
+      cd yay
+      makepkg -si --noconfirm
+    fi
+  args:
+    creates: /usr/bin/yay
+
+- name: Install AUR packages
+  become: true
+  become_user: aur_builder
+  shell: yay -S --noconfirm {{ item }}
+  loop: "{{ aur_packages | default([]) }}"
+  when: aur_packages is defined and aur_packages | length > 0
+  register: aur_install_result
+  changed_when: "'nothing to do' not in aur_install_result.stdout"

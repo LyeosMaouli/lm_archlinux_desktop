@@ -1,0 +1,23 @@
+---
+# Base system packages
+base_packages:
+  - base-devel
+  - linux-headers
+  - linux-firmware
+  - networkmanager
+  - wireless_tools
+  - wpa_supplicant
+  - intel-ucode
+  - git
+  - curl
+  - wget
+  - vim
+  - htop
+
+# AUR helper configuration
+install_aur_helper: true
+
+# AUR packages to install
+aur_packages:
+  - yay  # This will be installed by our AUR setup
+  # Add other AUR packages here as needed

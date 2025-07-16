@@ -1,0 +1,15 @@
+---
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_become: true
+  children:
+    workstations:
+      hosts:
+        localhost:
+      vars:
+        system_type: "desktop"
+        desktop_environment: "hyprland"
+        target_user: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"

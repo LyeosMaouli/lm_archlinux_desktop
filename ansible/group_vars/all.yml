@@ -1,8 +1,0 @@
-# group_vars/all.yml
-tailscale_auth_key: "{{ vault_tailscale_auth_key }}"
-tailscale_accept_routes: true
-tailscale_accept_dns: false
-tailscale_enable_ssh: true
-tailscale_tags:
-  - server
-  - arch-phoenix

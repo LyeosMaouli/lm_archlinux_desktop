@@ -1,0 +1,26 @@
+name: Ansible Validation
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible ansible-lint yamllint
+
+      - name: Validate YAML syntax
+        run: yamllint .
+
+      - name: Validate Ansible syntax
+        run: ansible-playbook site.yml --syntax-check
+
+      - name: Run ansible-lint
+        run: ansible-lint site.yml

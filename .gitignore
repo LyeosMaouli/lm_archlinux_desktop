@@ -1,0 +1,31 @@
+# Ansible
+*.retry
+.ansible/
+ansible.log
+/tmp/
+
+# Secrets
+vault_pass.txt
+**/vault.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Windows
+desktop.ini
+*.lnk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+tests/output/
+.molecule/
+.cache/
+
+# Windows line endings (configure git to handle this)
+# Run: git config core.autocrlf true
