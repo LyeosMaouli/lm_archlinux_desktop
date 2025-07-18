@@ -1,31 +1,36 @@
-# Ansible
-*.retry
+# Sensitive files
+configs/ansible/group_vars/all/vault.yml
+configs/ansible/host_vars/*/vault.yml
+configs/archinstall/user_credentials.json
+*.key
+*.pem
+*.p12
+
+# Logs
+logs/
+*.log
+
+# Backup files
+backup/configs/*
+backup/user_data/*
+!backup/*/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
 .ansible/
-ansible.log
-/tmp/
 
-# Secrets
-vault_pass.txt
-**/vault.yml
+# IDE files
+.vscode/settings.json
+.idea/
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Windows
-desktop.ini
-*.lnk
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Test artifacts
-tests/output/
-.molecule/
-.cache/
-
-# Windows line endings (configure git to handle this)
-# Run: git config core.autocrlf true
+# Build artifacts
+build/
+dist/
+*.iso
+*.img

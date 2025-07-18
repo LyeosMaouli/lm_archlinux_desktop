@@ -1,0 +1,60 @@
+# configs/ansible/roles/system_hardening/tasks/main.yml
+---
+- name: Configure kernel security parameters
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-security.conf
+    reload: yes
+  loop:
+    - { name: "kernel.kptr_restrict", value: "2" }
+    - { name: "kernel.dmesg_restrict", value: "1" }
+    - { name: "kernel.unprivileged_bpf_disabled", value: "1" }
+    - { name: "kernel.yama.ptrace_scope", value: "2" }
+    - { name: "net.ipv4.tcp_syncookies", value: "1" }
+    - { name: "net.ipv4.conf.all.rp_filter", value: "1" }
+    - { name: "net.ipv4.conf.all.accept_redirects", value: "0" }
+    - { name: "net.ipv4.conf.all.send_redirects", value: "0" }
+
+- name: Configure firewall with nftables
+  template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload_nftables
+
+- name: Enable nftables service
+  systemd:
+    name: nftables
+    enabled: yes
+    state: started
+
+- name: Install security tools
+  pacman:
+    name:
+      - ufw
+      - fail2ban
+      - rkhunter
+      - aide
+      - audit
+    state: present
+
+- name: Configure audit rules
+  template:
+    src: audit.rules.j2
+    dest: /etc/audit/rules.d/audit.rules
+    owner: root
+    group: root
+    mode: "0640"
+  notify: reload_auditd
+
+- name: Enable security services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - auditd
+    - fail2ban

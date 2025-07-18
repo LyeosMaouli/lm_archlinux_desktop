@@ -1,0 +1,37 @@
+---
+# Recovery configuration
+recovery:
+  max_attempts: 3
+  timeout_seconds: 1800
+
+  network:
+    test_hosts:
+      - "8.8.8.8"
+      - "1.1.1.1"
+      - "github.com"
+    retry_delay: 5
+    max_retries: 10
+
+  repository:
+    url: "https://github.com/LyeosMaouli/lm_archlinux_desktop.git"
+    fallback_branch: "main"
+    clone_timeout: 300
+
+  services:
+    essential:
+      - "NetworkManager"
+      - "sshd"
+      - "systemd-timesyncd"
+
+    optional:
+      - "bluetooth"
+      - "cups"
+
+  fallback:
+    enable_ssh: true
+    create_recovery_user: false
+    minimal_packages:
+      - "vim"
+      - "htop"
+      - "git"
+      - "curl"

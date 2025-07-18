@@ -1,0 +1,77 @@
+{
+  "archinstall-language": "English",
+  "audio_config": {
+    "audio": "pipewire"
+  },
+  "bootloader": "Systemd-boot",
+  "debug": false,
+  "disk_config": {
+    "config_type": "default_layout",
+    "device_modifications": [
+      {
+        "device": "/dev/nvme0n1",
+        "partitions": [
+          {
+            "fs_type": "fat32",
+            "mountpoint": "/boot",
+            "size": { "unit": "MiB", "value": 1024 },
+            "flags": ["boot"]
+          },
+          {
+            "fs_type": "ext4",
+            "mountpoint": "/",
+            "size": { "unit": "percentage", "value": 100 }
+          }
+        ]
+      }
+    ]
+  },
+  "disk_encryption": {
+    "encryption_type": "luks",
+    "partitions": ["root-partition"]
+  },
+  "hostname": "phoenix",
+  "kernels": ["linux"],
+  "locale_config": {
+    "kb_layout": "us",
+    "sys_enc": "UTF-8",
+    "sys_lang": "en_US"
+  },
+  "network_config": {
+    "type": "NetworkManager"
+  },
+  "packages": [
+    "base-devel",
+    "git",
+    "python",
+    "python-pip",
+    "ansible",
+    "openssh",
+    "networkmanager",
+    "curl",
+    "wget",
+    "vim",
+    "tmux",
+    "htop",
+    "intel-ucode",
+    "mesa",
+    "vulkan-intel",
+    "tpm2-tools",
+    "zram-generator"
+  ],
+  "profile_config": {
+    "profile": "minimal"
+  },
+  "services": ["NetworkManager", "sshd", "systemd-timesyncd"],
+  "timezone": "America/New_York",
+  "custom-commands": [
+    "curl -o /usr/local/bin/first-boot-setup.sh https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/bootstrap/first_boot_setup.sh",
+    "curl -o /usr/local/bin/first-boot-recovery.sh https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/bootstrap/first_boot_recovery.sh",
+    "chmod +x /usr/local/bin/first-boot-setup.sh",
+    "chmod +x /usr/local/bin/first-boot-recovery.sh",
+    "cat > /etc/systemd/system/first-boot-setup.service << 'EOF'\n[Unit]\nDescription=First Boot Ansible Setup\nAfter=network-online.target\nWants=network-online.target\nConditionPathExists=!/var/lib/first-boot-complete\nOnFailure=first-boot-recovery.service\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/first-boot-setup.sh\nExecStartPost=/usr/bin/touch /var/lib/first-boot-complete\nRemainAfterExit=yes\nTimeoutSec=3600\n\n[Install]\nWantedBy=multi-user.target\nEOF",
+    "cat > /etc/systemd/system/first-boot-recovery.service << 'EOF'\n[Unit]\nDescription=First Boot Recovery Service\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/first-boot-recovery.sh\nRemainAfterExit=yes\nTimeoutSec=1800\n\n[Install]\nWantedBy=multi-user.target\nEOF",
+    "systemctl enable first-boot-setup.service",
+    "systemctl enable first-boot-recovery.service"
+  ]
+}

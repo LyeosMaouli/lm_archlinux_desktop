@@ -1,0 +1,9 @@
+# configs/ansible/inventory/localhost.yml
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_user: lyeosmaouli
+      hostname: phoenix
+      gpu_driver: intel
+      desktop_environment: hyprland

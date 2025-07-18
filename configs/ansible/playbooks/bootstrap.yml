@@ -1,0 +1,38 @@
+# configs/ansible/playbooks/bootstrap.yml
+---
+- name: Bootstrap Arch Linux System
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars:
+    main_user: lyeosmaouli
+    bootstrap_mode: true
+
+  pre_tasks:
+    - name: Update package cache
+      pacman:
+        update_cache: true
+      changed_when: false
+
+    - name: Install essential packages
+      pacman:
+        name:
+          - base-devel
+          - git
+          - python
+          - python-pip
+        state: present
+
+  roles:
+    - role: base_system
+      tags: ["base", "system"]
+
+    - role: users_security
+      tags: ["users", "security"]
+
+  post_tasks:
+    - name: Bootstrap completion
+      debug:
+        msg: "Bootstrap completed! System ready for full deployment."

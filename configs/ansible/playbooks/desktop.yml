@@ -1,0 +1,34 @@
+# configs/ansible/playbooks/desktop.yml
+---
+- name: Complete Hyprland Desktop Setup
+  hosts: localhost
+  become: yes
+  vars:
+    user: lyeosmaouli
+    home_dir: "/home/{{ user }}"
+
+  pre_tasks:
+    - name: Update system packages
+      pacman:
+        update_cache: yes
+        upgrade: yes
+
+  roles:
+    - system_hardening
+    - hyprland_desktop
+    - development_tools
+    - security_config
+    - user_environment
+
+  post_tasks:
+    - name: Enable user services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        scope: user
+        state: started
+      loop:
+        - pipewire
+        - pipewire-pulse
+        - wireplumber
+      become_user: "{{ user }}"

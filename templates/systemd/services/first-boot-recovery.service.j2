@@ -1,0 +1,22 @@
+# templates/systemd/services/first-boot-setup.service.j2
+[Unit]
+Description=First Boot Ansible Setup
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/first-boot-complete
+OnFailure=first-boot-recovery.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/lm_archlinux_desktop/scripts/bootstrap/first_boot_setup.sh
+ExecStartPost=/usr/bin/touch /var/lib/first-boot-complete
+User=root
+Group=root
+WorkingDirectory=/opt/lm_archlinux_desktop
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=3600
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

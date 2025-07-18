@@ -1,0 +1,31 @@
+# configs/ansible/playbooks/security.yml
+---
+- name: Security Hardening and Monitoring
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars:
+    main_user: lyeosmaouli
+
+  pre_tasks:
+    - name: Update system packages
+      pacman:
+        update_cache: true
+        upgrade: true
+
+  roles:
+    - role: system_hardening
+      tags: ["security", "hardening"]
+
+    - role: monitoring
+      tags: ["monitoring", "security"]
+
+    - role: users_security
+      tags: ["users", "security"]
+
+  post_tasks:
+    - name: Security audit
+      debug:
+        msg: "Security hardening applied successfully!"

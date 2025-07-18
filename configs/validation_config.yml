@@ -1,0 +1,214 @@
+# Updated validation configuration for new role structure
+
+# Content validation
+min_file_size_bytes: 10
+min_dir_items: 1
+min_critical_file_size: 100
+
+# Files allowed to be empty
+ignore_empty_files:
+  - ".gitkeep"
+  - ".gitignore"
+  - "__init__.py"
+  - "CHANGELOG.md"
+
+# Directories allowed to be empty
+ignore_empty_dirs:
+  - "logs"
+  - "backup/configs"
+  - "backup/user_data"
+  - "backup/logs"
+  - "files/wallpapers"
+  - "files/fonts"
+  - "files/themes"
+  - ".git"
+
+# Critical files (Updated for new structure)
+critical_files:
+  - "README.md"
+  - "local.yml" # Main playbook
+  - "configs/ansible/ansible.cfg"
+  - "scripts/deployment/master_deploy.sh"
+  - "configs/archinstall/user_configuration.json"
+  - "scripts/bootstrap/bootstrap.sh"
+  - "scripts/bootstrap/first_boot_setup.sh"
+
+# MAIN PLAYBOOKS (allowed in root)
+main_playbooks:
+  - "local.yml"
+  - "site.yml"
+  - "playbook.yml"
+  - "main.yml"
+
+# FORBIDDEN FILES (Updated)
+forbidden_files:
+  # Temporary files
+  - "*.tmp"
+  - "*.temp"
+  - "*~"
+  - "*.bak"
+  - "*.backup"
+  - "*.orig"
+
+  # OS files
+  - ".DS_Store"
+  - "Thumbs.db"
+  - "desktop.ini"
+  - 'Icon\r'
+
+  # IDE files (specific)
+  - ".idea/*"
+  - "*.swp"
+  - "*.swo"
+
+  # Compiled files
+  - "*.pyc"
+  - "*.pyo"
+  - "__pycache__/*"
+  - "*.o"
+  - "*.so"
+  - "*.exe"
+
+  # Logs in wrong places
+  - "*.log"
+  - "log.txt"
+  - "debug.log"
+  - "error.log"
+
+  # Secrets
+  - "*.key"
+  - "*.pem"
+  - "*.p12"
+  - "id_rsa"
+  - "id_ed25519"
+  - "*.cert"
+  - "*.crt"
+  - "password*"
+  - "secret*"
+
+  # Package managers
+  - "node_modules/*"
+  - "venv/*"
+  - ".env"
+  - "*.egg"
+
+  # Build artifacts
+  - "build/*"
+  - "dist/*"
+  - "*.egg-info/*"
+  - "target/*"
+
+  # Archives
+  - "*.zip"
+  - "*.tar.gz"
+  - "*.iso"
+  - "*.img"
+  - "*.deb"
+  - "*.rpm"
+
+# ALLOWED IDE FILES
+allowed_ide_files:
+  - ".vscode/settings.json"
+  - ".vscode/extensions.json"
+  - ".vscode/tasks.json"
+  - ".vscode/launch.json"
+
+# FORBIDDEN DIRECTORIES
+forbidden_directories:
+  - "__pycache__"
+  - ".pytest_cache"
+  - ".mypy_cache"
+  - "node_modules"
+  - "venv"
+  - "env"
+  - ".env"
+  - "build"
+  - "dist"
+  - ".tox"
+  - "logs/old"
+  - "backup/old"
+
+# ALLOWED IDE DIRECTORIES
+allowed_ide_directories:
+  - ".vscode"
+
+# FILE LOCATION RULES (Updated)
+file_location_rules:
+  # Files that should be in specific directories
+  "configs/ansible/":
+    - "*.yml"
+    - "*.yaml"
+    - "ansible.cfg"
+  "configs/ansible/playbooks/":
+    - "*.yml"
+    - "*.yaml"
+  "configs/archinstall/":
+    - "*.json"
+  "scripts/":
+    - "*.sh"
+  "templates/":
+    - "*.j2"
+    - "*.jinja2"
+  "docs/":
+    - "*.md"
+    - "*.rst"
+    - "*.txt"
+  "tests/":
+    - "test_*.py"
+    - "*_test.py"
+
+  # Files that should NOT be in certain directories (Updated)
+  root_forbidden:
+    - "*.sh"
+    - "*.py"
+    # Removed *.yml, *.yaml to allow main playbooks
+
+  "configs_forbidden":
+    - "*.sh"
+    - "*.py"
+
+  "docs_forbidden":
+    - "*.sh"
+    - "*.py"
+    - "*.yml"
+
+# NAMING CONVENTIONS
+naming_rules:
+  scripts:
+    pattern: '^[a-z0-9_]+\.sh$'
+    description: "Scripts should be lowercase with underscores, ending in .sh"
+
+  ansible_files:
+    pattern: '^[a-z0-9_]+\.(yml|yaml)$'
+    description: "Ansible files should be lowercase with underscores"
+
+  roles:
+    pattern: "^[a-z0-9_]+$"
+    description: "Role names should be lowercase with underscores"
+
+  python_files:
+    pattern: '^[a-z0-9_]+\.py$'
+    description: "Python files should be lowercase with underscores"
+
+# EXPECTED FILE LOCATIONS (Updated for new structure)
+expected_locations:
+  "ansible.cfg": "configs/ansible"
+  "requirements.txt": ""
+  "Makefile": ""
+  "README.md": ""
+  "LICENSE": ""
+  ".gitignore": ""
+  "local.yml": "" # Main playbook
+  "site.yml": "" # Alternative main playbook
+
+# Expected Ansible roles (updated for new structure)
+expected_ansible_roles:
+  - "base_system"
+  - "users_security"
+  - "hyprland_desktop"
+  - "aur_packages"
+  - "system_hardening"
+  - "power_management"
+  - "development_tools"
+  - "monitoring"
+  - "user_environment"
