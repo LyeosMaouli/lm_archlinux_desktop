@@ -233,9 +233,21 @@ check_vm_prerequisites() {
     info "VM prerequisites check complete"
 }
 
-# Setup VM network
+# Setup VM network with enhanced robustness
 setup_vm_network() {
-    info "Setting up VM network..."
+    info "Setting up VM network with enhanced reliability..."
+    
+    # Clear any proxy settings that might interfere in VM
+    unset http_proxy https_proxy ftp_proxy rsync_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY RSYNC_PROXY
+    info "Cleared proxy settings for VM environment"
+    
+    # Configure reliable DNS servers
+    info "Configuring DNS servers..."
+    cat > /etc/resolv.conf << 'EOF'
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+nameserver 8.8.4.4
+EOF
     
     # Check if we're already connected
     if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
@@ -251,33 +263,71 @@ setup_vm_network() {
     
     info "Network not ready, attempting to configure..."
     
-    # Show network interfaces
+    # Show network interfaces for debugging
     info "Available network interfaces:"
     ip link show | grep -E '^[0-9]+:' || warn "Failed to list interfaces"
     
-    # Try to bring up network interface
-    local interface=$(ip link show | grep -E '^[0-9]+: en' | head -1 | cut -d':' -f2 | xargs)
-    if [[ -n "$interface" ]]; then
-        info "Bringing up network interface: $interface"
-        ip link set "$interface" up || warn "Failed to bring up interface"
-        
-        # Try DHCP
-        info "Attempting DHCP on $interface..."
-        dhcpcd "$interface" &
-        sleep 5
-        
-        # Kill background dhcpcd
-        pkill dhcpcd 2>/dev/null || true
-    fi
+    # Try to bring up network interface with multiple attempts
+    local interfaces=($(ip link show | grep -E '^[0-9]+: (en|eth)' | cut -d':' -f2 | xargs))
     
-    # Final connectivity check
-    if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
-        success "Network connectivity established"
-    elif ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
-        success "Network connectivity established"
-    else
-        error "Failed to establish network connectivity. Please check VM network settings."
-    fi
+    for interface in "${interfaces[@]}"; do
+        if [[ -n "$interface" ]]; then
+            info "Attempting to configure interface: $interface"
+            
+            # Bring up interface
+            ip link set "$interface" up || warn "Failed to bring up $interface"
+            sleep 2
+            
+            # Try DHCP with timeout
+            info "Attempting DHCP on $interface..."
+            timeout 15 dhcpcd "$interface" 2>/dev/null &
+            local dhcp_pid=$!
+            
+            # Wait for DHCP or timeout
+            local wait_time=0
+            while [[ $wait_time -lt 15 ]]; do
+                if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
+                    success "Network connectivity established via $interface"
+                    kill $dhcp_pid 2>/dev/null || true
+                    return 0
+                fi
+                sleep 1
+                wait_time=$((wait_time + 1))
+            done
+            
+            # Kill DHCP process if still running
+            kill $dhcp_pid 2>/dev/null || true
+            pkill dhcpcd 2>/dev/null || true
+            
+            # Try static IP as fallback for VM NAT
+            info "DHCP failed, trying manual configuration for VM NAT..."
+            ip addr add 10.0.2.15/24 dev "$interface" 2>/dev/null || true
+            ip route add default via 10.0.2.2 2>/dev/null || true
+            
+            sleep 2
+            if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+                success "Network connectivity established via manual config"
+                return 0
+            fi
+        fi
+    done
+    
+    # Final connectivity check with multiple targets
+    local connectivity_targets=("8.8.8.8" "1.1.1.1" "archlinux.org" "google.com")
+    for target in "${connectivity_targets[@]}"; do
+        if ping -c 1 -W 5 "$target" >/dev/null 2>&1; then
+            success "Network connectivity confirmed via $target"
+            return 0
+        fi
+    done
+    
+    # Show diagnostic information
+    info "Network diagnostic information:"
+    info "Interfaces: $(ip link show | grep -E '^[0-9]+:' | cut -d':' -f2 | xargs)"
+    info "Routes: $(ip route show 2>/dev/null || echo 'none')"
+    info "DNS: $(cat /etc/resolv.conf | grep nameserver || echo 'none configured')"
+    
+    error "Failed to establish network connectivity. Please check VM network settings (NAT/Bridged mode)."
 }
 
 # Automated disk setup for VM
@@ -322,7 +372,7 @@ automated_disk_setup() {
     success "VM disk configuration updated"
 }
 
-# Install Git if needed
+# Install Git if needed with enhanced mirror handling
 ensure_git() {
     # Check if git is already available (it should be on live ISO)
     if command -v git >/dev/null 2>&1; then
@@ -338,13 +388,27 @@ ensure_git() {
     fi
     
     if command -v pacman >/dev/null 2>&1; then
-        info "Updating package database..."
-        pacman -Sy --noconfirm || {
+        # Clear pacman cache and configure for better downloads
+        info "Configuring pacman for reliable package installation..."
+        rm -rf /var/lib/pacman/sync/* 2>/dev/null || true
+        
+        # Add download timeout configuration if not already present
+        if ! grep -q "XferCommand.*curl.*retry" /etc/pacman.conf; then
+            info "Adding download reliability settings to pacman..."
+            cat >> /etc/pacman.conf << 'EOF'
+
+# Enhanced download settings for VM environment
+XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u
+EOF
+        fi
+        
+        info "Updating package database with enhanced settings..."
+        timeout 120 pacman -Syy --noconfirm || {
             warn "Package database update failed, trying to continue..."
         }
         
         info "Installing Git package..."
-        pacman -S --noconfirm git || {
+        timeout 300 pacman -S --noconfirm git || {
             warn "Git installation failed. Checking if it's actually installed..."
             
             # Sometimes the package exists but path is not updated
