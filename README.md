@@ -51,6 +51,10 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 - **Graphics**: Intel GPU (optimized), others supported
 - **Network**: Internet connection for initial setup
 
+### Software
+- Arch Linux ISO (latest)
+- **No SSH keys required** - Automatically generated during setup
+
 ### Target Configuration
 - **Bootloader**: systemd-boot (UEFI)
 - **Filesystem**: ext4 with optional LUKS encryption
@@ -60,32 +64,52 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 
 ## 🚀 Quick Start
 
-### Option 1: Fresh Installation (Recommended)
+### 🤖 Fully Automated Installation (Zero Manual Steps!)
+**NEW**: Complete automation from ISO to desktop in one command!
+
 ```bash
 # 1. Boot from Arch Linux ISO
-# 2. Follow base installation in docs/installation-guide.md
-# 3. Deploy automation:
+# 2. Run the master automation:
 
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
+chmod +x deploy.sh
+./deploy.sh auto
+
+# That's it! 30-60 minutes later: Complete Hyprland desktop ready!
+```
+
+**Features:**
+- 🔧 **Zero configuration** - Smart defaults for everything
+- 🌐 **Automatic network** - WiFi/Ethernet auto-detection  
+- 💾 **Automated partitioning** - Disk setup with encryption
+- 🎨 **Complete desktop** - Hyprland + all applications
+- 🔒 **Security hardening** - Firewall, fail2ban, audit
+- ✅ **Validation testing** - Comprehensive system verification
+
+### ⚡ Alternative Methods
+
+**Option 1: Semi-Automated (Manual base + Auto desktop)**
+```bash
+# Install base Arch manually, then run:
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
+chmod +x deploy.sh
+./deploy.sh desktop
+```
+
+**Option 2: Traditional Approach (Advanced users)**
+```bash
 git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
 cd lm_archlinux_desktop
 make install        # Install Ansible and dependencies
 make full-install   # Deploy complete system
 ```
 
-### Option 2: Existing Arch System
+**Option 3: VirtualBox Testing (Fully Automated)**
 ```bash
-git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
-cd lm_archlinux_desktop
-make install
-make full-install
-```
-
-### Option 3: VirtualBox Testing
-```bash
-# See docs/virtualbox-testing-guide.md for complete VM setup
-make bootstrap      # Base system
-make desktop        # Hyprland environment
-make security       # Security hardening
+# Boot VM from Arch ISO, then run:
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/testing/auto_vm_test.sh -o vm_test.sh
+chmod +x vm_test.sh
+./vm_test.sh
 ```
 
 ## 📖 Documentation

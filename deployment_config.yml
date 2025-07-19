@@ -1,0 +1,125 @@
+# Deployment Configuration for Arch Linux Hyprland Automation
+# This file contains all necessary configuration for automated deployment
+# Copy this file and customize for your environment
+
+# System Configuration
+system:
+  hostname: "phoenix"
+  timezone: "Europe/Paris"
+  locale: "en_US.UTF-8"
+  keymap: "fr"
+  country: "United Kingdom"  # For mirror selection
+
+# User Configuration
+user:
+  username: "lyeosmaouli"
+  password: ""  # Will be prompted if empty
+  shell: "/bin/bash"
+  groups:
+    - wheel
+    - audio
+    - video
+    - network
+    - storage
+
+# Root Configuration
+root:
+  password: ""  # Will be prompted if empty
+
+# Network Configuration
+network:
+  wifi:
+    enabled: true
+    ssid: ""  # WiFi network name
+    password: ""  # WiFi password
+    security: "wpa2"  # wpa2, wpa3, or open
+  ethernet:
+    enabled: true
+    dhcp: true
+
+# Disk Configuration
+disk:
+  device: "/dev/nvme0n1"  # Primary disk device
+  encryption:
+    enabled: true
+    passphrase: ""  # Will be prompted if empty
+  partitions:
+    efi_size: "512M"
+    swap_size: "4G"  # For hibernation swapfile
+  filesystem: "ext4"
+
+# Bootloader Configuration
+bootloader:
+  type: "systemd-boot"
+  timeout: 5
+  quiet_boot: true
+
+# Desktop Configuration
+desktop:
+  environment: "hyprland"
+  display_manager: "sddm"
+  theme: "catppuccin-mocha"
+  wallpaper: "default"
+
+# Package Configuration
+packages:
+  mirrors:
+    country: "United Kingdom"
+    protocol: "https"
+    age: 12
+  aur:
+    helper: "yay"
+    packages:
+      - visual-studio-code-bin
+      - discord
+      - zoom
+      - hyprpaper
+      - bibata-cursor-theme
+
+# Security Configuration
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+  fail2ban:
+    enabled: true
+    ssh_protection: true
+  audit:
+    enabled: true
+    rules: "strict"
+  ssh:
+    port: 22
+    password_auth: false
+    root_login: false
+
+# Automation Configuration
+automation:
+  skip_confirmations: false  # Set to true for fully unattended
+  auto_reboot: false  # Auto reboot after installation
+  backup_configs: true
+  log_level: "info"  # debug, info, warning, error
+
+# VirtualBox Testing Configuration (when running in VM)
+virtualbox:
+  guest_additions: true
+  shared_folders: false
+  clipboard: true
+  drag_drop: true
+
+# Development Configuration
+development:
+  git:
+    username: ""                      # Your Git username (optional)
+    email: ""                         # Your Git email (optional)
+  ssh_keys:
+    generate: true                    # Automatically generate SSH keys
+    type: "ed25519"                  # SSH key type (ed25519 recommended)
+  tools:                             # Additional development tools
+    - neovim
+    - tmux
+    - htop
+    - tree
+    - ripgrep
+
+# Security Note: SSH keys are automatically generated during installation
+# No need to provide or manage SSH keys manually - the system handles this securely

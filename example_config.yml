@@ -1,0 +1,96 @@
+# Example Deployment Configuration
+# Copy this file to deployment_config.yml and customize for your setup
+
+# System Configuration
+system:
+  hostname: "phoenix"                    # Your computer name
+  timezone: "Europe/Paris"               # Your timezone
+  locale: "en_US.UTF-8"                 # System language
+  keymap: "fr"                          # Keyboard layout (us, fr, de, etc.)
+  country: "United Kingdom"             # For package mirrors
+
+# User Configuration
+user:
+  username: "lyeosmaouli"               # Your username
+  password: ""                          # Leave empty to be prompted securely
+  shell: "/bin/bash"                    # Your preferred shell
+
+# Network Configuration (for automatic setup)
+network:
+  wifi:
+    enabled: true                       # Enable WiFi auto-connection
+    ssid: "Your-WiFi-Network"          # Your WiFi network name
+    password: "your-wifi-password"      # Your WiFi password
+    security: "wpa2"                   # wpa2, wpa3, or open
+  ethernet:
+    enabled: true                       # Enable ethernet (usually automatic)
+    dhcp: true
+
+# Disk Configuration
+disk:
+  device: "/dev/nvme0n1"               # Your primary disk (/dev/sda for older systems)
+  encryption:
+    enabled: true                       # Enable full disk encryption (recommended)
+    passphrase: ""                     # Leave empty to be prompted securely
+  partitions:
+    efi_size: "512M"                   # EFI partition size
+    swap_size: "4G"                    # Hibernation swapfile size
+
+# Desktop Configuration
+desktop:
+  environment: "hyprland"              # Desktop environment
+  display_manager: "sddm"              # Login manager
+  theme: "catppuccin-mocha"           # Color theme
+  auto_login: false                    # Enable automatic login (not recommended)
+
+# Package Configuration
+packages:
+  aur:
+    packages:                          # AUR packages to install
+      - visual-studio-code-bin
+      - discord
+      - zoom
+      - hyprpaper
+      - bibata-cursor-theme
+
+# Security Configuration
+security:
+  firewall:
+    enabled: true                      # Enable UFW firewall
+  fail2ban:
+    enabled: true                      # Enable intrusion prevention
+  audit:
+    enabled: true                      # Enable security auditing
+  ssh:
+    password_auth: false               # Disable SSH password auth (keys only)
+    root_login: false                  # Disable SSH root login
+
+# Automation Settings
+automation:
+  skip_confirmations: false            # Set to true for fully unattended install
+  auto_reboot: false                   # Automatically reboot when needed
+  backup_configs: true                 # Backup configurations
+  log_level: "info"                   # debug, info, warning, error
+
+# VirtualBox Testing (when running in VM)
+virtualbox:
+  guest_additions: true               # Install VirtualBox guest additions
+  vm_optimizations: true              # Apply VM-specific optimizations
+
+# Development Tools (optional)
+development:
+  git:
+    username: ""                      # Your Git username (for git config)
+    email: ""                         # Your Git email (for git config)
+  ssh_keys:
+    generate: true                    # Generate SSH keys automatically
+    type: "ed25519"                  # SSH key type (ed25519 recommended)
+  tools:                             # Additional development tools
+    - neovim
+    - tmux
+    - htop
+    - tree
+    - ripgrep
+
+# SECURITY: SSH keys are automatically generated - no manual key management needed
+# The system creates secure SSH keys and configures them properly for you

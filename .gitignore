@@ -58,11 +58,20 @@ tmp/
 temp/
 .tmp/
 
-# SSH keys (should be in ssh/ directory but ignore any accidental copies)
-id_rsa
-id_rsa.pub
+# SSH keys - NEVER commit private keys
+ssh/
 *.pem
 *.key
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+*.priv
+*.private
+
+# GitHub deploy keys
+deploy_key*
+github_key*
 
 # Secrets
 secrets/

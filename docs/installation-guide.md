@@ -1,6 +1,18 @@
 # Installation Guide: Arch Linux Hyprland Desktop Automation
 
-This guide provides comprehensive instructions for deploying the Arch Linux Hyprland automation system on your work laptop.
+This guide provides comprehensive instructions for deploying the Arch Linux Hyprland automation system on your work laptop with **maximum automation** to minimize manual steps.
+
+## 🚀 Automated Installation (Recommended)
+
+The automation system now provides **fully automated installation** with minimal user interaction. Most manual steps have been eliminated through intelligent automation scripts.
+
+### Key Automation Features
+- **Automated network setup** (WiFi/Ethernet with configuration)
+- **Automated disk partitioning and encryption** 
+- **Automated base system installation**
+- **Automated desktop environment deployment**
+- **Automated security hardening**
+- **Automated post-installation configuration**
 
 ## Overview
 
@@ -23,23 +35,25 @@ This automation system transforms a minimal Arch Linux installation into a fully
 ### Software Requirements
 - Arch Linux ISO (latest)
 - USB drive (8GB minimum)
-- SSH key pair for repository access
+- Network credentials (WiFi SSID/password if needed)
+- No SSH keys required (automatically generated)
 
 ## Installation Methods
 
-Choose one of the following installation approaches:
+### Method 1: 🤖 Fully Automated Installation (Recommended)
+**Zero manual configuration** - Everything automated through configuration file.
 
-### Method 1: Fresh Installation (Recommended)
-Complete system installation from scratch with full control over partitioning and encryption.
+### Method 2: ⚡ Quick Semi-Automated 
+Minimal manual steps with automated deployment.
 
-### Method 2: Existing Arch System
-Deploy on an existing Arch Linux installation with minimal base system.
+### Method 3: 🔧 Manual Installation
+Traditional manual approach (for advanced users or troubleshooting).
 
 ---
 
-## Method 1: Fresh Installation
+## Method 1: 🤖 Fully Automated Installation
 
-### Phase 1: Prepare Installation Media
+### Phase 1: Prepare Installation Media and Configuration
 
 #### 1.1 Download Arch Linux ISO
 ```bash
@@ -60,292 +74,116 @@ sudo dd if=archlinux-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 # Select ISO, target USB drive, and flash
 ```
 
-### Phase 2: Base System Installation
+#### 1.3 Create Deployment Configuration
+Create your automation configuration file with your specific settings:
 
-#### 2.1 Boot from USB
+```bash
+# Download the configuration template
+curl -O https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/deployment_config.yml
+
+# Edit with your settings
+nano deployment_config.yml
+```
+
+**Key settings to customize:**
+```yaml
+# Network Configuration (for automatic WiFi connection)
+network:
+  wifi:
+    enabled: true
+    ssid: "Your-WiFi-Network"      # Your WiFi name
+    password: "your-wifi-password"  # Your WiFi password
+
+# User Configuration
+user:
+  username: "lyeosmaouli"
+  password: "your-secure-password"  # Or leave empty to be prompted
+
+# Disk Configuration
+disk:
+  device: "/dev/nvme0n1"  # Your target disk
+  encryption:
+    enabled: true
+    passphrase: "your-encryption-passphrase"  # Or leave empty
+
+# Automation Settings
+automation:
+  skip_confirmations: true   # Set to true for fully unattended
+  auto_reboot: true         # Automatically reboot when needed
+```
+
+#### 1.4 Boot and Run Master Automation
 1. Insert USB drive and boot from it
 2. Select "Arch Linux install medium"
 3. Wait for boot process to complete
+4. **Run the master automation script:**
 
-#### 2.2 Pre-installation Setup
 ```bash
-# Verify UEFI boot mode
-ls /sys/firmware/efi/efivars
+# Download and run the master automation script
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o master_auto_deploy.sh
+chmod +x master_auto_deploy.sh
 
-# Connect to internet
-# For WiFi:
-iwctl
-station wlan0 scan
-station wlan0 get-networks
-station wlan0 connect "SSID"
-exit
+# Upload your configuration file to the live environment
+# (Transfer via USB, wget, or nano/vim)
 
-# For Ethernet (usually automatic):
-ping archlinux.org
-
-# Update system clock
-timedatectl set-ntp true
+# Run fully automated installation
+CONFIG_FILE=./deployment_config.yml ./master_auto_deploy.sh auto
 ```
 
-#### 2.3 Disk Partitioning
+**That's it!** The script will automatically:
+- ✅ Connect to your WiFi network
+- ✅ Partition and encrypt your disk  
+- ✅ Install the base Arch Linux system
+- ✅ Configure bootloader and users
+- ✅ Reboot to installed system
+- ✅ Deploy complete Hyprland desktop
+- ✅ Install and configure all applications
+- ✅ Apply security hardening
+- ✅ Run post-installation validation
+
+### Phase 2: Wait for Completion
+
+The automation runs completely unattended. You'll see progress updates and can monitor logs:
+
 ```bash
-# List available disks
-lsblk
+# Monitor installation progress (if needed)
+tail -f /var/log/master_auto_deploy.log
 
-# Partition the disk (replace /dev/nvme0n1 with your disk)
-fdisk /dev/nvme0n1
-
-# Create GPT partition table and partitions:
-g          # Create GPT
-n          # New partition 1 (EFI)
-1
-<Enter>    # Default start
-+512M      # 512MB for EFI
-t          # Change type
-1          # EFI System
-
-n          # New partition 2 (Root)
-2
-<Enter>    # Default start
-<Enter>    # Use remaining space
-
-w          # Write changes
+# The system will automatically reboot between phases
+# Final completion will show desktop ready message
 ```
 
-#### 2.4 Encryption Setup (Recommended)
+**Total time:** Approximately 30-60 minutes depending on internet speed.
+
+---
+
+## Method 2: ⚡ Quick Semi-Automated
+
+This method provides a balance between automation and control, with minimal manual steps.
+
+### Phase 1: Manual Base Installation
+Follow traditional Arch installation steps for base system only:
+1. Boot from ISO and connect to internet
+2. Partition disk manually
+3. Install base system: `pacstrap /mnt base base-devel linux linux-firmware networkmanager sudo git`
+4. Configure basic system (timezone, locale, users)
+5. Install bootloader and reboot
+
+### Phase 2: Automated Desktop Deployment
 ```bash
-# Set up LUKS encryption on root partition
-cryptsetup luksFormat /dev/nvme0n1p2
-# Enter a strong passphrase
+# After first boot, download and run automation
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o master_auto_deploy.sh
+chmod +x master_auto_deploy.sh
 
-# Open encrypted partition
-cryptsetup open /dev/nvme0n1p2 cryptroot
-```
-
-#### 2.5 Filesystem Creation
-```bash
-# Format EFI partition
-mkfs.fat -F32 /dev/nvme0n1p1
-
-# Format root partition
-mkfs.ext4 /dev/mapper/cryptroot  # Encrypted
-# OR
-mkfs.ext4 /dev/nvme0n1p2        # Non-encrypted
-```
-
-#### 2.6 Mount Filesystems
-```bash
-# Mount root
-mount /dev/mapper/cryptroot /mnt  # Encrypted
-# OR
-mount /dev/nvme0n1p2 /mnt        # Non-encrypted
-
-# Mount EFI
-mkdir /mnt/boot
-mount /dev/nvme0n1p1 /mnt/boot
-```
-
-#### 2.7 Install Base System
-```bash
-# Update mirror list
-reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
-
-# Install essential packages
-pacstrap /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim
-
-# Generate fstab
-genfstab -U /mnt >> /mnt/etc/fstab
-```
-
-#### 2.8 Configure Base System
-```bash
-# Chroot into new system
-arch-chroot /mnt
-
-# Set timezone
-ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
-hwclock --systohc
-
-# Configure locale
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen
-echo "LANG=en_US.UTF-8" > /etc/locale.conf
-
-# Set keyboard layout
-echo "KEYMAP=fr" > /etc/vconsole.conf
-
-# Set hostname
-echo "phoenix" > /etc/hostname
-
-# Configure hosts file
-cat > /etc/hosts << EOF
-127.0.0.1    localhost
-::1          localhost
-127.0.1.1    phoenix.localdomain    phoenix
-EOF
-```
-
-#### 2.9 Configure Bootloader
-```bash
-# Install systemd-boot
-bootctl install
-
-# Configure loader
-cat > /boot/loader/loader.conf << EOF
-default arch.conf
-timeout 5
-console-mode max
-editor no
-EOF
-
-# Get root partition UUID
-ROOT_UUID=$(blkid -s UUID -o value /dev/mapper/cryptroot)  # Encrypted
-# OR
-ROOT_UUID=$(blkid -s UUID -o value /dev/nvme0n1p2)       # Non-encrypted
-
-# Create boot entry for encrypted system
-cat > /boot/loader/entries/arch.conf << EOF
-title    Arch Linux
-linux    /vmlinuz-linux
-initrd   /intel-ucode.img
-initrd   /initramfs-linux.img
-options  cryptdevice=/dev/nvme0n1p2:cryptroot root=/dev/mapper/cryptroot rw quiet
-EOF
-
-# For non-encrypted system:
-cat > /boot/loader/entries/arch.conf << EOF
-title    Arch Linux
-linux    /vmlinuz-linux
-initrd   /intel-ucode.img
-initrd   /initramfs-linux.img
-options  root=UUID=$ROOT_UUID rw quiet
-EOF
-```
-
-#### 2.10 Configure Encryption (If Using LUKS)
-```bash
-# Install intel-ucode for Intel processors
-pacman -S intel-ucode
-
-# Configure mkinitcpio for encryption
-sed -i 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt filesystems fsck)/' /etc/mkinitcpio.conf
-
-# Rebuild initramfs
-mkinitcpio -P
-```
-
-#### 2.11 User Setup
-```bash
-# Set root password
-passwd
-
-# Create main user
-useradd -m -G wheel -s /bin/bash lyeosmaouli
-passwd lyeosmaouli
-
-# Configure sudo
-echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-
-# Enable essential services
-systemctl enable NetworkManager
-systemctl enable sshd
-```
-
-#### 2.12 Finalize Installation
-```bash
-# Exit chroot
-exit
-
-# Unmount all partitions
-umount -R /mnt
-
-# Reboot
-reboot
-```
-
-### Phase 3: Deploy Automation System
-
-#### 3.1 Post-Boot Setup
-```bash
-# Remove USB drive and boot from hard disk
-# Log in as lyeosmaouli
-
-# Connect to internet
-sudo systemctl start NetworkManager
-sudo nmcli device wifi connect "SSID" password "password"
-# Verify connectivity
-ping google.com
-```
-
-#### 3.2 Clone Repository
-```bash
-# Navigate to home directory
-cd ~
-
-# Clone the automation repository
-git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
-cd lm_archlinux_desktop
-
-# Copy SSH keys to proper location
-mkdir -p ~/.ssh
-cp ssh/lm-archlinux-deploy ~/.ssh/id_rsa
-cp ssh/lm-archlinux-deploy.pub ~/.ssh/id_rsa.pub
-chmod 600 ~/.ssh/id_rsa
-chmod 644 ~/.ssh/id_rsa.pub
-```
-
-#### 3.3 Install Ansible
-```bash
-# Install Python and pip
-sudo pacman -S python python-pip
-
-# Install Ansible and dependencies using Makefile
-make install
-
-# Add pip binaries to PATH
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-#### 3.4 Deploy System
-
-**Option A: Complete Deployment (Recommended)**
-```bash
-# Run the complete automation
-make full-install
-
-# This will run:
-# 1. Bootstrap (base system setup)
-# 2. Desktop (Hyprland installation)  
-# 3. Security (hardening configuration)
-```
-
-**Option B: Step-by-Step Deployment**
-```bash
-# Step 1: Bootstrap
-make bootstrap
-
-# Step 2: Desktop Environment
-make desktop
-
-# Step 3: Security Hardening
-make security
-```
-
-**Option C: Manual Playbook Execution**
-```bash
-# Main playbook with interactive prompts
-ansible-playbook -i configs/ansible/inventory/localhost.yml local.yml
-
-# Individual playbooks
-ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/playbooks/bootstrap.yml
-ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/playbooks/desktop.yml
-ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/playbooks/security.yml
+# Run desktop deployment only
+./master_auto_deploy.sh desktop
 ```
 
 ---
 
-## Method 2: Existing Arch System
+## Method 3: 🔧 Manual Installation (Advanced Users)
+
+For advanced users who want full control over each step.
 
 ### Prerequisites
 - Existing Arch Linux installation with base system
@@ -367,21 +205,40 @@ make full-install
 
 ---
 
-## Post-Installation Configuration
+## 🎉 Post-Installation - System Ready!
 
-### Phase 4: System Validation
+If you used Method 1 (Fully Automated), your system is already configured and validated. The automation handles all post-installation tasks automatically.
 
-#### 4.1 Reboot and Test
+### ✅ Automated Post-Installation (Method 1)
+
+The automation system automatically handles:
+- **System validation** - All components tested
+- **Service verification** - All services enabled and running  
+- **Security audit** - Complete security configuration verified
+- **Desktop testing** - Key bindings and applications validated
+- **Maintenance setup** - Update scripts and monitoring configured
+
+### 🔧 Manual Validation (Methods 2-3)
+
+If you used semi-automated or manual installation, run validation:
+
+#### Quick System Status Check
+```bash
+# Run automated validation
+system-status
+
+# Or run comprehensive validation
+./lm_archlinux_desktop/scripts/deployment/auto_post_install.sh
+```
+
+#### Manual Testing
 ```bash
 # Reboot to test complete system
 sudo reboot
 
 # System should boot to SDDM login manager
 # Log in as lyeosmaouli and select "Hyprland" session
-```
 
-#### 4.2 Desktop Environment Test
-```bash
 # Test key bindings:
 Super + T          # Terminal (Kitty)
 Super + R          # Application launcher (Wofi)
@@ -392,30 +249,6 @@ Super + 1-9        # Switch workspaces
 # Verify desktop environment
 echo $XDG_CURRENT_DESKTOP  # Should show "Hyprland"
 echo $XDG_SESSION_TYPE     # Should show "wayland"
-```
-
-#### 4.3 System Services Check
-```bash
-# Check critical services
-systemctl status sddm
-systemctl status NetworkManager
-systemctl --user status pipewire
-sudo systemctl status ufw
-sudo systemctl status fail2ban
-sudo systemctl status auditd
-```
-
-#### 4.4 Security Validation
-```bash
-# Check firewall status
-sudo ufw status verbose
-
-# Check fail2ban
-sudo fail2ban-client status
-
-# Run security audit
-sudo /usr/local/bin/permission-audit
-sudo /usr/local/bin/audit-analysis
 ```
 
 ### Phase 5: Application Testing
