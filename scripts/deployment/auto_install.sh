@@ -45,6 +45,22 @@ setup_comprehensive_logging() {
     echo "=== DNS Configuration ===" >> "$VERBOSE_LOG"
     cat /etc/resolv.conf >> "$VERBOSE_LOG" 2>&1 || true
     echo "=== Starting Installation Process ===" >> "$VERBOSE_LOG"
+    
+    # Try to copy logs to common accessible locations
+    copy_logs_to_accessible_locations
+}
+
+# Copy logs to locations accessible from host
+copy_logs_to_accessible_locations() {
+    local accessible_dirs=("/mnt/shared" "/media" "/run/archiso/bootmnt" "/tmp")
+    
+    for dir in "${accessible_dirs[@]}"; do
+        if [[ -d "$dir" && -w "$dir" ]]; then
+            info "Copying logs to accessible location: $dir"
+            cp "$VERBOSE_LOG" "$dir/auto_install_verbose.log" 2>/dev/null || true
+            cp "$LOG_FILE" "$dir/auto_install.log" 2>/dev/null || true
+        fi
+    done
 }
 
 # Logging function
@@ -66,6 +82,11 @@ info() {
 warn() {
     echo -e "${YELLOW}WARNING: $1${NC}"
     log "WARNING: $1"
+}
+
+success() {
+    echo -e "${GREEN}✓ $1${NC}"
+    log "SUCCESS: $1"
 }
 
 # Parse YAML configuration (simple parser)
@@ -550,14 +571,11 @@ mount_filesystems() {
 
 # Get best mirrors from Arch mirror status or use curated list
 get_best_mirrors() {
-    info "Attempting to get optimal mirrors..."
-    
     # Clear any proxy settings that might interfere
-    unset http_proxy https_proxy ftp_proxy rsync_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY RSYNC_PROXY
+    unset http_proxy https_proxy ftp_proxy rsync_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY RSYNC_PROXY >/dev/null 2>&1
     
     # Configure DNS if needed
     if ! ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        info "Configuring DNS servers..."
         echo "nameserver 8.8.8.8" > /etc/resolv.conf
         echo "nameserver 1.1.1.1" >> /etc/resolv.conf
     fi
@@ -565,8 +583,6 @@ get_best_mirrors() {
     # Try to fetch mirror status with better error handling
     local mirror_json="/tmp/mirror_status.json"
     if curl -f -s --max-time 30 --retry 3 --retry-delay 2 "https://archlinux.org/mirrors/status/json/" > "$mirror_json" 2>/dev/null; then
-        info "✓ Mirror status downloaded successfully"
-        
         # Extract HTTPS mirrors with better filtering
         local extracted_mirrors
         extracted_mirrors=$(python3 -c "
@@ -587,14 +603,12 @@ except:
 " 2>/dev/null)
         
         if [[ -n "$extracted_mirrors" ]]; then
-            info "Found high-quality mirrors from status page"
             echo "$extracted_mirrors"
             return 0
         fi
     fi
     
     # Fallback to curated list of highly reliable mirrors (updated 2025)
-    info "Using curated list of reliable mirrors..."
     cat << 'EOF'
 https://geo.mirror.pkgbuild.com/
 https://mirrors.kernel.org/archlinux/
@@ -615,8 +629,10 @@ create_optimized_mirrorlist() {
     cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
     
     # Try to get best mirrors from status page
+    info "Attempting to get optimal mirrors..."
     local mirrors
     if mirrors=$(get_best_mirrors); then
+        info "✓ Mirror status downloaded successfully"
         info "✓ Creating custom mirror list from status data"
         
         # Create new mirrorlist
@@ -627,9 +643,9 @@ create_optimized_mirrorlist() {
 
 EOF
         
-        # Add mirrors
+        # Add mirrors (clean URLs only, no log pollution)
         while IFS= read -r mirror; do
-            if [[ -n "$mirror" ]]; then
+            if [[ -n "$mirror" && "$mirror" =~ ^https?:// ]]; then
                 echo "Server = ${mirror}\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
                 info "  Added: $mirror"
             fi
@@ -777,13 +793,12 @@ install_base_system() {
         info "✓ Package database sync successful"
     fi
     
-    # Configure pacman for better download handling
+    # Configure pacman for better download handling (in the correct section)
     info "Configuring pacman for reliable downloads..."
-    cat >> /etc/pacman.conf << 'EOF'
-
-# Timeout and retry settings for reliable downloads
-XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u
-EOF
+    # Remove any existing XferCommand lines
+    sed -i '/^XferCommand/d' /etc/pacman.conf
+    # Add XferCommand in the [options] section
+    sed -i '/^ParallelDownloads/a XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u' /etc/pacman.conf
     
     # Try pacstrap with better error handling and diagnostics
     info "Starting package installation with pacstrap..."
