@@ -1,0 +1,173 @@
+---
+# Development Profile Configuration
+# Developer-focused configuration with comprehensive tooling
+
+profile_name: "development"
+profile_type: "DEVELOPMENT"
+
+# System Configuration
+system:
+  hostname: "phoenix-dev"
+  timezone: "Europe/Paris"
+  locale: "en_US.UTF-8"
+  keymap: "fr"
+
+# User Configuration
+user:
+  username: "lyeosmaouli"
+  shell: "/bin/zsh"  # Developer preference
+  groups:
+    - wheel
+    - audio
+    - video
+    - network
+    - storage
+    - docker
+
+# Desktop Configuration
+desktop:
+  environment: "hyprland"
+  theme: "catppuccin-mocha"
+  auto_login: true
+  wallpaper: "code-dark"
+
+# Package Configuration
+packages:
+  mirrors:
+    protocol: "https"
+    age: 12
+  aur:
+    helper: "yay"
+    packages:
+      - visual-studio-code-bin
+      - jetbrains-toolbox
+      - discord
+      - slack-desktop
+      - postman-bin
+      - dbeaver
+      - docker-desktop
+      - nvm
+      - rustup
+      - go
+      - nodejs
+      - npm
+      - yarn
+
+# Security Configuration (Development focused)
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+    allow_ssh: true
+    custom_ports: [3000, 8080, 5432, 3306]  # Development ports
+  fail2ban:
+    enabled: true
+    ssh_protection: true
+    aggressive_mode: false
+  audit:
+    enabled: true
+    rules: "development"
+  ssh:
+    port: 22
+    password_auth: false
+    root_login: false
+    key_types: ["ed25519", "rsa"]
+
+# Power Management (Performance focused)
+power_management:
+  enabled: true
+  tlp_enabled: false  # Disable for consistent performance
+  cpu_governor_ac: "performance"
+  cpu_governor_battery: "performance"
+  wifi_powersave: false
+  usb_autosuspend: false
+
+# Development Tools (Comprehensive)
+development:
+  git:
+    username: "Lyeos Maouli"
+    email: "lyeos.dev@gmail.com"
+  ssh_keys:
+    generate: true
+    type: "ed25519"
+  tools:
+    - neovim
+    - tmux
+    - htop
+    - tree
+    - docker
+    - docker-compose
+    - kubectl
+    - helm
+    - terraform
+    - ansible
+    - vagrant
+    - virtualbox
+    - qemu
+
+# Programming Languages and Runtimes
+programming:
+  languages:
+    - python
+    - nodejs
+    - go
+    - rust
+    - java-openjdk
+    - php
+    - ruby
+  databases:
+    - postgresql
+    - mysql
+    - mongodb
+    - redis
+  tools:
+    - git
+    - github-cli
+    - gitlab-cli
+    - jq
+    - curl
+    - wget
+
+# Development applications
+dev_apps:
+  editors:
+    - visual-studio-code-bin
+    - neovim
+    - emacs
+  terminals:
+    - kitty
+    - alacritty
+    - tmux
+  browsers:
+    - firefox-developer-edition
+    - chromium
+  database_tools:
+    - dbeaver
+    - pgadmin4
+  api_tools:
+    - postman-bin
+    - insomnia
+  virtualization:
+    - docker
+    - virtualbox
+    - qemu
+
+# Container and Orchestration
+containers:
+  docker_enabled: true
+  kubernetes_tools: true
+  podman_enabled: false
+
+# Cloud Development
+cloud:
+  aws_cli: true
+  gcp_cli: true
+  azure_cli: true
+  terraform: true
+
+# Automation Configuration
+automation:
+  skip_confirmations: true
+  auto_reboot: false
+  backup_configs: true
+  log_level: "debug"  # More verbose for development

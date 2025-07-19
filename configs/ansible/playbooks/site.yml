@@ -1,0 +1,91 @@
+---
+# Site-wide Playbook for Arch Linux Hyprland Automation
+# Main playbook that orchestrates the complete deployment
+
+- name: Arch Linux Hyprland Complete Deployment
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  
+  vars:
+    deployment_profile: "{{ deployment_profile | default('work') }}"
+    deployment_mode: "{{ deployment_mode | default('full') }}"
+    
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "Starting Arch Linux Hyprland deployment"
+          - "Profile: {{ deployment_profile }}"
+          - "Mode: {{ deployment_mode }}"
+          - "Target: {{ inventory_hostname }}"
+      tags:
+        - always
+
+    - name: Ensure system is Arch Linux
+      fail:
+        msg: "This playbook is designed for Arch Linux only"
+      when: ansible_distribution != "Archlinux"
+      tags:
+        - always
+
+  roles:
+    - role: base_system
+      tags:
+        - bootstrap
+        - base
+      when: deployment_mode in ['full', 'bootstrap']
+
+    - role: users_security
+      tags:
+        - bootstrap
+        - security
+        - users
+      when: deployment_mode in ['full', 'bootstrap', 'security']
+
+    - role: hyprland_desktop
+      tags:
+        - desktop
+        - hyprland
+      when: deployment_mode in ['full', 'desktop']
+
+    - role: aur_packages
+      tags:
+        - desktop
+        - packages
+        - aur
+      when: deployment_mode in ['full', 'desktop']
+
+    - role: system_hardening
+      tags:
+        - security
+        - hardening
+      when: deployment_mode in ['full', 'security']
+
+    - role: power_management
+      tags:
+        - power
+        - optimization
+      when: 
+        - deployment_mode in ['full', 'power']
+        - ansible_chassis == "laptop" or deployment_profile == "work"
+
+  post_tasks:
+    - name: Display completion message
+      debug:
+        msg:
+          - "Arch Linux Hyprland deployment completed successfully!"
+          - "Profile: {{ deployment_profile }}"
+          - "Mode: {{ deployment_mode }}"
+          - "Reboot recommended to ensure all changes take effect"
+      tags:
+        - always
+
+    - name: Create deployment completion marker
+      file:
+        path: "/etc/arch-hyprland-deployed"
+        state: touch
+        mode: '0644'
+      tags:
+        - always

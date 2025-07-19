@@ -1,0 +1,128 @@
+---
+# Personal Profile Configuration
+# Multimedia-focused configuration for personal use
+
+profile_name: "personal"
+profile_type: "PERSONAL"
+
+# System Configuration
+system:
+  hostname: "phoenix-personal"
+  timezone: "Europe/Paris"
+  locale: "en_US.UTF-8"
+  keymap: "fr"
+
+# User Configuration
+user:
+  username: "lyeosmaouli"
+  shell: "/bin/bash"
+  groups:
+    - wheel
+    - audio
+    - video
+    - network
+    - storage
+    - games
+
+# Desktop Configuration
+desktop:
+  environment: "hyprland"
+  theme: "catppuccin-mocha"
+  auto_login: true  # Convenience for personal use
+  wallpaper: "nature-landscape"
+
+# Package Configuration
+packages:
+  mirrors:
+    protocol: "https"
+    age: 12
+  aur:
+    helper: "yay"
+    packages:
+      - visual-studio-code-bin
+      - discord
+      - spotify
+      - steam
+      - lutris
+      - vlc
+      - gimp
+      - blender
+      - obs-studio
+      - firefox
+      - chromium
+
+# Security Configuration (Balanced)
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+    allow_ssh: false  # Personal use, SSH not needed
+  fail2ban:
+    enabled: true
+    ssh_protection: false
+    aggressive_mode: false
+  audit:
+    enabled: true
+    rules: "basic"
+  ssh:
+    port: 22
+    password_auth: true
+    root_login: false
+
+# Power Management (Performance oriented)
+power_management:
+  enabled: true
+  tlp_enabled: true
+  cpu_governor_ac: "performance"
+  cpu_governor_battery: "ondemand"
+  wifi_powersave: false
+  usb_autosuspend: false
+
+# Development Tools (Personal projects)
+development:
+  git:
+    username: "Lyeos Maouli"
+    email: "lyeos.personal@gmail.com"
+  ssh_keys:
+    generate: true
+    type: "ed25519"
+  tools:
+    - neovim
+    - tmux
+    - htop
+    - tree
+
+# Personal applications
+personal_apps:
+  multimedia:
+    - vlc
+    - mpv
+    - gimp
+    - inkscape
+    - blender
+    - audacity
+  gaming:
+    - steam
+    - lutris
+    - wine
+    - gamemode
+  productivity:
+    - libreoffice-fresh
+    - thunderbird
+    - firefox
+    - chromium
+
+# Gaming configuration
+gaming:
+  steam_enabled: true
+  lutris_enabled: true
+  gamemode_enabled: true
+  mesa_drivers: true
+  vulkan_support: true
+
+# Automation Configuration
+automation:
+  skip_confirmations: true  # More automated for personal use
+  auto_reboot: false
+  backup_configs: true
+  log_level: "info"

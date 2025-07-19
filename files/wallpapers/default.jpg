@@ -1,0 +1,14 @@
+# Default Wallpaper Placeholder
+# This is a placeholder for the default wallpaper
+# Replace with actual wallpaper image file
+# Recommended resolution: 1920x1080 or higher
+# Supported formats: JPG, PNG
+# 
+# To add actual wallpapers:
+# 1. Place image files in this directory
+# 2. Update Hyprland configuration templates to reference them
+# 3. Consider creating subdirectories for different themes
+
+WALLPAPER_INFO="Default placeholder - replace with actual image"
+RESOLUTION="1920x1080"
+FORMAT="JPG"

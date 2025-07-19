@@ -1,0 +1,14 @@
+---
+# AUR Packages Role Handlers
+
+- name: update package database
+  command: yay -Sy
+  become: false
+
+- name: clean package cache
+  command: yay -Sc --noconfirm
+  become: false
+
+- name: refresh aur helper
+  command: yay --version
+  become: false

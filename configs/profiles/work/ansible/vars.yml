@@ -1,0 +1,111 @@
+---
+# Work Profile Configuration
+# Security-focused laptop configuration for professional use
+
+profile_name: "work"
+profile_type: "WORK"
+
+# System Configuration
+system:
+  hostname: "phoenix-work"
+  timezone: "Europe/Paris"
+  locale: "en_US.UTF-8"
+  keymap: "fr"
+
+# User Configuration
+user:
+  username: "lyeosmaouli"
+  shell: "/bin/bash"
+  groups:
+    - wheel
+    - audio
+    - video
+    - network
+    - storage
+
+# Desktop Configuration
+desktop:
+  environment: "hyprland"
+  theme: "catppuccin-mocha"
+  auto_login: false  # Security: Manual login required
+  wallpaper: "corporate-dark"
+
+# Package Configuration
+packages:
+  mirrors:
+    protocol: "https"
+    age: 12
+  aur:
+    helper: "yay"
+    packages:
+      - visual-studio-code-bin
+      - discord
+      - zoom
+      - slack-desktop
+      - teams
+      - firefox-developer-edition
+
+# Security Configuration (Enhanced for work)
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+    allow_ssh: true
+  fail2ban:
+    enabled: true
+    ssh_protection: true
+    aggressive_mode: true
+  audit:
+    enabled: true
+    rules: "strict"
+  ssh:
+    port: 22
+    password_auth: false
+    root_login: false
+    key_types: ["ed25519"]
+
+# Power Management (Laptop optimized)
+power_management:
+  enabled: true
+  tlp_enabled: true
+  cpu_governor_ac: "performance"
+  cpu_governor_battery: "powersave"
+  wifi_powersave: true
+  usb_autosuspend: true
+
+# Development Tools
+development:
+  git:
+    username: "Lyeos Maouli"
+    email: "lyeos.maouli@company.com"
+  ssh_keys:
+    generate: true
+    type: "ed25519"
+  tools:
+    - neovim
+    - tmux
+    - htop
+    - tree
+    - docker
+    - kubectl
+
+# Work-specific applications
+work_apps:
+  productivity:
+    - libreoffice-fresh
+    - thunderbird
+    - keepassxc
+  security:
+    - gnupg
+    - yubikey-manager
+  communication:
+    - zoom
+    - teams
+    - slack-desktop
+
+# Automation Configuration
+automation:
+  skip_confirmations: false
+  auto_reboot: false
+  backup_configs: true
+  log_level: "info"
