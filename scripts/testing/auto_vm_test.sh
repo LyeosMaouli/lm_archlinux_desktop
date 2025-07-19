@@ -237,25 +237,46 @@ check_vm_prerequisites() {
 setup_vm_network() {
     info "Setting up VM network..."
     
-    # VM usually has NAT networking that works automatically
-    if ping -c 3 archlinux.org >/dev/null 2>&1; then
-        success "Network connectivity confirmed"
+    # Check if we're already connected
+    if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+        success "Network connectivity confirmed (via 8.8.8.8)"
         return
     fi
+    
+    # Try archlinux.org
+    if ping -c 1 -W 3 archlinux.org >/dev/null 2>&1; then
+        success "Network connectivity confirmed (via archlinux.org)"
+        return
+    fi
+    
+    info "Network not ready, attempting to configure..."
+    
+    # Show network interfaces
+    info "Available network interfaces:"
+    ip link show | grep -E '^[0-9]+:' || warn "Failed to list interfaces"
     
     # Try to bring up network interface
     local interface=$(ip link show | grep -E '^[0-9]+: en' | head -1 | cut -d':' -f2 | xargs)
     if [[ -n "$interface" ]]; then
         info "Bringing up network interface: $interface"
-        sudo ip link set "$interface" up
-        sudo dhclient "$interface" || warn "DHCP failed"
+        ip link set "$interface" up || warn "Failed to bring up interface"
+        
+        # Try DHCP
+        info "Attempting DHCP on $interface..."
+        dhcpcd "$interface" &
+        sleep 5
+        
+        # Kill background dhcpcd
+        pkill dhcpcd 2>/dev/null || true
     fi
     
-    # Check connectivity again
-    if ping -c 3 archlinux.org >/dev/null 2>&1; then
+    # Final connectivity check
+    if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+        success "Network connectivity established"
+    elif ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
         success "Network connectivity established"
     else
-        error "Failed to establish network connectivity"
+        error "Failed to establish network connectivity. Please check VM network settings."
     fi
 }
 
@@ -298,13 +319,46 @@ automated_disk_setup() {
 
 # Install Git if needed
 ensure_git() {
-    if ! command -v git >/dev/null 2>&1; then
-        info "Installing Git..."
-        if command -v pacman >/dev/null 2>&1; then
-            pacman -S --noconfirm git || error "Failed to install Git"
+    # Check if git is already available (it should be on live ISO)
+    if command -v git >/dev/null 2>&1; then
+        info "Git already available: $(git --version)"
+        return 0
+    fi
+    
+    info "Git not found, attempting installation..."
+    
+    # Make sure we have network connectivity for package installation
+    if ! ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+        error "No network connectivity for package installation"
+    fi
+    
+    if command -v pacman >/dev/null 2>&1; then
+        info "Updating package database..."
+        pacman -Sy --noconfirm || {
+            warn "Package database update failed, trying to continue..."
+        }
+        
+        info "Installing Git package..."
+        pacman -S --noconfirm git || {
+            warn "Git installation failed. Checking if it's actually installed..."
+            
+            # Sometimes the package exists but path is not updated
+            if [[ -x /usr/bin/git ]]; then
+                info "Git found at /usr/bin/git"
+                export PATH="/usr/bin:$PATH"
+            else
+                error "Failed to install Git. Please install it manually: pacman -S git"
+            fi
+        }
+        
+        # Final verification
+        if command -v git >/dev/null 2>&1; then
+            info "Git successfully available: $(git --version)"
         else
-            error "Git not available and cannot install"
+            error "Git installation failed - command not found after installation"
         fi
+    else
+        error "Git not available and cannot install (pacman not found)"
     fi
 }
 
