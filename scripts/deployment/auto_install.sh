@@ -138,8 +138,12 @@ update_clock() {
 detect_disk_device() {
     local config_device=$(parse_nested_config "disk" "device")
     
+    info "Disk detection debug:"
+    info "  Config device: '$config_device'"
+    
     # If device specified in config and exists, use it
     if [[ -n "$config_device" ]] && [[ -b "$config_device" ]]; then
+        info "  Using config device: $config_device"
         echo "$config_device"
         return 0
     fi
@@ -147,15 +151,21 @@ detect_disk_device() {
     # Auto-detect common disk devices
     local devices=("/dev/nvme0n1" "/dev/sda" "/dev/vda" "/dev/hda")
     
+    info "  Checking available devices:"
     for device in "${devices[@]}"; do
         if [[ -b "$device" ]]; then
+            info "  ✓ Found: $device"
             echo "$device"
             return 0
+        else
+            info "  ✗ Missing: $device"
         fi
     done
     
-    # If no device found, return config device anyway (will error later)
-    echo "${config_device:-/dev/sda}"
+    # If no device found, return default
+    local default_device="/dev/sda"
+    warn "No disk device found, using default: $default_device"
+    echo "$default_device"
 }
 
 # Get partition naming based on device type

@@ -263,26 +263,35 @@ setup_vm_network() {
 automated_disk_setup() {
     info "Setting up VM disk automatically..."
     
-    # Detect the VM disk
-    local vm_disk="/dev/sda"
-    if [[ ! -b "$vm_disk" ]]; then
-        # Try other common VM disk names
-        for disk in /dev/vda /dev/nvme0n1; do
-            if [[ -b "$disk" ]]; then
-                vm_disk="$disk"
-                break
-            fi
-        done
-    fi
+    # Show available disks for debugging
+    info "Available block devices:"
+    lsblk -f || warn "lsblk failed"
     
-    if [[ ! -b "$vm_disk" ]]; then
-        error "No suitable disk found for VM installation"
+    # Detect the VM disk
+    local vm_disk=""
+    local possible_disks=("/dev/sda" "/dev/vda" "/dev/nvme0n1" "/dev/hda")
+    
+    for disk in "${possible_disks[@]}"; do
+        if [[ -b "$disk" ]]; then
+            vm_disk="$disk"
+            info "Found VM disk: $vm_disk"
+            break
+        fi
+    done
+    
+    if [[ -z "$vm_disk" ]] || [[ ! -b "$vm_disk" ]]; then
+        error "No suitable disk found for VM installation. Available devices: $(ls /dev/sd* /dev/vd* /dev/nvme* 2>/dev/null || echo 'none')"
     fi
     
     info "Using disk: $vm_disk"
+    info "Disk size: $(lsblk -b -n -o SIZE "$vm_disk" 2>/dev/null | head -1 | numfmt --to=iec || echo 'unknown')"
     
     # Update configuration with detected disk
     sed -i "s|device: \"/dev/sda\"|device: \"$vm_disk\"|" "$CONFIG_FILE"
+    
+    # Verify the configuration was updated
+    local updated_device=$(grep "device:" "$CONFIG_FILE" | head -1 | cut -d'"' -f2)
+    info "Configuration updated - device: $updated_device"
     
     success "VM disk configuration updated"
 }
