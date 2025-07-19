@@ -12,7 +12,7 @@
 
 - name: Update mirrorlist for better performance
   shell: |
-    reflector --country "{{ base_mirror_country }}" \
+    reflector --latest 20 \
              --age 12 \
              --protocol https \
              --sort rate \

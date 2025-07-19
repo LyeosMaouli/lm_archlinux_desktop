@@ -28,6 +28,7 @@ The project is organized around infrastructure automation best practices:
 ## Key Architecture Decisions
 
 ### Target System Configuration
+
 - **Hardware**: Work laptop with Intel GPU
 - **Bootloader**: systemd-boot (not GRUB)
 - **Filesystem**: ext4 with LUKS encryption
@@ -37,7 +38,8 @@ The project is organized around infrastructure automation best practices:
 - **Network**: NetworkManager
 
 ### Localization
-- **Region**: UK package mirrors
+
+- **Region**: Fastest package mirrors
 - **Locale**: English (en_US.UTF-8)
 - **Keyboard**: AZERTY layout (fr keymap)
 - **Timezone**: Europe/Paris
@@ -46,6 +48,7 @@ The project is organized around infrastructure automation best practices:
 ## Critical Package Requirements
 
 This project specifically targets **Hyprland ecosystem** packages, not KDE/Plasma:
+
 - Core Hyprland: `hyprland`, `waybar`, `wofi`, `mako`, `kitty`, `thunar`
 - Wayland support: `xdg-desktop-portal-hyprland`, `qt5-wayland`, `qt6-wayland`
 - Graphics: `mesa`, `intel-media-driver`, `vulkan-intel`
@@ -55,12 +58,14 @@ This project specifically targets **Hyprland ecosystem** packages, not KDE/Plasm
 ## Ansible Architecture
 
 ### Main Playbooks
+
 - `configs/ansible/playbooks/bootstrap.yml` - Initial system setup
 - `configs/ansible/playbooks/desktop.yml` - Hyprland desktop installation
 - `configs/ansible/playbooks/security.yml` - Security hardening
 - `configs/ansible/playbooks/maintenance.yml` - System maintenance tasks
 
 ### Key Roles
+
 - `base_system/` - Core system configuration and optimization
 - `users_security/` - User management and security hardening
 - `hyprland_desktop/` - Complete Wayland desktop environment setup
@@ -71,6 +76,7 @@ This project specifically targets **Hyprland ecosystem** packages, not KDE/Plasm
 ## Common Development Tasks
 
 ### Running Ansible Playbooks
+
 ```bash
 # Full system deployment
 ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/playbooks/site.yml
@@ -81,6 +87,7 @@ ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/play
 ```
 
 ### Testing and Validation
+
 ```bash
 # Run validation scripts
 ./scripts/testing/test_installation.sh
@@ -92,6 +99,7 @@ ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/play
 ```
 
 ### Deployment Scripts
+
 ```bash
 # Master deployment script
 ./scripts/deployment/master_deploy.sh
@@ -104,6 +112,7 @@ ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/play
 ## Security Considerations
 
 This project implements multi-layered security:
+
 - LUKS full disk encryption
 - UFW firewall with restrictive defaults
 - fail2ban for intrusion prevention
@@ -114,6 +123,7 @@ This project implements multi-layered security:
 ## Template System
 
 The project uses Jinja2 templates extensively for dynamic configuration:
+
 - `templates/systemd/` - Systemd service and timer files
 - Template files in role directories for application configs
 - Dynamic configuration based on hardware detection and user variables
@@ -130,6 +140,7 @@ The project uses Jinja2 templates extensively for dynamic configuration:
 ## Interactive Features
 
 The main playbook includes interactive prompts for:
+
 - LUKS encryption passphrase
 - User password configuration
 - Root password setup
@@ -138,8 +149,13 @@ The main playbook includes interactive prompts for:
 ## Profile Management
 
 The project supports multiple deployment profiles:
+
 - `work/` - Work laptop configuration
 - `personal/` - Personal system setup
 - `development/` - Development environment
 
 Each profile has its own archinstall and ansible variable configurations.
+
+## Maintenance Guidelines
+
+- Always keep github up to date
