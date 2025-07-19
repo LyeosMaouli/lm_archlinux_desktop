@@ -94,6 +94,11 @@ install_prerequisites() {
     # Install required packages
     sudo pacman -S --noconfirm --needed python python-pip git
     
+    # Verify Git is working
+    if ! command -v git >/dev/null 2>&1; then
+        error "Git installation failed"
+    fi
+    
     info "Prerequisites installed successfully"
 }
 

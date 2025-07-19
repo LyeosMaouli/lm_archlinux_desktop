@@ -210,6 +210,48 @@ show_config_summary() {
     echo
 }
 
+# Ensure repository is available
+ensure_repository() {
+    header "Repository Setup"
+    
+    # If running from a downloaded script, clone the repository
+    if [[ ! -d "$PROJECT_ROOT" ]] || [[ ! -f "$PROJECT_ROOT/local.yml" ]]; then
+        info "Repository not found locally, cloning..."
+        
+        # Install git if needed
+        if ! command -v git >/dev/null 2>&1; then
+            info "Installing Git..."
+            if command -v pacman >/dev/null 2>&1; then
+                pacman -S --noconfirm git || error "Failed to install Git"
+            else
+                error "Git not available and cannot install"
+            fi
+        fi
+        
+        # Determine clone location
+        local clone_dir
+        if [[ -w "/tmp" ]]; then
+            clone_dir="/tmp/lm_archlinux_desktop"
+        else
+            clone_dir="$HOME/lm_archlinux_desktop"
+        fi
+        
+        # Remove existing if present
+        [[ -d "$clone_dir" ]] && rm -rf "$clone_dir"
+        
+        # Clone repository
+        git clone "https://github.com/LyeosMaouli/lm_archlinux_desktop.git" "$clone_dir" || error "Failed to clone repository"
+        
+        # Update paths to point to cloned repository
+        PROJECT_ROOT="$clone_dir"
+        SCRIPT_DIR="$clone_dir/scripts/deployment"
+        
+        success "Repository cloned to: $PROJECT_ROOT"
+    else
+        info "Repository found at: $PROJECT_ROOT"
+    fi
+}
+
 # Make scripts executable
 prepare_scripts() {
     header "Preparing Scripts"
@@ -402,6 +444,7 @@ main() {
             print_banner
             detect_system_state
             setup_configuration
+            ensure_repository
             prepare_scripts
             
             if [[ "$LIVE_ISO" == true ]]; then
@@ -429,6 +472,7 @@ main() {
             print_banner
             detect_system_state
             setup_configuration
+            ensure_repository
             prepare_scripts
             setup_network
             run_iso_installation
@@ -438,6 +482,7 @@ main() {
             # Desktop deployment only
             print_banner
             setup_configuration
+            ensure_repository
             prepare_scripts
             setup_network
             run_desktop_deployment
@@ -449,6 +494,7 @@ main() {
             # VM testing mode
             print_banner
             setup_configuration
+            ensure_repository
             prepare_scripts
             
             if [[ "$VM_ENVIRONMENT" == true ]]; then

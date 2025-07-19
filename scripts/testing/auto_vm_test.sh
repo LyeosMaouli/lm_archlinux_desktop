@@ -287,9 +287,45 @@ automated_disk_setup() {
     success "VM disk configuration updated"
 }
 
+# Install Git if needed
+ensure_git() {
+    if ! command -v git >/dev/null 2>&1; then
+        info "Installing Git..."
+        if command -v pacman >/dev/null 2>&1; then
+            pacman -S --noconfirm git || error "Failed to install Git"
+        else
+            error "Git not available and cannot install"
+        fi
+    fi
+}
+
+# Clone repository for installation
+clone_repository() {
+    info "Cloning automation repository..."
+    
+    # Ensure Git is available
+    ensure_git
+    
+    # Remove existing directory if it exists
+    if [[ -d "$INSTALL_DIR" ]]; then
+        warn "Existing installation directory found, backing up..."
+        mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%Y%m%d-%H%M%S)"
+    fi
+    
+    # Clone repository
+    git clone "$REPO_URL" "$INSTALL_DIR" || error "Failed to clone repository"
+    
+    info "Repository cloned successfully to $INSTALL_DIR"
+}
+
 # Run automated base installation
 run_base_installation() {
     info "Starting automated base installation..."
+    
+    # Ensure repository is cloned
+    if [[ ! -d "$INSTALL_DIR" ]]; then
+        clone_repository
+    fi
     
     # Check if base installation script exists
     local install_script="$INSTALL_DIR/scripts/deployment/auto_install.sh"
@@ -310,10 +346,9 @@ run_base_installation() {
 run_automated_deployment() {
     info "Starting automated desktop deployment..."
     
-    # Clone repository if not already done
+    # Ensure repository is cloned
     if [[ ! -d "$INSTALL_DIR" ]]; then
-        info "Cloning repository..."
-        git clone "$REPO_URL" "$INSTALL_DIR"
+        clone_repository
     fi
     
     cd "$INSTALL_DIR"
