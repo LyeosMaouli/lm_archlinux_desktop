@@ -8,7 +8,7 @@ system:
   timezone: "Europe/Paris"
   locale: "en_US.UTF-8"
   keymap: "fr"
-  country: "United Kingdom"  # For mirror selection
+  # country: "United Kingdom"  # For mirror selection - commented out to auto-detect fastest mirrors
 
 # User Configuration
 user:

@@ -470,43 +470,95 @@ mount_filesystems() {
 install_base_system() {
     local country=$(parse_config "country")
     
-    info "Updating mirror list..."
-    if [[ -n "$country" ]]; then
-        info "Using mirrors for country: $country"
-        reflector --country "$country" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
-            warn "Reflector failed for $country, trying UK mirrors..."
-            reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
-                warn "Reflector failed completely, using default mirrors"
-            }
-        }
-    else
-        info "Using default UK mirrors"
-        reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
-            warn "Reflector failed, using default mirrors"
-        }
+    info "Configuring package mirrors..."
+    
+    # Try to update mirrors with multiple fallback strategies
+    local mirror_updated=false
+    
+    # Strategy 1: Use reflector with auto-detection (no country restriction)
+    if ! $mirror_updated; then
+        info "Attempting auto-detection of fastest mirrors..."
+        if reflector --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
+            info "✓ Auto-detected mirrors configured successfully"
+            mirror_updated=true
+        else
+            warn "✗ Auto-detection failed"
+        fi
+    fi
+    
+    # Strategy 2: Use reflector with country if specified
+    if ! $mirror_updated && [[ -n "$country" ]]; then
+        info "Attempting mirrors for country: $country"
+        if reflector --country "$country" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
+            info "✓ Country-specific mirrors configured successfully"
+            mirror_updated=true
+        else
+            warn "✗ Country-specific mirrors failed"
+        fi
+    fi
+    
+    # Strategy 3: Use a broader set of countries
+    if ! $mirror_updated; then
+        info "Attempting mirrors from multiple countries..."
+        if reflector --country "United States,Germany,France,United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
+            info "✓ Multi-country mirrors configured successfully"
+            mirror_updated=true
+        else
+            warn "✗ Multi-country mirrors failed"
+        fi
+    fi
+    
+    # Strategy 4: Keep original mirrors if all else fails
+    if ! $mirror_updated; then
+        warn "All mirror update strategies failed, using original mirrors"
+        info "This might work if the original mirrors are still functional"
     fi
     
     # Show current mirror list for debugging
-    info "Current mirror list (first 5 lines):"
-    head -n 5 /etc/pacman.d/mirrorlist || warn "Could not display mirror list"
+    info "Current mirror configuration (first 3 lines):"
+    head -n 3 /etc/pacman.d/mirrorlist | grep -v '^#' || warn "Could not display mirror list"
     
     info "Installing base system packages..."
     info "This may take several minutes depending on internet speed..."
     
-    # Try pacstrap with verbose output and better error handling
+    # Test package database access first
+    info "Testing package database access..."
+    if ! pacman -Sy --noconfirm 2>/dev/null; then
+        warn "Package database sync failed, but continuing with installation attempt..."
+    else
+        info "✓ Package database sync successful"
+    fi
+    
+    # Try pacstrap with better error handling and diagnostics
+    info "Starting package installation with pacstrap..."
     if ! pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode; then
-        warn "Full package installation failed, trying minimal installation..."
+        warn "Full package installation failed"
+        
+        # Show more diagnostic information
+        info "Diagnostic information:"
+        info "Available space in /mnt:"
+        df -h /mnt 2>/dev/null || warn "Could not check disk space"
+        
+        info "Testing network connectivity to package servers:"
+        ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 && info "✓ archlinux.org reachable" || warn "✗ archlinux.org unreachable"
         
         # Try minimal installation first
+        warn "Attempting minimal installation..."
         if ! pacstrap -c /mnt base linux linux-firmware networkmanager; then
-            error "Even minimal package installation failed. Check network connectivity and mirrors."
+            # Show current mirror list for debugging
+            info "Current mirrors being used:"
+            grep -v '^#' /etc/pacman.d/mirrorlist | head -5 || warn "Could not display mirrors"
+            
+            error "Even minimal package installation failed. This suggests mirror or network issues."
         fi
         
         # Install additional packages in chroot if minimal succeeded
-        info "Installing additional packages in chroot..."
+        info "Minimal installation succeeded, installing additional packages..."
         arch-chroot /mnt pacman -S --noconfirm base-devel sudo git openssh neovim intel-ucode || {
             warn "Some additional packages failed to install, continuing..."
         }
+    else
+        info "✓ Full package installation completed successfully"
     fi
     
     info "Verifying critical packages..."

@@ -142,9 +142,9 @@ desktop:
 # Package Configuration
 packages:
   mirrors:
-    country: "United Kingdom"
     protocol: "https"
     age: 12
+    # country: auto-detect fastest mirrors
   aur:
     helper: "yay"
     packages:
