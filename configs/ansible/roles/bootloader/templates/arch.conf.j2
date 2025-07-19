@@ -1,6 +1,0 @@
-# roles/boot_config/templates/arch.conf.j2
-title Arch Linux ({{ ansible_hostname }})
-linux /vmlinuz-linux
-initrd /intel-ucode.img
-initrd /initramfs-linux.img
-options root=UUID={{ root_uuid.stdout }} rw quiet

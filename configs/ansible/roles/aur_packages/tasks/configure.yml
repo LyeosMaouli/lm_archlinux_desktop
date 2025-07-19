@@ -1,0 +1,152 @@
+---
+# Configuration tasks for AUR packages
+
+- name: Create AUR package configuration directory
+  file:
+    path: "/home/{{ aur_user }}/.config/aur-packages"
+    state: directory
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0755'
+  tags: configure
+
+- name: Configure Visual Studio Code (if installed)
+  block:
+    - name: Check if VSCode is installed
+      command: which code
+      register: vscode_check
+      changed_when: false
+      failed_when: false
+      become_user: "{{ aur_user }}"
+      become: yes
+
+    - name: Create VSCode user settings directory
+      file:
+        path: "/home/{{ aur_user }}/.config/Code/User"
+        state: directory
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0755'
+      when: vscode_check.rc == 0
+
+    - name: Configure VSCode settings
+      copy:
+        content: |
+          {
+            "workbench.colorTheme": "Default Dark+",
+            "editor.fontFamily": "'JetBrains Mono', 'Droid Sans Mono', 'monospace'",
+            "editor.fontSize": 14,
+            "editor.tabSize": 2,
+            "editor.insertSpaces": true,
+            "files.autoSave": "afterDelay",
+            "terminal.integrated.fontFamily": "JetBrains Mono",
+            "workbench.startupEditor": "newUntitledFile",
+            "extensions.autoUpdate": false
+          }
+        dest: "/home/{{ aur_user }}/.config/Code/User/settings.json"
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0644'
+      when: vscode_check.rc == 0
+  tags: configure, vscode
+
+- name: Configure Discord (if installed)
+  block:
+    - name: Check if Discord is installed
+      command: which discord
+      register: discord_check
+      changed_when: false
+      failed_when: false
+      become_user: "{{ aur_user }}"
+      become: yes
+
+    - name: Create Discord configuration directory
+      file:
+        path: "/home/{{ aur_user }}/.config/discord"
+        state: directory
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0755'
+      when: discord_check.rc == 0
+
+    - name: Configure Discord for Wayland
+      copy:
+        content: |
+          --enable-features=UseOzonePlatform
+          --ozone-platform=wayland
+          --enable-wayland-ime
+        dest: "/home/{{ aur_user }}/.config/discord/discord-flags.conf"
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0644'
+      when: discord_check.rc == 0
+  tags: configure, discord
+
+- name: Configure Zoom (if installed)
+  block:
+    - name: Check if Zoom is installed
+      command: which zoom
+      register: zoom_check
+      changed_when: false
+      failed_when: false
+      become_user: "{{ aur_user }}"
+      become: yes
+
+    - name: Configure Zoom for Wayland
+      copy:
+        content: |
+          export QT_QPA_PLATFORM=wayland
+          export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+        dest: "/home/{{ aur_user }}/.zoom-wayland.sh"
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0755'
+      when: zoom_check.rc == 0
+  tags: configure, zoom
+
+- name: Configure Hyprpaper (if installed)
+  block:
+    - name: Check if Hyprpaper is installed
+      command: which hyprpaper
+      register: hyprpaper_check
+      changed_when: false
+      failed_when: false
+      become_user: "{{ aur_user }}"
+      become: yes
+
+    - name: Create Hyprpaper config directory
+      file:
+        path: "/home/{{ aur_user }}/.config/hypr"
+        state: directory
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0755'
+      when: hyprpaper_check.rc == 0
+
+    - name: Configure Hyprpaper
+      copy:
+        content: |
+          preload = /usr/share/pixmaps/archlinux-logo.png
+          wallpaper = ,/usr/share/pixmaps/archlinux-logo.png
+        dest: "/home/{{ aur_user }}/.config/hypr/hyprpaper.conf"
+        owner: "{{ aur_user }}"
+        group: "{{ aur_user }}"
+        mode: '0644'
+      when: hyprpaper_check.rc == 0
+  tags: configure, hyprpaper
+
+- name: Create AUR package update script
+  template:
+    src: update-aur.sh.j2
+    dest: "/home/{{ aur_user }}/.local/bin/update-aur"
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0755'
+  tags: configure, scripts
+
+- name: Create installed packages manifest
+  shell: yay -Qm > "/home/{{ aur_user }}/.config/aur-packages/installed.txt"
+  become_user: "{{ aur_user }}"
+  become: yes
+  changed_when: false
+  tags: configure, manifest

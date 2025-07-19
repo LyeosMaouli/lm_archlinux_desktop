@@ -1,0 +1,69 @@
+---
+# SDDM display manager configuration tasks
+
+- name: Configure SDDM
+  template:
+    src: sddm/sddm.conf.j2
+    dest: /etc/sddm.conf
+    mode: '0644'
+    backup: yes
+  notify: restart sddm
+  tags: sddm
+
+- name: Create SDDM theme directory
+  file:
+    path: /usr/share/sddm/themes/hyprland
+    state: directory
+    mode: '0755'
+  tags: sddm, theme
+
+- name: Install SDDM theme files
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/share/sddm/themes/hyprland/{{ item }}"
+    mode: '0644'
+  loop:
+    - theme.conf
+    - background.jpg
+  failed_when: false
+  tags: sddm, theme
+
+- name: Enable SDDM service
+  systemd:
+    name: sddm
+    enabled: yes
+  tags: sddm
+
+- name: Configure SDDM Wayland session
+  copy:
+    content: |
+      [Desktop Entry]
+      Type=XSession
+      Exec=/usr/bin/Hyprland
+      Name=Hyprland
+      Comment=An intelligent dynamic tiling Wayland compositor
+    dest: /usr/share/xsessions/hyprland.desktop
+    mode: '0644'
+  tags: sddm, session
+
+- name: Configure SDDM auto-login (optional)
+  lineinfile:
+    path: /etc/sddm.conf
+    regexp: '^User='
+    line: "User={{ desktop_user }}"
+    state: present
+  when: sddm_autologin | default(false)
+  notify: restart sddm
+  tags: sddm, autologin
+
+- name: Disable other display managers
+  systemd:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+  loop:
+    - gdm
+    - lightdm
+    - lxdm
+  failed_when: false
+  tags: sddm

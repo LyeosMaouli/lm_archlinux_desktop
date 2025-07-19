@@ -1,0 +1,97 @@
+---
+# Theme and fonts configuration tasks
+
+- name: Create GTK config directories
+  file:
+    path: "/home/{{ desktop_user }}/.config/{{ item }}"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  loop:
+    - gtk-3.0
+    - gtk-4.0
+  tags: themes, gtk
+
+- name: Configure GTK 3 theme
+  copy:
+    content: |
+      [Settings]
+      gtk-theme-name=Adwaita-dark
+      gtk-icon-theme-name=Papirus-Dark
+      gtk-font-name=Cantarell 11
+      gtk-cursor-theme-name=Adwaita
+      gtk-cursor-theme-size=24
+      gtk-toolbar-style=GTK_TOOLBAR_BOTH_HORIZ
+      gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
+      gtk-button-images=0
+      gtk-menu-images=0
+      gtk-enable-event-sounds=1
+      gtk-enable-input-feedback-sounds=0
+      gtk-xft-antialias=1
+      gtk-xft-hinting=1
+      gtk-xft-hintstyle=hintfull
+      gtk-xft-rgba=rgb
+    dest: "/home/{{ desktop_user }}/.config/gtk-3.0/settings.ini"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: themes, gtk
+
+- name: Configure GTK 4 theme
+  copy:
+    content: |
+      [Settings]
+      gtk-theme-name=Adwaita-dark
+      gtk-icon-theme-name=Papirus-Dark
+      gtk-font-name=Cantarell 11
+      gtk-cursor-theme-name=Adwaita
+      gtk-cursor-theme-size=24
+    dest: "/home/{{ desktop_user }}/.config/gtk-4.0/settings.ini"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: themes, gtk
+
+- name: Configure Qt theme
+  copy:
+    content: |
+      [Appearance]
+      color_scheme_path=/usr/share/color-schemes/BreezeDark.colors
+      icon_theme=Papirus-Dark
+      
+      [Fonts]
+      fixed=JetBrains Mono,10,-1,5,50,0,0,0,0,0
+      general=Cantarell,11,-1,5,50,0,0,0,0,0
+    dest: "/home/{{ desktop_user }}/.config/kdeglobals"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: themes, qt
+
+- name: Set environment variables for theming
+  copy:
+    content: |
+      # Theme environment variables
+      export GTK_THEME=Adwaita:dark
+      export QT_QPA_PLATFORMTHEME=gtk3
+      export QT_STYLE_OVERRIDE=Adwaita-dark
+    dest: /etc/profile.d/theme.sh
+    mode: '0644'
+  tags: themes, environment
+
+- name: Create fonts directory
+  file:
+    path: "/home/{{ desktop_user }}/.local/share/fonts"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: fonts
+
+- name: Update font cache
+  command: fc-cache -fv
+  become_user: "{{ desktop_user }}"
+  become: yes
+  changed_when: false
+  tags: fonts

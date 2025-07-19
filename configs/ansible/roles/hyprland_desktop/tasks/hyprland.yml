@@ -1,0 +1,62 @@
+---
+# Hyprland configuration tasks
+
+- name: Create Hyprland config directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/hypr"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: hyprland
+
+- name: Configure Hyprland main config
+  template:
+    src: hyprland/hyprland.conf.j2
+    dest: "/home/{{ desktop_user }}/.config/hypr/hyprland.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+    backup: yes
+  tags: hyprland
+
+- name: Configure Hyprlock
+  template:
+    src: hyprland/hyprlock.conf.j2
+    dest: "/home/{{ desktop_user }}/.config/hypr/hyprlock.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: hyprland, lock
+
+- name: Configure Hypridle
+  template:
+    src: hyprland/hypridle.conf.j2
+    dest: "/home/{{ desktop_user }}/.config/hypr/hypridle.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: hyprland, idle
+
+- name: Create Hyprland startup script
+  template:
+    src: hyprland/hyprland-startup.sh.j2
+    dest: "/home/{{ desktop_user }}/.config/hypr/startup.sh"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: hyprland
+
+- name: Set Wayland environment variables
+  template:
+    src: hyprland/hyprland-env.sh.j2
+    dest: "/etc/profile.d/hyprland-env.sh"
+    mode: '0644'
+  tags: hyprland, environment
+
+- name: Create user session script
+  template:
+    src: hyprland/hyprland-session.desktop.j2
+    dest: "/usr/share/wayland-sessions/hyprland-session.desktop"
+    mode: '0644'
+  tags: hyprland, session

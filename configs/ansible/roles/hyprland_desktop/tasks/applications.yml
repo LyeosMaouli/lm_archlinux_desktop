@@ -1,0 +1,99 @@
+---
+# Desktop applications configuration tasks
+
+- name: Create application config directories
+  file:
+    path: "/home/{{ desktop_user }}/.config/{{ item }}"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  loop:
+    - wofi
+    - mako
+    - kitty
+  tags: applications
+
+- name: Configure Wofi (application launcher)
+  template:
+    src: wofi/config.j2
+    dest: "/home/{{ desktop_user }}/.config/wofi/config"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: applications, wofi
+
+- name: Configure Wofi style
+  template:
+    src: wofi/style.css.j2
+    dest: "/home/{{ desktop_user }}/.config/wofi/style.css"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: applications, wofi
+
+- name: Configure Mako (notification daemon)
+  template:
+    src: mako/config.j2
+    dest: "/home/{{ desktop_user }}/.config/mako/config"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: applications, mako
+
+- name: Configure Kitty terminal
+  template:
+    src: kitty/kitty.conf.j2
+    dest: "/home/{{ desktop_user }}/.config/kitty/kitty.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: applications, kitty
+
+- name: Enable Bluetooth service
+  systemd:
+    name: bluetooth
+    enabled: yes
+    state: started
+  when: bluetooth_enabled
+  tags: applications, bluetooth
+
+- name: Configure Bluetooth auto-power
+  copy:
+    content: |
+      [Policy]
+      AutoEnable=true
+    dest: /etc/bluetooth/main.conf
+    mode: '0644'
+  when: bluetooth_enabled
+  notify: restart bluetooth
+  tags: applications, bluetooth
+
+- name: Enable CUPS printing service
+  systemd:
+    name: cups
+    enabled: yes
+    state: started
+  tags: applications, printing
+
+- name: Create desktop entries directory
+  file:
+    path: "/home/{{ desktop_user }}/.local/share/applications"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: applications
+
+- name: Create custom desktop entries
+  template:
+    src: "desktop/{{ item }}.desktop.j2"
+    dest: "/home/{{ desktop_user }}/.local/share/applications/{{ item }}.desktop"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  loop:
+    - hyprland-settings
+    - system-monitor
+  failed_when: false
+  tags: applications

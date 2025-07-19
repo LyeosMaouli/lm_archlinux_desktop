@@ -1,0 +1,7 @@
+---
+# Handlers for users_security role
+
+- name: restart sshd
+  systemd:
+    name: sshd
+    state: restarted

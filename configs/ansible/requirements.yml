@@ -1,12 +1,17 @@
 ---
+# Ansible Galaxy requirements for the project
 collections:
+  # Community general collection for various modules
   - name: community.general
-    version: ">=8.0.0"
+    version: ">=7.0.0"
+    
+  # Ansible POSIX collection for system administration
   - name: ansible.posix
     version: ">=1.5.0"
+    
+  # Community crypto for certificate management
   - name: community.crypto
     version: ">=2.0.0"
-  - name: kewlfft.aur
-    version: ">=0.11.0"
-  - name: community.archlinux
-    version: ">=0.3.0"
+
+# External roles (if any)
+roles: []

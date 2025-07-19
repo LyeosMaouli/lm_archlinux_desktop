@@ -1,0 +1,61 @@
+---
+# Systemd-boot configuration tasks
+
+- name: Check if system is UEFI
+  stat:
+    path: /sys/firmware/efi
+  register: uefi_check
+  tags: bootloader
+
+- name: Install systemd-boot (UEFI only)
+  command: bootctl install
+  when: uefi_check.stat.exists
+  changed_when: false
+  failed_when: false
+  tags: bootloader
+
+- name: Configure systemd-boot loader
+  template:
+    src: loader.conf.j2
+    dest: /boot/loader/loader.conf
+    mode: '0644'
+    backup: yes
+  when: uefi_check.stat.exists
+  tags: bootloader
+
+- name: Get kernel version for boot entry
+  shell: uname -r
+  register: kernel_version
+  changed_when: false
+  tags: bootloader
+
+- name: Configure Arch Linux boot entry
+  template:
+    src: arch.conf.j2
+    dest: /boot/loader/entries/arch.conf
+    mode: '0644'
+    backup: yes
+  when: uefi_check.stat.exists
+  vars:
+    kernel_version: "{{ kernel_version.stdout }}"
+  tags: bootloader
+
+- name: Configure Arch Linux LTS boot entry (if linux-lts is installed)
+  template:
+    src: arch-lts.conf.j2
+    dest: /boot/loader/entries/arch-lts.conf
+    mode: '0644'
+    backup: yes
+  when: 
+    - uefi_check.stat.exists
+    - ansible_facts.packages['linux-lts'] is defined
+  tags: bootloader
+
+- name: Configure fallback boot entry
+  template:
+    src: arch-fallback.conf.j2
+    dest: /boot/loader/entries/arch-fallback.conf
+    mode: '0644'
+    backup: yes
+  when: uefi_check.stat.exists
+  tags: bootloader

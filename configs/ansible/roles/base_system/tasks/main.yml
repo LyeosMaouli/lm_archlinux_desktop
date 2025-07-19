@@ -1,0 +1,45 @@
+---
+# Main tasks for base_system role
+
+- name: Include locale configuration tasks
+  include_tasks: locale.yml
+  tags: locale
+
+- name: Include package management tasks
+  include_tasks: packages.yml
+  tags: packages
+
+- name: Include services configuration tasks
+  include_tasks: services.yml
+  tags: services
+
+- name: Include swap configuration tasks
+  include_tasks: swap.yml
+  tags: swap
+
+- name: Include bootloader configuration tasks
+  include_tasks: bootloader.yml
+  tags: bootloader
+
+- name: Create ansible log directory
+  file:
+    path: "{{ log_directory }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  tags: logging
+
+- name: Set hostname
+  hostname:
+    name: "{{ base_hostname }}"
+  notify: update hosts file
+  tags: hostname
+
+- name: Configure hosts file
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+    mode: '0644'
+    backup: yes
+  tags: hostname

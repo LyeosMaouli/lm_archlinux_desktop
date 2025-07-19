@@ -1,34 +1,69 @@
-# configs/ansible/playbooks/desktop.yml
 ---
-- name: Complete Hyprland Desktop Setup
+# Desktop playbook for Hyprland installation and configuration
+
+- name: Install and Configure Hyprland Desktop
   hosts: localhost
+  connection: local
   become: yes
-  vars:
-    user: lyeosmaouli
-    home_dir: "/home/{{ user }}"
+  gather_facts: yes
+  
+  vars_prompt:
+    - name: install_dev_packages
+      prompt: "Install development packages from AUR? (yes/no)"
+      private: no
+      default: "no"
 
   pre_tasks:
-    - name: Update system packages
-      pacman:
-        update_cache: yes
-        upgrade: yes
+    - name: Check if base system is configured
+      stat:
+        path: /var/log/ansible/bootstrap.log
+      register: bootstrap_check
+      
+    - name: Ensure bootstrap is completed
+      fail:
+        msg: "Please run bootstrap playbook first"
+      when: not bootstrap_check.stat.exists
 
   roles:
-    - system_hardening
-    - hyprland_desktop
-    - development_tools
-    - security_config
-    - user_environment
+    - role: hyprland_desktop
+      tags: desktop, hyprland
+      
+    - role: aur_packages
+      tags: aur, packages
+      vars:
+        install_dev_packages: "{{ install_dev_packages | bool }}"
 
   post_tasks:
-    - name: Enable user services
-      systemd:
-        name: "{{ item }}"
-        enabled: yes
-        scope: user
-        state: started
-      loop:
-        - pipewire
-        - pipewire-pulse
-        - wireplumber
-      become_user: "{{ user }}"
+    - name: Log desktop installation completion
+      copy:
+        content: |
+          Desktop installation completed at: {{ ansible_date_time.iso8601 }}
+          Desktop Environment: {{ desktop.environment | default('hyprland') }}
+          Display Manager: {{ desktop.display_manager | default('sddm') }}
+          User: {{ users.main_user | default('lyeosmaouli') }}
+        dest: /var/log/ansible/desktop.log
+        mode: '0644'
+      tags: always
+      
+    - name: Display post-installation instructions
+      debug:
+        msg: |
+          =====================================
+          Desktop Installation Complete!
+          =====================================
+          
+          Next steps:
+          1. Reboot your system: sudo reboot
+          2. Log in through SDDM
+          3. Select Hyprland session
+          4. Enjoy your new desktop!
+          
+          Key bindings:
+          - Super + T: Terminal (Kitty)
+          - Super + R: Application launcher (Wofi)
+          - Super + E: File manager (Thunar)
+          - Super + L: Lock screen
+          - Super + Q: Close window
+          
+          =====================================
+      tags: always

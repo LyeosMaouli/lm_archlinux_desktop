@@ -1,0 +1,188 @@
+---
+# File permissions hardening tasks
+
+- name: Set secure permissions on critical system files
+  file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  loop: "{{ secure_permissions }}"
+  tags: permissions
+
+- name: Secure /tmp directory with sticky bit
+  file:
+    path: /tmp
+    mode: '1777'
+    state: directory
+  tags: permissions, tmp
+
+- name: Secure /var/tmp directory
+  file:
+    path: /var/tmp
+    mode: '1777'
+    state: directory
+  tags: permissions, tmp
+
+- name: Remove world-writable permissions from system directories
+  shell: |
+    find /usr -type d -perm -002 -exec chmod o-w {} \; 2>/dev/null || true
+    find /bin -type d -perm -002 -exec chmod o-w {} \; 2>/dev/null || true
+    find /sbin -type d -perm -002 -exec chmod o-w {} \; 2>/dev/null || true
+  changed_when: false
+  tags: permissions, system
+
+- name: Find and secure SUID/SGID files
+  shell: |
+    # Find SUID files and log them
+    find / -type f \( -perm -4000 -o -perm -2000 \) -exec ls -la {} \; 2>/dev/null > /var/log/suid-sgid-files.log
+    
+    # Remove SUID bit from unnecessary files
+    {% for file in suid_remove | default([]) %}
+    chmod u-s {{ file }} 2>/dev/null || true
+    {% endfor %}
+  changed_when: false
+  tags: permissions, suid
+
+- name: Create daily SUID/SGID monitoring script
+  copy:
+    content: |
+      #!/bin/bash
+      # SUID/SGID File Monitoring Script
+      
+      CURRENT_LIST="/tmp/current-suid-sgid.txt"
+      BASELINE_LIST="/var/log/suid-sgid-baseline.txt"
+      
+      # Generate current list
+      find / -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | sort > "$CURRENT_LIST"
+      
+      # Create baseline if it doesn't exist
+      if [ ! -f "$BASELINE_LIST" ]; then
+          cp "$CURRENT_LIST" "$BASELINE_LIST"
+          echo "SUID/SGID baseline created"
+          exit 0
+      fi
+      
+      # Compare with baseline
+      if ! diff -q "$BASELINE_LIST" "$CURRENT_LIST" >/dev/null; then
+          echo "WARNING: SUID/SGID files have changed!"
+          echo "New files:"
+          diff "$BASELINE_LIST" "$CURRENT_LIST" | grep "^>" | sed 's/^> //'
+          echo "Removed files:"
+          diff "$BASELINE_LIST" "$CURRENT_LIST" | grep "^<" | sed 's/^< //'
+          
+          # Update baseline
+          cp "$CURRENT_LIST" "$BASELINE_LIST"
+      fi
+      
+      rm -f "$CURRENT_LIST"
+    dest: /usr/local/bin/suid-monitor
+    mode: '0755'
+  tags: permissions, monitoring
+
+- name: Secure home directory permissions
+  file:
+    path: "/home/{{ item }}"
+    mode: '0750'
+    state: directory
+  loop: "{{ ansible_facts['users'] | map(attribute='name') | list }}"
+  when: item != 'root'
+  failed_when: false
+  tags: permissions, home
+
+- name: Remove other-readable permission from user files
+  shell: |
+    find /home -type f -perm -044 -exec chmod o-r {} \; 2>/dev/null || true
+  changed_when: false
+  tags: permissions, home
+
+- name: Secure log file permissions
+  file:
+    path: "{{ item }}"
+    mode: '0640'
+    owner: root
+    group: root
+  loop:
+    - /var/log/auth.log
+    - /var/log/secure
+    - /var/log/messages
+    - /var/log/kern.log
+  failed_when: false
+  tags: permissions, logs
+
+- name: Create file permission audit script
+  copy:
+    content: |
+      #!/bin/bash
+      # File Permission Security Audit
+      
+      echo "=== File Permission Security Audit ==="
+      echo "Date: $(date)"
+      echo
+      
+      echo "=== World-Writable Files ==="
+      find / -type f -perm -002 -ls 2>/dev/null | head -20
+      
+      echo
+      echo "=== World-Writable Directories ==="
+      find / -type d -perm -002 -ls 2>/dev/null | head -20
+      
+      echo
+      echo "=== Files with No Owner ==="
+      find / -nouser -ls 2>/dev/null | head -10
+      
+      echo
+      echo "=== Files with No Group ==="
+      find / -nogroup -ls 2>/dev/null | head -10
+      
+      echo
+      echo "=== SUID Files ==="
+      find / -type f -perm -4000 -ls 2>/dev/null
+      
+      echo
+      echo "=== SGID Files ==="
+      find / -type f -perm -2000 -ls 2>/dev/null
+      
+      echo
+      echo "=== Critical File Permissions ==="
+      ls -la /etc/passwd /etc/shadow /etc/group /etc/gshadow /etc/sudoers
+      
+      echo
+      echo "=== SSH Configuration Permissions ==="
+      ls -la /etc/ssh/ssh*config 2>/dev/null
+      
+      echo
+      echo "=== Audit Complete ==="
+    dest: /usr/local/bin/permission-audit
+    mode: '0755'
+  tags: permissions, audit
+
+- name: Set umask for better default permissions
+  lineinfile:
+    path: /etc/profile
+    regexp: '^umask'
+    line: 'umask 027'
+    backup: yes
+  tags: permissions, umask
+
+- name: Configure umask in PAM
+  lineinfile:
+    path: /etc/pam.d/login
+    line: 'session optional pam_umask.so umask=027'
+    backup: yes
+  tags: permissions, pam
+
+- name: Secure cron directories
+  file:
+    path: "{{ item }}"
+    mode: '0700'
+    owner: root
+    group: root
+  loop:
+    - /etc/cron.d
+    - /etc/cron.daily
+    - /etc/cron.hourly
+    - /etc/cron.monthly
+    - /etc/cron.weekly
+  failed_when: false
+  tags: permissions, cron

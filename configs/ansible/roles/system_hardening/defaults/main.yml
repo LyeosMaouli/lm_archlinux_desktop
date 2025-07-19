@@ -1,0 +1,152 @@
+---
+# Default variables for system_hardening role
+
+# Firewall configuration
+firewall_enabled: "{{ security.firewall.enabled | default(true) }}"
+firewall_default_policy: "{{ security.firewall.default_policy | default('deny') }}"
+firewall_tool: ufw
+
+# Allowed services
+firewall_allowed_services:
+  - ssh
+  - http
+  - https
+
+# Custom firewall rules
+firewall_custom_rules:
+  - { rule: "allow", port: "22", proto: "tcp", comment: "SSH" }
+  - { rule: "allow", port: "80", proto: "tcp", comment: "HTTP" }
+  - { rule: "allow", port: "443", proto: "tcp", comment: "HTTPS" }
+
+# Fail2ban configuration
+fail2ban_enabled: "{{ security.fail2ban.enabled | default(true) }}"
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+fail2ban_maxretry: 5
+fail2ban_backend: systemd
+
+# Fail2ban jails
+fail2ban_jails:
+  - name: sshd
+    enabled: true
+    port: ssh
+    filter: sshd
+    logpath: /var/log/auth.log
+    maxretry: 3
+    bantime: 3600
+  - name: nginx-http-auth
+    enabled: false
+    port: http,https
+    filter: nginx-http-auth
+    logpath: /var/log/nginx/error.log
+
+# Audit configuration
+audit_enabled: "{{ security.audit.enabled | default(true) }}"
+audit_rules_file: /etc/audit/rules.d/audit.rules
+audit_log_file: /var/log/audit/audit.log
+audit_max_log_file: 100
+audit_num_logs: 5
+
+# Kernel security parameters
+kernel_hardening:
+  # Network security
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.secure_redirects: 0
+  net.ipv4.conf.default.secure_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_source_route: 0
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.conf.default.log_martians: 1
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.ip_forward: 0
+  net.ipv6.conf.all.forwarding: 0
+  
+  # Memory protection
+  kernel.dmesg_restrict: 1
+  kernel.kptr_restrict: 2
+  kernel.yama.ptrace_scope: 1
+  kernel.core_uses_pid: 1
+  kernel.core_pattern: "|/bin/false"
+  
+  # File system security
+  fs.suid_dumpable: 0
+  fs.protected_hardlinks: 1
+  fs.protected_symlinks: 1
+  fs.protected_fifos: 2
+  fs.protected_regular: 2
+
+# Security packages
+security_packages:
+  - ufw
+  - fail2ban
+  - audit
+  - rkhunter
+  - chkrootkit
+  - clamav
+  - lynis
+
+# Blacklisted kernel modules
+blacklisted_modules:
+  - dccp
+  - sctp
+  - rds
+  - tipc
+  - n-hdlc
+  - ax25
+  - netrom
+  - x25
+  - rose
+  - decnet
+  - econet
+  - af_802154
+  - ipx
+  - appletalk
+  - psnap
+  - p8023
+  - p8022
+  - can
+  - atm
+
+# File permissions hardening
+secure_permissions:
+  - { path: "/etc/passwd", mode: "0644", owner: "root", group: "root" }
+  - { path: "/etc/shadow", mode: "0640", owner: "root", group: "shadow" }
+  - { path: "/etc/group", mode: "0644", owner: "root", group: "root" }
+  - { path: "/etc/gshadow", mode: "0640", owner: "root", group: "shadow" }
+  - { path: "/etc/ssh/sshd_config", mode: "0600", owner: "root", group: "root" }
+  - { path: "/boot", mode: "0700", owner: "root", group: "root" }
+
+# Login security
+login_security:
+  login_timeout: 60
+  password_max_days: 90
+  password_min_days: 1
+  password_warn_age: 7
+  login_retries: 3
+  lock_time: 900
+
+# AppArmor configuration (optional)
+apparmor_enabled: false
+apparmor_profiles: []
+
+# SELinux configuration (optional - not recommended for desktop)
+selinux_enabled: false
+
+# Security scanning
+security_scanning:
+  rkhunter_enabled: true
+  chkrootkit_enabled: true
+  clamav_enabled: false  # Disabled by default for desktop
+  lynis_enabled: true
+
+# Automatic security updates
+auto_security_updates: false

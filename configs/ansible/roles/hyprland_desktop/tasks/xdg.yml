@@ -1,0 +1,52 @@
+---
+# XDG desktop portal configuration tasks
+
+- name: Create XDG portal config directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/xdg-desktop-portal"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: xdg
+
+- name: Configure XDG desktop portal for Hyprland
+  template:
+    src: xdg/hyprland-portals.conf.j2
+    dest: "/home/{{ desktop_user }}/.config/xdg-desktop-portal/hyprland-portals.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: xdg
+
+- name: Configure global XDG portal
+  copy:
+    content: |
+      [preferred]
+      default=hyprland;gtk
+      org.freedesktop.impl.portal.Screenshot=hyprland
+      org.freedesktop.impl.portal.ScreenCast=hyprland
+      org.freedesktop.impl.portal.FileChooser=gtk
+      org.freedesktop.impl.portal.AppChooser=gtk
+    dest: /etc/xdg-desktop-portal/hyprland-portals.conf
+    mode: '0644'
+  tags: xdg
+
+- name: Install additional XDG portal backends
+  pacman:
+    name:
+      - xdg-desktop-portal-gtk
+      - xdg-desktop-portal
+    state: present
+  tags: xdg, packages
+
+- name: Create environment variables for XDG
+  copy:
+    content: |
+      # XDG Desktop Portal Environment
+      export XDG_CURRENT_DESKTOP=Hyprland
+      export XDG_SESSION_TYPE=wayland
+      export XDG_SESSION_DESKTOP=Hyprland
+    dest: /etc/profile.d/xdg-portal.sh
+    mode: '0644'
+  tags: xdg, environment

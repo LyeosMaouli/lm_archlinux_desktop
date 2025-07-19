@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: base_system
+  author: lyeosmaouli
+  description: Base system configuration for Arch Linux
+  license: MIT
+  min_ansible_version: "2.12"
+  
+  platforms:
+    - name: ArchLinux
+      versions:
+        - all
+        
+  galaxy_tags:
+    - archlinux
+    - system
+    - base
+    - configuration
+
+dependencies: []

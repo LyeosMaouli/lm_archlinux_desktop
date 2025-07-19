@@ -1,0 +1,19 @@
+---
+# Handlers for hyprland_desktop role
+
+- name: restart sddm
+  systemd:
+    name: sddm
+    state: restarted
+
+- name: restart bluetooth
+  systemd:
+    name: bluetooth
+    state: restarted
+
+- name: reload systemd user
+  systemd:
+    daemon_reload: yes
+    scope: user
+  become_user: "{{ desktop_user }}"
+  become: yes

@@ -1,0 +1,69 @@
+---
+# Default variables for base_system role
+
+# System locale and keyboard
+base_locale: "{{ system.locale | default('en_US.UTF-8') }}"
+base_keymap: "{{ system.keymap | default('fr') }}"
+base_timezone: "{{ system.timezone | default('Europe/Paris') }}"
+base_hostname: "{{ system.hostname | default('phoenix') }}"
+
+# Package mirrors
+base_mirror_country: "{{ mirrors.country | default('United Kingdom') }}"
+base_country_code: "{{ mirrors.country_code | default('GB') }}"
+
+# Core packages
+base_packages:
+  - base-devel
+  - linux-firmware
+  - networkmanager
+  - sudo
+  - openssh
+  - git
+  - reflector
+  - neovim
+  - tmux
+  - htop
+  - zsh
+  - curl
+  - wget
+  - tree
+  - zip
+  - unzip
+  - trash-cli
+  - man-db
+  - man-pages
+
+# Essential services
+base_services:
+  enable:
+    - NetworkManager
+    - systemd-timesyncd
+    - sshd
+    - reflector.timer
+  disable:
+    - dhcpcd
+
+# Bootloader configuration
+bootloader:
+  type: "{{ bootloader.type | default('systemd-boot') }}"
+  timeout: "{{ bootloader.timeout | default(5) }}"
+
+# Swap configuration
+swap:
+  zram:
+    enabled: true
+    size: "{{ storage.swap.zram_size | default('4G') if storage is defined and storage.swap is defined else '4G' }}"
+  swapfile:
+    enabled: true
+    size: "{{ storage.swap.swapfile_size | default('8G') if storage is defined and storage.swap is defined else '8G' }}"
+    path: /swapfile
+
+# Logging
+log_directory: "{{ logging.directory | default('/var/log/ansible') }}"
+
+# Pacman configuration
+pacman:
+  parallel_downloads: 5
+  color: true
+  check_space: true
+  verbose_pkg_lists: true

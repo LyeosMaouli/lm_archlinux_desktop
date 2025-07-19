@@ -1,9 +1,47 @@
-# configs/ansible/inventory/localhost.yml
+---
 all:
   hosts:
-    localhost:
+    phoenix:
+      ansible_host: 127.0.0.1
       ansible_connection: local
-      ansible_user: lyeosmaouli
-      hostname: phoenix
-      gpu_driver: intel
-      desktop_environment: hyprland
+      ansible_user: root
+      ansible_become: yes
+      
+  children:
+    laptops:
+      hosts:
+        phoenix:
+          
+    desktops:
+      hosts: {}
+      
+  vars:
+    # Global variables
+    ansible_python_interpreter: /usr/bin/python3
+    
+    # Project configuration
+    project_name: lm_archlinux_desktop
+    deployment_user: lyeosmaouli
+    
+    # System configuration
+    locale: en_US.UTF-8
+    keymap: fr
+    timezone: Europe/Paris
+    hostname: phoenix
+    
+    # UK package mirrors
+    country_code: GB
+    mirror_country: "United Kingdom"
+    
+    # Desktop environment
+    desktop_environment: hyprland
+    display_manager: sddm
+    
+    # Security settings
+    enable_firewall: true
+    enable_fail2ban: true
+    enable_audit: true
+    
+    # Power management (laptop specific)
+    enable_tlp: true
+    enable_thermald: true

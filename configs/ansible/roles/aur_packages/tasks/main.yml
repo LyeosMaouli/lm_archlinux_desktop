@@ -1,0 +1,22 @@
+---
+# Main tasks for aur_packages role
+
+- name: Include security setup tasks
+  include_tasks: security.yml
+  tags: security
+
+- name: Include yay installation tasks
+  include_tasks: yay.yml
+  tags: yay, install
+
+- name: Include AUR packages installation tasks
+  include_tasks: packages.yml
+  tags: packages
+
+- name: Include configuration tasks
+  include_tasks: configure.yml
+  tags: configure
+
+- name: Include maintenance tasks
+  include_tasks: maintenance.yml
+  tags: maintenance

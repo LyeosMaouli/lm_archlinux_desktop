@@ -1,0 +1,71 @@
+---
+# PAM configuration tasks
+
+- name: Install PAM packages
+  pacman:
+    name:
+      - pam
+      - libpwquality
+    state: present
+  tags: pam
+
+- name: Configure password quality requirements
+  template:
+    src: pwquality.conf.j2
+    dest: /etc/security/pwquality.conf
+    mode: '0644'
+    backup: yes
+  when: pam_pwquality_enabled
+  tags: pam
+
+- name: Configure user limits
+  template:
+    src: limits.conf.j2
+    dest: /etc/security/limits.conf
+    mode: '0644'
+    backup: yes
+  when: pam_limits_enabled
+  tags: pam
+
+- name: Configure login definitions
+  template:
+    src: login.defs.j2
+    dest: /etc/login.defs
+    mode: '0644'
+    backup: yes
+  tags: pam
+
+- name: Configure PAM system-auth
+  copy:
+    content: |
+      #%PAM-1.0
+
+      auth       required     pam_env.so
+      auth       required     pam_faillock.so      preauth
+      auth       [success=2 default=ignore] pam_systemd_home.so
+      auth       [success=1 default=bad]     pam_unix.so     try_first_pass nullok
+      auth       [default=die] pam_faillock.so      authfail
+      auth       optional     pam_permit.so
+      auth       required     pam_env.so
+      auth       required     pam_faillock.so      authsucc
+
+      account    required     pam_access.so
+      account    required     pam_nologin.so
+      account    [success=1 default=ignore] pam_systemd_home.so
+      account    required     pam_unix.so
+      account    optional     pam_permit.so
+      account    required     pam_time.so
+
+      password   required     pam_pwquality.so     retry=3
+      password   [success=1 default=ignore] pam_systemd_home.so
+      password   required     pam_unix.so          try_first_pass nullok sha512 shadow
+      password   optional     pam_permit.so
+
+      session    required     pam_limits.so
+      session    required     pam_unix.so
+      session    optional     pam_systemd_home.so
+      session    optional     pam_systemd.so
+    dest: /etc/pam.d/system-auth
+    mode: '0644'
+    backup: yes
+  tags: pam

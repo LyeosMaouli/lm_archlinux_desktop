@@ -1,31 +1,78 @@
-# configs/ansible/playbooks/security.yml
 ---
-- name: Security Hardening and Monitoring
+# Security hardening playbook
+
+- name: Apply Security Hardening
   hosts: localhost
   connection: local
-  become: true
-  gather_facts: true
-
-  vars:
-    main_user: lyeosmaouli
+  become: yes
+  gather_facts: yes
+  
+  vars_prompt:
+    - name: enable_strict_hardening
+      prompt: "Enable strict security hardening? (recommended for servers, may affect desktop usability) (yes/no)"
+      private: no
+      default: "no"
+      
+    - name: admin_email
+      prompt: "Admin email for security notifications (optional, press enter to skip)"
+      private: no
+      default: ""
 
   pre_tasks:
-    - name: Update system packages
-      pacman:
-        update_cache: true
-        upgrade: true
+    - name: Set strict hardening variables
+      set_fact:
+        disable_kernel_modules: "{{ enable_strict_hardening | bool }}"
+        sddm_autologin: false
+      when: enable_strict_hardening | bool
+      
+    - name: Set admin email if provided
+      set_fact:
+        admin_email: "{{ admin_email }}"
+      when: admin_email != ""
 
   roles:
     - role: system_hardening
-      tags: ["security", "hardening"]
-
-    - role: monitoring
-      tags: ["monitoring", "security"]
-
-    - role: users_security
-      tags: ["users", "security"]
+      tags: hardening, security
 
   post_tasks:
-    - name: Security audit
+    - name: Run security audit
+      command: /usr/local/bin/permission-audit
+      register: security_audit
+      changed_when: false
+      failed_when: false
+      tags: audit
+      
+    - name: Display security audit summary
       debug:
-        msg: "Security hardening applied successfully!"
+        msg: |
+          =====================================
+          Security Hardening Complete!
+          =====================================
+          
+          Applied configurations:
+          - Firewall: {{ 'Enabled' if firewall_enabled else 'Disabled' }}
+          - Fail2ban: {{ 'Enabled' if fail2ban_enabled else 'Disabled' }}
+          - Audit: {{ 'Enabled' if audit_enabled else 'Disabled' }}
+          - Strict hardening: {{ 'Enabled' if enable_strict_hardening | bool else 'Disabled' }}
+          
+          Security tools available:
+          - /usr/local/bin/ufw-status
+          - /usr/local/bin/fail2ban-status
+          - /usr/local/bin/audit-analysis
+          - /usr/local/bin/permission-audit
+          
+          =====================================
+      tags: always
+      
+    - name: Log security hardening completion
+      copy:
+        content: |
+          Security hardening completed at: {{ ansible_date_time.iso8601 }}
+          Firewall enabled: {{ firewall_enabled | default(false) }}
+          Fail2ban enabled: {{ fail2ban_enabled | default(false) }}
+          Audit enabled: {{ audit_enabled | default(false) }}
+          Strict hardening: {{ enable_strict_hardening | default(false) }}
+          Admin email: {{ admin_email | default('not set') }}
+        dest: /var/log/ansible/security.log
+        mode: '0644'
+      tags: always

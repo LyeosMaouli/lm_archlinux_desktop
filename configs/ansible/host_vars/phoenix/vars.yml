@@ -1,0 +1,71 @@
+---
+# Host-specific variables for phoenix (work laptop)
+
+# Hardware specific configuration
+hardware:
+  type: laptop
+  cpu_vendor: intel
+  gpu_vendor: intel
+  form_factor: laptop
+  
+# Network configuration
+network:
+  hostname: phoenix
+  interfaces:
+    - name: wlan0
+      type: wireless
+    - name: eth0
+      type: ethernet
+      
+# Storage configuration
+storage:
+  filesystem: ext4
+  encryption: luks
+  swap:
+    type: hybrid  # zram + hibernation swapfile
+    zram_size: 4G
+    swapfile_size: 8G
+    
+# Display configuration
+display:
+  primary:
+    resolution: "1920x1080"
+    refresh_rate: 60
+    
+# Power management (laptop specific)
+power_management:
+  battery_optimization: true
+  cpu_scaling_governor: powersave
+  intel_pstate: true
+  wifi_power_save: true
+  
+# Bluetooth
+bluetooth:
+  enabled: true
+  auto_power_on: true
+  
+# Audio
+audio:
+  system: pipewire
+  bluetooth_codec: aptx
+  
+# Development tools (work laptop specific)
+development:
+  languages:
+    - python
+    - nodejs
+    - rust
+    - go
+  editors:
+    - visual-studio-code-bin
+  tools:
+    - docker
+    - kubectl
+    - terraform
+    
+# Security enhancements for work laptop
+security_enhanced:
+  disk_encryption: true
+  secure_boot: false  # May conflict with Hyprland
+  tpm2: true
+  firewall_strict: true

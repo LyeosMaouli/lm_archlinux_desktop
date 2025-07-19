@@ -1,80 +1,82 @@
-# local.yml - Main playbook for ansible-pull
 ---
-- name: Arch Linux Desktop Automation with Hyprland
+# Main Ansible playbook for ansible-pull deployment
+# This playbook transforms a minimal Arch Linux installation into a complete Hyprland desktop
+
+- name: Arch Linux Hyprland Desktop Automation
   hosts: localhost
   connection: local
-  become: true
-  gather_facts: true
-
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-    main_user: lyeosmaouli
-    hostname: phoenix
+  become: yes
+  gather_facts: yes
+  
+  vars_prompt:
+    - name: user_password
+      prompt: "Enter password for user 'lyeosmaouli'"
+      private: yes
+      confirm: yes
+      
+    - name: root_password
+      prompt: "Enter root password"
+      private: yes
+      confirm: yes
+      
+    - name: luks_passphrase
+      prompt: "Enter LUKS encryption passphrase (if using encryption)"
+      private: yes
+      when: enable_luks_encryption | default(false)
+      
+    - name: confirm_deployment
+      prompt: "This will configure your system. Continue? (yes/no)"
+      private: no
+      default: "no"
 
   pre_tasks:
+    - name: Verify deployment confirmation
+      fail:
+        msg: "Deployment cancelled by user"
+      when: confirm_deployment != "yes"
+      
     - name: Update package cache
       pacman:
-        update_cache: true
-      changed_when: false
-      tags: always
-
-    - name: Verify system requirements
-      assert:
-        that:
-          - ansible_facts['distribution'] == "Archlinux"
-          - ansible_facts['architecture'] == "x86_64"
-        fail_msg: "This playbook requires Arch Linux x86_64"
-      tags: always
-
-    - name: Set hostname
-      hostname:
-        name: "{{ hostname }}"
+        update_cache: yes
       tags: always
 
   roles:
     - role: base_system
-      tags: ["base", "system"]
-
+      tags: base
+      
     - role: users_security
-      tags: ["users", "security"]
-
+      tags: users, security
+      vars:
+        main_user: lyeosmaouli
+        user_password_hash: "{{ user_password | password_hash('sha512') }}"
+        root_password_hash: "{{ root_password | password_hash('sha512') }}"
+        
     - role: system_hardening
-      tags: ["security", "hardening"]
-
-    - role: power_management
-      tags: ["power", "hardware"]
-
+      tags: security, hardening
+      
     - role: hyprland_desktop
-      tags: ["desktop", "hyprland"]
-
+      tags: desktop, hyprland
+      
     - role: aur_packages
-      tags: ["aur", "packages"]
-
-    - role: development_tools
-      tags: ["development", "tools"]
-      when: install_development_tools | default(true)
-
-    - role: user_environment
-      tags: ["environment", "dotfiles"]
-
-    - role: monitoring
-      tags: ["monitoring", "maintenance"]
+      tags: aur, packages
+      
+    - role: power_management
+      tags: power
+      when: ansible_form_factor == "Laptop"
 
   post_tasks:
-    - name: Enable essential services
-      systemd:
-        name: "{{ item }}"
-        enabled: true
-        state: started
-      loop:
-        - NetworkManager
-        - systemd-timesyncd
-        - systemd-resolved
-        - bluetooth
-        - fstrim.timer
-      tags: always
-
-    - name: Final system verification
+    - name: Display completion message
       debug:
-        msg: "System configuration completed successfully for {{ main_user }}@{{ hostname }}!"
+        msg: |
+          =====================================
+          Arch Linux Hyprland Desktop Setup Complete!
+          =====================================
+          
+          Next steps:
+          1. Reboot your system
+          2. Log in as 'lyeosmaouli'
+          3. Start Hyprland desktop environment
+          
+          For troubleshooting, check logs in /var/log/ansible/
+          =====================================
       tags: always

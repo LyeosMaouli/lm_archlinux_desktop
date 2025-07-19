@@ -1,0 +1,48 @@
+---
+# Package management tasks
+
+- name: Configure pacman
+  template:
+    src: pacman.conf.j2
+    dest: /etc/pacman.conf
+    mode: '0644'
+    backup: yes
+  notify: update package cache
+  tags: packages
+
+- name: Update mirrorlist for better performance
+  shell: |
+    reflector --country "{{ base_mirror_country }}" \
+             --age 12 \
+             --protocol https \
+             --sort rate \
+             --save /etc/pacman.d/mirrorlist
+  changed_when: true
+  notify: update package cache
+  tags: packages, mirrors
+
+- name: Update package cache
+  pacman:
+    update_cache: yes
+  tags: packages
+
+- name: Upgrade all packages
+  pacman:
+    upgrade: yes
+  tags: packages
+
+- name: Install base packages
+  pacman:
+    name: "{{ base_packages }}"
+    state: present
+  tags: packages
+
+- name: Remove orphaned packages
+  shell: |
+    if pacman -Qdtq >/dev/null 2>&1; then
+      pacman -Rns $(pacman -Qdtq) --noconfirm
+    fi
+  register: orphan_removal
+  changed_when: orphan_removal.rc == 0 and "removing" in orphan_removal.stdout
+  failed_when: false
+  tags: packages, cleanup

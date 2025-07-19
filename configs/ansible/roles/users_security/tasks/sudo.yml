@@ -1,0 +1,45 @@
+---
+# Sudo configuration tasks
+
+- name: Install sudo package
+  pacman:
+    name: sudo
+    state: present
+  tags: sudo
+
+- name: Configure sudo with custom settings
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers.d/10-installer
+    mode: '0440'
+    validate: 'visudo -cf %s'
+    backup: yes
+  tags: sudo
+
+- name: Remove default sudoers entry for wheel group
+  lineinfile:
+    path: /etc/sudoers
+    regexp: '^# %wheel ALL=\(ALL\) ALL'
+    state: absent
+  tags: sudo
+
+- name: Ensure secure sudo configuration
+  lineinfile:
+    path: /etc/sudoers
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state | default('present') }}"
+    validate: 'visudo -cf %s'
+  loop:
+    - { regexp: '^Defaults.*env_reset', line: 'Defaults env_reset' }
+    - { regexp: '^Defaults.*mail_badpass', line: 'Defaults mail_badpass' }
+    - { regexp: '^Defaults.*secure_path', line: 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' }
+  tags: sudo
+
+- name: Set sudo lecture
+  lineinfile:
+    path: /etc/sudoers
+    regexp: '^Defaults.*lecture'
+    line: 'Defaults lecture=always'
+    validate: 'visudo -cf %s'
+  tags: sudo

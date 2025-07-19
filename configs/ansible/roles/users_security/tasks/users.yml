@@ -1,0 +1,79 @@
+---
+# User management tasks
+
+- name: Create main user
+  user:
+    name: "{{ main_user }}"
+    groups: "{{ user_groups }}"
+    shell: "{{ user_shell }}"
+    create_home: yes
+    password: "{{ user_password_hash }}"
+    update_password: always
+    state: present
+  when: user_password_hash is defined
+  tags: users
+
+- name: Create user home directory structure
+  file:
+    path: "/home/{{ main_user }}/{{ item }}"
+    state: directory
+    owner: "{{ main_user }}"
+    group: "{{ main_user }}"
+    mode: '0755'
+  loop:
+    - .config
+    - .local/bin
+    - .local/share
+    - .cache
+    - Documents
+    - Downloads
+    - Pictures
+    - Videos
+    - Music
+  tags: users
+
+- name: Install zsh for user shell
+  pacman:
+    name: zsh
+    state: present
+  when: user_shell == '/bin/zsh'
+  tags: users, shell
+
+- name: Create SSH directory for user
+  file:
+    path: "/home/{{ main_user }}/.ssh"
+    state: directory
+    owner: "{{ main_user }}"
+    group: "{{ main_user }}"
+    mode: '0700'
+  tags: users, ssh
+
+- name: Set up SSH authorized keys
+  authorized_key:
+    user: "{{ main_user }}"
+    state: present
+    key: "{{ lookup('file', ssh_public_key_file) }}"
+    manage_dir: yes
+  when: ssh_public_key_file is exists
+  failed_when: false
+  tags: users, ssh
+
+- name: Configure user's bashrc
+  template:
+    src: bashrc.j2
+    dest: "/home/{{ main_user }}/.bashrc"
+    owner: "{{ main_user }}"
+    group: "{{ main_user }}"
+    mode: '0644'
+    backup: yes
+  tags: users, shell
+
+- name: Configure user's profile
+  template:
+    src: profile.j2
+    dest: "/home/{{ main_user }}/.profile"
+    owner: "{{ main_user }}"
+    group: "{{ main_user }}"
+    mode: '0644'
+    backup: yes
+  tags: users, shell

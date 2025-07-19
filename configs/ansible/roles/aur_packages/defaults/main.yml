@@ -1,0 +1,78 @@
+---
+# Default variables for aur_packages role
+
+# Main user for AUR operations
+aur_user: "{{ users.main_user | default('lyeosmaouli') }}"
+
+# AUR helper configuration
+aur_helper: yay
+aur_helper_version: latest
+
+# AUR packages to install
+aur_packages: "{{ packages.aur_packages | default([
+  'visual-studio-code-bin',
+  'discord',
+  'zoom',
+  'hyprpaper',
+  'bibata-cursor-theme'
+]) }}"
+
+# Additional development AUR packages
+aur_dev_packages:
+  - google-chrome
+  - spotify
+  - slack-desktop
+  - postman-bin
+  - docker-desktop
+
+# Security settings for AUR
+aur_security:
+  verify_signatures: true
+  check_pgp_keys: true
+  review_pkgbuild: false  # Set to true for manual review
+  sandbox_build: true
+
+# Yay configuration
+yay_config:
+  build_dir: "/tmp/yay-{{ aur_user }}"
+  editor: nvim
+  diff_menu: true
+  clean_after: true
+  provides: true
+  pgp_fetch: true
+  upgrade_menu: true
+  clean_menu: true
+
+# Makepkg configuration
+makepkg_config:
+  makeflags: "-j{{ ansible_processor_vcpus | default(2) }}"
+  packager: "{{ aur_user }} <{{ aur_user }}@localhost>"
+  compress_xz: true
+  integrity_check: true
+
+# Build dependencies
+build_dependencies:
+  - base-devel
+  - git
+  - fakeroot
+  - binutils
+  - make
+  - gcc
+  - pkg-config
+
+# Security packages for AUR verification
+security_packages:
+  - gnupg
+  - archlinux-keyring
+
+# Excluded packages (packages to never install from AUR)
+aur_excluded_packages:
+  - linux
+  - linux-lts
+  - systemd
+  - glibc
+  - pacman
+
+# Update settings
+aur_auto_update: false
+aur_update_interval: weekly

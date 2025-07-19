@@ -1,0 +1,93 @@
+---
+# Security setup tasks for AUR
+
+- name: Install security packages
+  pacman:
+    name: "{{ security_packages }}"
+    state: present
+  tags: security
+
+- name: Install build dependencies
+  pacman:
+    name: "{{ build_dependencies }}"
+    state: present
+  tags: security, dependencies
+
+- name: Ensure user is in wheel group for sudo access
+  user:
+    name: "{{ aur_user }}"
+    groups: wheel
+    append: yes
+  tags: security
+
+- name: Create secure build directory
+  file:
+    path: "{{ yay_config.build_dir }}"
+    state: directory
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0750'
+  tags: security
+
+- name: Configure sudo for AUR user (temporary)
+  copy:
+    content: |
+      # Temporary sudo access for AUR package installation
+      {{ aur_user }} ALL=(ALL) NOPASSWD: /usr/bin/pacman
+    dest: /etc/sudoers.d/50-aur-{{ aur_user }}
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  tags: security
+
+- name: Initialize GnuPG for package verification
+  command: gpg --list-keys
+  become_user: "{{ aur_user }}"
+  become: yes
+  changed_when: false
+  failed_when: false
+  tags: security, gpg
+
+- name: Import Arch Linux PGP keys
+  command: gpg --recv-keys --keyserver keyserver.ubuntu.com {{ item }}
+  become_user: "{{ aur_user }}"
+  become: yes
+  loop:
+    - "0x6AC6A4C2"  # Arch Linux Release Engineering
+    - "0x91FFE0700E80619CEB73235CA88E23E377514E00"  # Pierre Schmitz
+  failed_when: false
+  changed_when: false
+  tags: security, gpg
+
+- name: Configure makepkg for security
+  template:
+    src: makepkg.conf.j2
+    dest: "/home/{{ aur_user }}/.makepkg.conf"
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0644'
+    backup: yes
+  tags: security, makepkg
+
+- name: Create AUR security checklist
+  copy:
+    content: |
+      # AUR Security Checklist for {{ aur_user }}
+      
+      Before installing AUR packages:
+      1. Review PKGBUILD files for malicious content
+      2. Verify package signatures when available
+      3. Check comments and votes on AUR package page
+      4. Ensure package maintainer is trustworthy
+      5. Review build dependencies
+      
+      Excluded packages (NEVER install from AUR):
+      {% for package in aur_excluded_packages %}
+      - {{ package }}
+      {% endfor %}
+      
+      Report suspicious packages to: aur-general@archlinux.org
+    dest: "/home/{{ aur_user }}/.aur-security-checklist"
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0644'
+  tags: security

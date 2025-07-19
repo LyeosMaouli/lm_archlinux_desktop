@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: users_security
+  author: lyeosmaouli
+  description: User management and security configuration for Arch Linux
+  license: MIT
+  min_ansible_version: "2.12"
+  
+  platforms:
+    - name: ArchLinux
+      versions:
+        - all
+        
+  galaxy_tags:
+    - archlinux
+    - users
+    - security
+    - ssh
+    - sudo
+
+dependencies: []

@@ -1,0 +1,164 @@
+---
+# Firewall configuration tasks
+
+- name: Install UFW firewall
+  pacman:
+    name: ufw
+    state: present
+  tags: firewall, packages
+
+- name: Reset UFW to defaults
+  community.general.ufw:
+    state: reset
+  tags: firewall
+
+- name: Configure UFW default policies
+  community.general.ufw:
+    default: "{{ firewall_default_policy }}"
+    direction: "{{ item }}"
+  loop:
+    - incoming
+    - outgoing
+    - routed
+  tags: firewall
+
+- name: Configure UFW logging
+  community.general.ufw:
+    logging: "medium"
+  tags: firewall
+
+- name: Allow loopback traffic
+  community.general.ufw:
+    rule: allow
+    interface: lo
+    direction: in
+  tags: firewall
+
+- name: Allow loopback traffic out
+  community.general.ufw:
+    rule: allow
+    interface: lo
+    direction: out
+  tags: firewall
+
+- name: Configure custom firewall rules
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment | default('Custom rule') }}"
+  loop: "{{ firewall_custom_rules }}"
+  tags: firewall
+
+- name: Allow specific services
+  community.general.ufw:
+    rule: allow
+    name: "{{ item }}"
+  loop: "{{ firewall_allowed_services }}"
+  tags: firewall
+
+- name: Configure rate limiting for SSH
+  community.general.ufw:
+    rule: limit
+    port: ssh
+    proto: tcp
+    comment: "SSH rate limiting"
+  tags: firewall, ssh
+
+- name: Block common attack ports
+  community.general.ufw:
+    rule: deny
+    port: "{{ item }}"
+    comment: "Block common attack port"
+  loop:
+    - "135"    # Windows RPC
+    - "139"    # NetBIOS
+    - "445"    # SMB
+    - "1433"   # SQL Server
+    - "3389"   # RDP
+    - "5432"   # PostgreSQL
+    - "3306"   # MySQL
+  tags: firewall, security
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+  tags: firewall
+
+- name: Enable UFW service
+  systemd:
+    name: ufw
+    enabled: yes
+    state: started
+  tags: firewall
+
+- name: Create UFW application profiles directory
+  file:
+    path: /etc/ufw/applications.d
+    state: directory
+    mode: '0755'
+  tags: firewall
+
+- name: Create custom application profiles
+  copy:
+    content: |
+      [Hyprland]
+      title=Hyprland Desktop
+      description=Hyprland Wayland compositor
+      ports=
+      
+      [Development]
+      title=Development Tools
+      description=Common development ports
+      ports=3000,8000,8080,9000/tcp
+      
+      [Media]
+      title=Media Streaming
+      description=Media streaming services
+      ports=8096,32400/tcp
+    dest: /etc/ufw/applications.d/custom-apps
+    mode: '0644'
+  tags: firewall, applications
+
+- name: Configure UFW to log dropped packets
+  lineinfile:
+    path: /etc/ufw/before.rules
+    line: "-A ufw-before-input -j LOG --log-prefix \"[UFW BLOCK] \" --log-level 4"
+    insertbefore: "^COMMIT"
+  notify: restart ufw
+  tags: firewall, logging
+
+- name: Configure connection tracking for UFW
+  copy:
+    content: |
+      # Connection tracking helpers
+      -A ufw-before-input -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      -A ufw-before-output -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      -A ufw-before-forward -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      
+      # Drop invalid packets
+      -A ufw-before-input -m conntrack --ctstate INVALID -j ufw-logging-deny
+      -A ufw-before-input -m conntrack --ctstate INVALID -j DROP
+    dest: /etc/ufw/before.rules.d/conntrack.rules
+    mode: '0644'
+  tags: firewall, conntrack
+
+- name: Create UFW status check script
+  copy:
+    content: |
+      #!/bin/bash
+      # UFW Status Check Script
+      
+      echo "=== UFW Firewall Status ==="
+      ufw status verbose
+      
+      echo
+      echo "=== Recent UFW Logs ==="
+      journalctl -u ufw --since "1 hour ago" --no-pager | tail -20
+      
+      echo
+      echo "=== UFW Rules Summary ==="
+      ufw --dry-run status numbered
+    dest: /usr/local/bin/ufw-status
+    mode: '0755'
+  tags: firewall, monitoring

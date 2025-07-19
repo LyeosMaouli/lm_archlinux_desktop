@@ -1,0 +1,200 @@
+---
+# Fail2ban configuration tasks
+
+- name: Install fail2ban
+  pacman:
+    name: fail2ban
+    state: present
+  tags: fail2ban, packages
+
+- name: Create fail2ban configuration directory
+  file:
+    path: /etc/fail2ban/jail.d
+    state: directory
+    mode: '0755'
+  tags: fail2ban
+
+- name: Configure fail2ban main settings
+  template:
+    src: fail2ban/jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+    backup: yes
+  notify: restart fail2ban
+  tags: fail2ban
+
+- name: Create custom fail2ban jail configurations
+  template:
+    src: fail2ban/custom-jails.local.j2
+    dest: /etc/fail2ban/jail.d/custom-jails.local
+    mode: '0644'
+  notify: restart fail2ban
+  tags: fail2ban
+
+- name: Configure fail2ban for SSH hardening
+  copy:
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      backend = systemd
+      maxretry = {{ fail2ban_maxretry }}
+      findtime = {{ fail2ban_findtime }}
+      bantime = {{ fail2ban_bantime }}
+      ignoreip = 127.0.0.1/8 ::1
+      
+      [sshd-ddos]
+      enabled = true
+      port = ssh
+      filter = sshd-ddos
+      backend = systemd
+      maxretry = 2
+      findtime = 300
+      bantime = 3600
+    dest: /etc/fail2ban/jail.d/sshd.local
+    mode: '0644'
+  notify: restart fail2ban
+  tags: fail2ban, ssh
+
+- name: Create custom fail2ban filters
+  copy:
+    content: |
+      # Custom filter for repeated SSH connection attempts
+      [Definition]
+      failregex = ^%(__prefix_line)s(?:error: PAM: )?[aA]uthentication (?:failure|error|failed) for .* from <HOST>( via \S+)?\s*$
+                  ^%(__prefix_line)s(?:error: )?Received disconnect from <HOST>: 3: .*: Auth fail [preauth]$
+                  ^%(__prefix_line)s(?:error: )?Connection closed by authenticating user .* <HOST> port .* \[preauth\]$
+                  ^%(__prefix_line)s(?:error: )?PAM: pam_unix\(sshd:auth\): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=<HOST>.*$
+      
+      ignoreregex = 
+      
+      [Init]
+      journalmatch = _SYSTEMD_UNIT=sshd.service + _COMM=sshd
+    dest: /etc/fail2ban/filter.d/sshd-aggressive.conf
+    mode: '0644'
+  notify: restart fail2ban
+  tags: fail2ban, filters
+
+- name: Configure fail2ban for web services (if needed)
+  copy:
+    content: |
+      [nginx-http-auth]
+      enabled = false
+      port = http,https
+      filter = nginx-http-auth
+      backend = auto
+      maxretry = 3
+      findtime = 600
+      bantime = 3600
+      
+      [nginx-noscript]
+      enabled = false
+      port = http,https
+      filter = nginx-noscript
+      backend = auto
+      maxretry = 6
+      findtime = 600
+      bantime = 3600
+      
+      [nginx-badbots]
+      enabled = false
+      port = http,https
+      filter = nginx-badbots
+      backend = auto
+      maxretry = 2
+      findtime = 600
+      bantime = 86400
+    dest: /etc/fail2ban/jail.d/nginx.local
+    mode: '0644'
+  notify: restart fail2ban
+  when: false  # Disabled by default for desktop
+  tags: fail2ban, web
+
+- name: Create fail2ban action for UFW integration
+  copy:
+    content: |
+      [Definition]
+      actionstart = 
+      actionstop = 
+      actioncheck = 
+      actionban = ufw insert 1 deny from <ip> to any comment "fail2ban-<name>"
+      actionunban = ufw --force delete deny from <ip> to any comment "fail2ban-<name>"
+      
+      [Init]
+      name = default
+    dest: /etc/fail2ban/action.d/ufw.conf
+    mode: '0644'
+  notify: restart fail2ban
+  tags: fail2ban, ufw
+
+- name: Configure fail2ban to use UFW action
+  lineinfile:
+    path: /etc/fail2ban/jail.local
+    regexp: '^banaction'
+    line: 'banaction = ufw'
+    insertafter: '^#banaction'
+  notify: restart fail2ban
+  when: firewall_enabled
+  tags: fail2ban, ufw
+
+- name: Create fail2ban monitoring script
+  copy:
+    content: |
+      #!/bin/bash
+      # Fail2ban Status Monitor
+      
+      echo "=== Fail2ban Status ==="
+      fail2ban-client status
+      
+      echo
+      echo "=== Active Jails ==="
+      for jail in $(fail2ban-client status | grep "Jail list" | sed -E 's/^[^:]+:(.*)$/\1/' | sed 's/,//g'); do
+          echo "--- $jail ---"
+          fail2ban-client status $jail
+          echo
+      done
+      
+      echo "=== Recent Bans (last 24h) ==="
+      journalctl -u fail2ban --since "24 hours ago" | grep "Ban\|Unban" | tail -20
+      
+      echo
+      echo "=== Fail2ban Statistics ==="
+      fail2ban-client status | grep "Currently banned" || echo "No currently banned IPs"
+    dest: /usr/local/bin/fail2ban-status
+    mode: '0755'
+  tags: fail2ban, monitoring
+
+- name: Enable and start fail2ban service
+  systemd:
+    name: fail2ban
+    enabled: yes
+    state: started
+  tags: fail2ban
+
+- name: Create fail2ban log rotation
+  copy:
+    content: |
+      /var/log/fail2ban.log {
+          weekly
+          rotate 4
+          compress
+          delaycompress
+          missingok
+          postrotate
+              /bin/systemctl reload fail2ban.service > /dev/null 2>&1 || true
+          endscript
+      }
+    dest: /etc/logrotate.d/fail2ban
+    mode: '0644'
+  tags: fail2ban, logging
+
+- name: Configure fail2ban email notifications (optional)
+  lineinfile:
+    path: /etc/fail2ban/jail.local
+    regexp: '^destemail'
+    line: 'destemail = {{ admin_email | default("root@localhost") }}'
+    insertafter: '^#destemail'
+  notify: restart fail2ban
+  when: admin_email is defined
+  tags: fail2ban, notifications

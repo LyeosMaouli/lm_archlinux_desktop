@@ -1,0 +1,60 @@
+---
+# Package installation tasks for Hyprland desktop
+
+- name: Install Hyprland packages
+  pacman:
+    name: "{{ hyprland_packages }}"
+    state: present
+  tags: packages, hyprland
+
+- name: Install graphics packages
+  pacman:
+    name: "{{ graphics_packages }}"
+    state: present
+  tags: packages, graphics
+
+- name: Install audio packages
+  pacman:
+    name: "{{ audio_packages }}"
+    state: present
+  tags: packages, audio
+
+- name: Install desktop applications
+  pacman:
+    name: "{{ desktop_applications }}"
+    state: present
+  tags: packages, applications
+
+- name: Install utility packages
+  pacman:
+    name: "{{ utility_packages }}"
+    state: present
+  tags: packages, utilities
+
+- name: Install font packages
+  pacman:
+    name: "{{ font_packages }}"
+    state: present
+  tags: packages, fonts
+
+- name: Install theme packages
+  pacman:
+    name: "{{ theme_packages }}"
+    state: present
+  tags: packages, themes
+
+- name: Install SDDM display manager
+  pacman:
+    name: sddm
+    state: present
+  tags: packages, sddm
+
+- name: Install Bluetooth packages
+  pacman:
+    name:
+      - bluez
+      - bluez-utils
+      - blueman
+    state: present
+  when: bluetooth_enabled
+  tags: packages, bluetooth

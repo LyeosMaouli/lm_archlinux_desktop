@@ -1,36 +1,86 @@
-# Sensitive files
-configs/ansible/group_vars/all/vault.yml
-configs/ansible/host_vars/*/vault.yml
-configs/archinstall/user_credentials.json
-*.key
-*.pem
-*.p12
+# Ansible specific
+*.retry
+.vault_pass
+vault_pass.txt
+ansible.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 logs/
 *.log
 
 # Backup files
-backup/configs/*
-backup/user_data/*
-!backup/*/.gitkeep
+backup/
+*.bak
+*.backup
 
 # Temporary files
-*.tmp
-*.temp
-.cache/
-.ansible/
+tmp/
+temp/
+.tmp/
 
-# IDE files
-.vscode/settings.json
-.idea/
+# SSH keys (should be in ssh/ directory but ignore any accidental copies)
+id_rsa
+id_rsa.pub
+*.pem
+*.key
 
-# OS files
-.DS_Store
-Thumbs.db
+# Secrets
+secrets/
+.env
+.secrets
 
 # Build artifacts
-build/
-dist/
-*.iso
-*.img
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# Test results
+test-results/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation build
+docs/_build/
+site/

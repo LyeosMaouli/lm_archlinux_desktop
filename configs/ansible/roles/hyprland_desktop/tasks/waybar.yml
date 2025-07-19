@@ -1,0 +1,53 @@
+---
+# Waybar configuration tasks
+
+- name: Create Waybar config directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/waybar"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: waybar
+
+- name: Configure Waybar main config
+  template:
+    src: waybar/config.jsonc.j2
+    dest: "/home/{{ desktop_user }}/.config/waybar/config.jsonc"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+    backup: yes
+  tags: waybar
+
+- name: Configure Waybar style
+  template:
+    src: waybar/style.css.j2
+    dest: "/home/{{ desktop_user }}/.config/waybar/style.css"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+    backup: yes
+  tags: waybar
+
+- name: Create Waybar modules directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/waybar/modules"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: waybar
+
+- name: Configure custom Waybar modules
+  template:
+    src: waybar/modules/{{ item }}.j2
+    dest: "/home/{{ desktop_user }}/.config/waybar/modules/{{ item }}"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  loop:
+    - weather.sh
+    - updates.sh
+    - system-info.sh
+  tags: waybar, modules

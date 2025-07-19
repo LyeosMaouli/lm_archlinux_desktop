@@ -1,0 +1,78 @@
+---
+# Audio system configuration tasks
+
+- name: Enable PipeWire services for user
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    scope: user
+    daemon_reload: yes
+  become_user: "{{ desktop_user }}"
+  become: yes
+  loop:
+    - pipewire.service
+    - pipewire-pulse.service
+    - wireplumber.service
+  tags: audio, pipewire
+
+- name: Create PipeWire config directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/pipewire"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: audio
+
+- name: Create WirePlumber config directory
+  file:
+    path: "/home/{{ desktop_user }}/.config/wireplumber"
+    state: directory
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0755'
+  tags: audio
+
+- name: Configure PipeWire
+  copy:
+    content: |
+      context.properties = {
+          default.clock.rate = 48000
+          default.clock.quantum = 1024
+          default.clock.min-quantum = 32
+          default.clock.max-quantum = 2048
+      }
+    dest: "/home/{{ desktop_user }}/.config/pipewire/pipewire.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: audio
+
+- name: Configure PulseAudio compatibility
+  copy:
+    content: |
+      stream.properties = {
+          node.latency = "1024/48000"
+          resample.quality = 4
+      }
+    dest: "/home/{{ desktop_user }}/.config/pipewire/pipewire-pulse.conf"
+    owner: "{{ desktop_user }}"
+    group: "{{ desktop_user }}"
+    mode: '0644'
+  tags: audio
+
+- name: Add user to audio group
+  user:
+    name: "{{ desktop_user }}"
+    groups: audio
+    append: yes
+  tags: audio
+
+- name: Install additional audio tools
+  pacman:
+    name:
+      - alsa-utils
+      - pavucontrol
+      - playerctl
+    state: present
+  tags: audio, tools

@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: system_hardening
+  author: lyeosmaouli
+  description: Comprehensive system security hardening for Arch Linux
+  license: MIT
+  min_ansible_version: "2.12"
+  
+  platforms:
+    - name: ArchLinux
+      versions:
+        - all
+        
+  galaxy_tags:
+    - archlinux
+    - security
+    - hardening
+    - firewall
+    - audit
+    - fail2ban
+
+dependencies: []

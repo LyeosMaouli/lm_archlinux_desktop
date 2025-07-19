@@ -1,0 +1,34 @@
+---
+# Main tasks for hyprland_desktop role
+
+- name: Include package installation tasks
+  include_tasks: packages.yml
+  tags: packages
+
+- name: Include Hyprland configuration tasks
+  include_tasks: hyprland.yml
+  tags: hyprland
+
+- name: Include Waybar configuration tasks
+  include_tasks: waybar.yml
+  tags: waybar
+
+- name: Include audio system configuration tasks
+  include_tasks: audio.yml
+  tags: audio
+
+- name: Include display manager configuration tasks
+  include_tasks: sddm.yml
+  tags: sddm, display_manager
+
+- name: Include XDG portal configuration tasks
+  include_tasks: xdg.yml
+  tags: xdg
+
+- name: Include theme and fonts configuration tasks
+  include_tasks: themes.yml
+  tags: themes
+
+- name: Include application configuration tasks
+  include_tasks: applications.yml
+  tags: applications

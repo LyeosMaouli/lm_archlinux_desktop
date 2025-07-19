@@ -1,0 +1,53 @@
+---
+# Services configuration tasks
+
+- name: Enable essential services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: "{{ base_services.enable }}"
+  tags: services
+
+- name: Disable unnecessary services
+  systemd:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+  loop: "{{ base_services.disable }}"
+  failed_when: false
+  tags: services
+
+- name: Configure NetworkManager
+  copy:
+    content: |
+      [main]
+      plugins=keyfile
+      dns=systemd-resolved
+      
+      [connectivity]
+      uri=http://www.archlinux.org/check_network_status.txt
+      interval=20
+      
+      [device]
+      wifi.scan-rand-mac-address=yes
+    dest: /etc/NetworkManager/NetworkManager.conf
+    mode: '0644'
+    backup: yes
+  notify: restart NetworkManager
+  tags: services, network
+
+- name: Start and enable systemd-resolved
+  systemd:
+    name: systemd-resolved
+    enabled: yes
+    state: started
+  tags: services, network
+
+- name: Create systemd-resolved symlink
+  file:
+    src: /run/systemd/resolve/stub-resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: yes
+  tags: services, network

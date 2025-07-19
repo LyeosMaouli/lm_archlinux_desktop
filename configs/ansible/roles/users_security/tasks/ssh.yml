@@ -1,0 +1,59 @@
+---
+# SSH configuration tasks
+
+- name: Install OpenSSH
+  pacman:
+    name: openssh
+    state: present
+  tags: ssh
+
+- name: Configure SSH daemon
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: '0644'
+    backup: yes
+  notify: restart sshd
+  tags: ssh
+
+- name: Create SSH banner
+  copy:
+    src: ssh_banner
+    dest: /etc/ssh/banner
+    mode: '0644'
+  notify: restart sshd
+  tags: ssh
+
+- name: Generate SSH host keys if missing
+  command: ssh-keygen -A
+  args:
+    creates: /etc/ssh/ssh_host_rsa_key
+  notify: restart sshd
+  tags: ssh
+
+- name: Set proper permissions on SSH host keys
+  file:
+    path: "{{ item }}"
+    mode: '0600'
+    owner: root
+    group: root
+  loop:
+    - /etc/ssh/ssh_host_rsa_key
+    - /etc/ssh/ssh_host_ed25519_key
+  failed_when: false
+  tags: ssh
+
+- name: Enable and start SSH daemon
+  systemd:
+    name: sshd
+    enabled: yes
+    state: started
+  tags: ssh
+
+- name: Configure SSH client settings
+  template:
+    src: ssh_config.j2
+    dest: /etc/ssh/ssh_config
+    mode: '0644'
+    backup: yes
+  tags: ssh

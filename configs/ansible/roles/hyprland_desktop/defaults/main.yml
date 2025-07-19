@@ -1,0 +1,104 @@
+---
+# Default variables for hyprland_desktop role
+
+# Desktop environment
+desktop_environment: "{{ desktop.environment | default('hyprland') }}"
+display_manager: "{{ desktop.display_manager | default('sddm') }}"
+
+# Main user
+desktop_user: "{{ users.main_user | default('lyeosmaouli') }}"
+
+# Hyprland packages
+hyprland_packages: "{{ desktop.hyprland_packages | default([
+  'hyprland',
+  'waybar',
+  'wofi',
+  'mako',
+  'kitty',
+  'thunar',
+  'grim',
+  'slurp',
+  'wl-clipboard',
+  'xdg-desktop-portal-hyprland',
+  'polkit-gnome',
+  'qt5-wayland',
+  'qt6-wayland'
+]) }}"
+
+# Graphics packages
+graphics_packages: "{{ desktop.graphics_packages | default([
+  'mesa',
+  'intel-media-driver',
+  'vulkan-intel'
+]) }}"
+
+# Audio packages
+audio_packages: "{{ desktop.audio_packages | default([
+  'pipewire',
+  'pipewire-pulse',
+  'pipewire-alsa',
+  'wireplumber'
+]) }}"
+
+# Applications
+desktop_applications: "{{ desktop.applications | default([
+  'firefox',
+  'thunderbird',
+  'libreoffice-still',
+  'vlc',
+  'okular',
+  'cups'
+]) }}"
+
+# Additional utilities
+utility_packages:
+  - thunar-volman
+  - thunar-archive-plugin
+  - file-roller
+  - network-manager-applet
+  - blueman
+  - pavucontrol
+  - brightnessctl
+  - playerctl
+  - swayidle
+  - swaylock
+
+# Fonts
+font_packages:
+  - ttf-dejavu
+  - ttf-liberation
+  - noto-fonts
+  - noto-fonts-emoji
+  - ttf-jetbrains-mono
+
+# Theme packages
+theme_packages:
+  - papirus-icon-theme
+  - adwaita-dark
+  - gtk3
+  - gtk4
+
+# Bluetooth configuration
+bluetooth_enabled: "{{ bluetooth.enabled | default(true) }}"
+
+# Display configuration
+display_resolution: "{{ display.primary.resolution | default('1920x1080') }}"
+display_refresh_rate: "{{ display.primary.refresh_rate | default(60) }}"
+
+# Hyprland configuration
+hyprland_config:
+  monitor: "{{ display_resolution }}@{{ display_refresh_rate }},auto,1"
+  workspace_auto_back_and_forth: true
+  animations_enabled: true
+  border_size: 2
+  gaps_in: 5
+  gaps_out: 10
+  rounding: 8
+
+# Waybar configuration
+waybar_config:
+  position: "top"
+  height: 30
+  modules_left: ["hyprland/workspaces", "hyprland/mode"]
+  modules_center: ["clock"]
+  modules_right: ["network", "bluetooth", "pulseaudio", "battery", "tray"]

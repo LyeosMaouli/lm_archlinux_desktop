@@ -1,0 +1,41 @@
+---
+# Default variables for users_security role
+
+# Main user configuration
+main_user: "{{ users.main_user | default('lyeosmaouli') }}"
+user_groups: "{{ users.groups | default(['wheel', 'audio', 'video', 'storage', 'network', 'input', 'optical']) }}"
+user_shell: "{{ users.shell | default('/bin/zsh') }}"
+
+# SSH configuration
+ssh_port: "{{ security.ssh.port | default(22) }}"
+ssh_permit_root_login: "{{ security.ssh.permit_root_login | default('no') }}"
+ssh_password_authentication: "{{ security.ssh.password_authentication | default('no') }}"
+ssh_pubkey_authentication: "{{ security.ssh.pubkey_authentication | default('yes') }}"
+ssh_max_auth_tries: 3
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+
+# SSH key configuration
+ssh_key_path: "{{ ansible_env.HOME }}/.ssh"
+ssh_public_key_file: "{{ ssh_key_path }}/id_rsa.pub"
+ssh_private_key_file: "{{ ssh_key_path }}/id_rsa"
+
+# Sudo configuration
+sudo_timeout: 15
+sudo_password_feedback: true
+sudo_insults: false
+
+# Password policy
+password_min_length: 12
+password_max_age: 90
+password_warn_age: 7
+password_complexity: true
+
+# Security settings
+enable_fail2ban: "{{ security.fail2ban.enabled | default(true) }}"
+lockout_time: 600
+max_login_attempts: 5
+
+# PAM settings
+pam_pwquality_enabled: true
+pam_limits_enabled: true

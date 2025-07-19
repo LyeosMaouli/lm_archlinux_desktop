@@ -1,0 +1,39 @@
+---
+# Locale configuration tasks
+
+- name: Generate locale
+  locale_gen:
+    name: "{{ base_locale }}"
+    state: present
+  notify: update locale
+  tags: locale
+
+- name: Set system locale
+  template:
+    src: locale.conf.j2
+    dest: /etc/locale.conf
+    mode: '0644'
+    backup: yes
+  notify: update locale
+  tags: locale
+
+- name: Set console keymap
+  template:
+    src: vconsole.conf.j2
+    dest: /etc/vconsole.conf
+    mode: '0644'
+    backup: yes
+  tags: locale
+
+- name: Set timezone
+  timezone:
+    name: "{{ base_timezone }}"
+  notify: sync hardware clock
+  tags: locale
+
+- name: Enable NTP synchronization
+  systemd:
+    name: systemd-timesyncd
+    enabled: yes
+    state: started
+  tags: locale

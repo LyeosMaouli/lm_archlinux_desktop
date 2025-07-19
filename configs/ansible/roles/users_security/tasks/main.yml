@@ -1,0 +1,26 @@
+---
+# Main tasks for users_security role
+
+- name: Include user management tasks
+  include_tasks: users.yml
+  tags: users
+
+- name: Include sudo configuration tasks
+  include_tasks: sudo.yml
+  tags: sudo
+
+- name: Include SSH configuration tasks
+  include_tasks: ssh.yml
+  tags: ssh
+
+- name: Include PAM configuration tasks
+  include_tasks: pam.yml
+  tags: pam
+
+- name: Set root password
+  user:
+    name: root
+    password: "{{ root_password_hash }}"
+    update_password: always
+  when: root_password_hash is defined
+  tags: users, root

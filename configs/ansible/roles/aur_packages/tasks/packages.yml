@@ -1,0 +1,101 @@
+---
+# AUR packages installation tasks
+
+- name: Update package databases
+  pacman:
+    update_cache: yes
+  tags: packages
+
+- name: Update AUR package database
+  command: yay -Sy --noconfirm
+  become_user: "{{ aur_user }}"
+  become: yes
+  changed_when: false
+  failed_when: false
+  tags: packages
+
+- name: Check for excluded packages in install list
+  fail:
+    msg: "Package {{ item }} is in the excluded list and should not be installed from AUR"
+  when: item in aur_excluded_packages
+  loop: "{{ aur_packages }}"
+  tags: packages, security
+
+- name: Install AUR packages with security checks
+  shell: |
+    # Security check: verify package exists and is not malicious
+    if yay -Si {{ item }} >/dev/null 2>&1; then
+      {% if aur_security.verify_signatures %}
+      # Check for PGP signatures
+      if yay -Si {{ item }} | grep -q "Signature"; then
+        echo "Package {{ item }} has signatures - proceeding with installation"
+      else
+        echo "Warning: Package {{ item }} has no signatures"
+      fi
+      {% endif %}
+      
+      # Install package with confirmation
+      yay -S {{ item }} --noconfirm --needed {% if aur_security.check_pgp_keys %}--pgpfetch{% endif %}
+    else
+      echo "Package {{ item }} not found in AUR"
+      exit 1
+    fi
+  become_user: "{{ aur_user }}"
+  become: yes
+  loop: "{{ aur_packages }}"
+  register: aur_install_result
+  failed_when: aur_install_result.rc != 0
+  changed_when: "'nothing to do' not in aur_install_result.stdout"
+  tags: packages
+
+- name: Install development AUR packages (optional)
+  shell: |
+    yay -S {{ item }} --noconfirm --needed
+  become_user: "{{ aur_user }}"
+  become: yes
+  loop: "{{ aur_dev_packages }}"
+  when: install_dev_packages | default(false)
+  register: aur_dev_install_result
+  failed_when: aur_dev_install_result.rc != 0
+  changed_when: "'nothing to do' not in aur_dev_install_result.stdout"
+  tags: packages, development
+
+- name: Verify installed AUR packages
+  command: yay -Q {{ item }}
+  become_user: "{{ aur_user }}"
+  become: yes
+  loop: "{{ aur_packages }}"
+  register: aur_verify
+  changed_when: false
+  failed_when: aur_verify.rc != 0
+  tags: packages, verify
+
+- name: Display installed AUR packages
+  debug:
+    msg: "Successfully installed AUR package: {{ item.item }} - {{ item.stdout }}"
+  loop: "{{ aur_verify.results }}"
+  when: item.rc == 0
+  tags: packages
+
+- name: Clean package cache
+  command: yay -Sc --noconfirm
+  become_user: "{{ aur_user }}"
+  become: yes
+  when: yay_config.clean_after
+  changed_when: false
+  tags: packages, cleanup
+
+- name: Remove orphaned AUR packages
+  shell: |
+    orphans=$(yay -Qdtq)
+    if [ -n "$orphans" ]; then
+      echo "$orphans" | yay -Rs --noconfirm -
+    else
+      echo "No orphaned packages found"
+    fi
+  become_user: "{{ aur_user }}"
+  become: yes
+  register: orphan_cleanup
+  changed_when: "'No orphaned packages found' not in orphan_cleanup.stdout"
+  failed_when: false
+  tags: packages, cleanup

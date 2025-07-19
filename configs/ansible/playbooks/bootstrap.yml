@@ -1,38 +1,59 @@
-# configs/ansible/playbooks/bootstrap.yml
 ---
+# Bootstrap playbook for initial system setup
+# This playbook prepares the system for the main configuration
+
 - name: Bootstrap Arch Linux System
   hosts: localhost
   connection: local
-  become: true
-  gather_facts: true
-
-  vars:
-    main_user: lyeosmaouli
-    bootstrap_mode: true
+  become: yes
+  gather_facts: yes
+  
+  vars_prompt:
+    - name: confirm_bootstrap
+      prompt: "This will bootstrap your Arch Linux system. Continue? (yes/no)"
+      private: no
+      default: "no"
 
   pre_tasks:
+    - name: Verify bootstrap confirmation
+      fail:
+        msg: "Bootstrap cancelled by user"
+      when: confirm_bootstrap != "yes"
+      
+    - name: Check if running on Arch Linux
+      fail:
+        msg: "This playbook is designed for Arch Linux only"
+      when: ansible_distribution != "Archlinux"
+      
     - name: Update package cache
       pacman:
-        update_cache: true
-      changed_when: false
-
-    - name: Install essential packages
-      pacman:
-        name:
-          - base-devel
-          - git
-          - python
-          - python-pip
-        state: present
+        update_cache: yes
+      tags: always
 
   roles:
     - role: base_system
-      tags: ["base", "system"]
-
+      tags: base
+      
     - role: users_security
-      tags: ["users", "security"]
+      tags: users, security
+      vars:
+        main_user: "{{ deployment_user | default('lyeosmaouli') }}"
 
   post_tasks:
-    - name: Bootstrap completion
-      debug:
-        msg: "Bootstrap completed! System ready for full deployment."
+    - name: Create ansible log directory
+      file:
+        path: /var/log/ansible
+        state: directory
+        mode: '0755'
+      tags: always
+      
+    - name: Log bootstrap completion
+      copy:
+        content: |
+          Bootstrap completed at: {{ ansible_date_time.iso8601 }}
+          System: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          Architecture: {{ ansible_architecture }}
+        dest: /var/log/ansible/bootstrap.log
+        mode: '0644'
+      tags: always

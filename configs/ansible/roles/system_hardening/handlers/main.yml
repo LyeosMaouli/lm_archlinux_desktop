@@ -1,0 +1,26 @@
+---
+# Handlers for system_hardening role
+
+- name: reload sysctl
+  command: sysctl --system
+
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+
+- name: restart auditd
+  command: systemctl restart auditd
+
+- name: restart ufw
+  systemd:
+    name: ufw
+    state: restarted
+
+- name: update grub
+  command: grub-mkconfig -o /boot/grub/grub.cfg
+  when: ansible_facts['virtualization_type'] != "container"
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes

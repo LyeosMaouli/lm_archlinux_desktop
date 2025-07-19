@@ -1,0 +1,30 @@
+---
+# Handlers for base_system role
+
+- name: update locale
+  command: locale-gen
+  
+- name: sync hardware clock
+  command: hwclock --systohc
+  
+- name: update package cache
+  pacman:
+    update_cache: yes
+    
+- name: restart NetworkManager
+  systemd:
+    name: NetworkManager
+    state: restarted
+    
+- name: restart systemd-zram-setup@zram0
+  systemd:
+    name: systemd-zram-setup@zram0
+    state: restarted
+    enabled: yes
+    
+- name: update hosts file
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1    {{ base_hostname }}.localdomain    {{ base_hostname }}"
+    state: present

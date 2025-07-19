@@ -1,25 +1,131 @@
 ---
+# Global variables for all hosts
+
 # System configuration
-hostname: arch-desktop
-timezone: America/New_York
-locale: en_US.UTF-8
-
+system:
+  locale: "{{ locale | default('en_US.UTF-8') }}"
+  keymap: "{{ keymap | default('fr') }}"
+  timezone: "{{ timezone | default('Europe/Paris') }}"
+  hostname: "{{ hostname | default('phoenix') }}"
+  
 # User configuration
-create_user: true
-install_development_tools: true
-install_multimedia: true
-install_aur_helper: true
+users:
+  main_user: "{{ deployment_user | default('lyeosmaouli') }}"
+  groups:
+    - wheel
+    - audio
+    - video
+    - storage
+    - network
+    - input
+    - optical
+  shell: /bin/zsh
 
+# Package management
+packages:
+  base_packages:
+    - base-devel
+    - linux-firmware
+    - networkmanager
+    - sudo
+    - openssh
+    - git
+    - reflector
+    - neovim
+    - tmux
+    - htop
+    - zsh
+    - curl
+    - wget
+    - tree
+    - zip
+    - unzip
+    - trash-cli
+    
+  aur_packages:
+    - visual-studio-code-bin
+    - discord
+    - zoom
+    - hyprpaper
+    - bibata-cursor-theme
+    
 # Desktop environment
-desktop_environment: hyprland
-enable_hibernation: true
-configure_systemd_boot: true
-
-# Network configuration
-enable_networkmanager: true
-enable_bluetooth: true
-
+desktop:
+  environment: hyprland
+  display_manager: sddm
+  
+  hyprland_packages:
+    - hyprland
+    - waybar
+    - wofi
+    - mako
+    - kitty
+    - thunar
+    - grim
+    - slurp
+    - wl-clipboard
+    - xdg-desktop-portal-hyprland
+    - polkit-gnome
+    - qt5-wayland
+    - qt6-wayland
+    
+  graphics_packages:
+    - mesa
+    - intel-media-driver
+    - vulkan-intel
+    
+  audio_packages:
+    - pipewire
+    - pipewire-pulse
+    - pipewire-alsa
+    - wireplumber
+    
+  applications:
+    - firefox
+    - thunderbird
+    - libreoffice-still
+    - vlc
+    - okular
+    - cups
+    
 # Security configuration
-enable_firewall: true
-enable_fail2ban: true
-configure_ssh_hardening: true
+security:
+  firewall:
+    enabled: "{{ enable_firewall | default(true) }}"
+    default_policy: deny
+    
+  fail2ban:
+    enabled: "{{ enable_fail2ban | default(true) }}"
+    
+  audit:
+    enabled: "{{ enable_audit | default(true) }}"
+    
+  ssh:
+    port: 22
+    permit_root_login: "no"
+    password_authentication: "no"
+    pubkey_authentication: "yes"
+    
+# Power management
+power:
+  tlp:
+    enabled: "{{ enable_tlp | default(true) }}"
+    
+  thermald:
+    enabled: "{{ enable_thermald | default(true) }}"
+    
+# Mirrors
+mirrors:
+  country: "{{ mirror_country | default('United Kingdom') }}"
+  country_code: "{{ country_code | default('GB') }}"
+  
+# Bootloader
+bootloader:
+  type: systemd-boot
+  timeout: 5
+  
+# Logging
+logging:
+  directory: /var/log/ansible
+  max_size: 100M
+  backup_count: 5

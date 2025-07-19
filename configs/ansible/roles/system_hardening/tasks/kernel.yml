@@ -1,0 +1,120 @@
+---
+# Kernel security hardening tasks
+
+- name: Install security packages
+  pacman:
+    name: "{{ security_packages }}"
+    state: present
+  tags: kernel, packages
+
+- name: Configure kernel security parameters
+  template:
+    src: sysctl.d/99-security.conf.j2
+    dest: /etc/sysctl.d/99-security.conf
+    mode: '0644'
+    backup: yes
+  notify: reload sysctl
+  tags: kernel, sysctl
+
+- name: Create additional sysctl hardening files
+  copy:
+    content: |
+      # Network hardening
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv6.conf.all.accept_redirects = 0
+      net.ipv6.conf.default.accept_redirects = 0
+      
+      # ICMP hardening
+      net.ipv4.icmp_echo_ignore_all = 0
+      net.ipv4.icmp_echo_ignore_broadcasts = 1
+      net.ipv4.icmp_ignore_bogus_error_responses = 1
+      
+      # TCP hardening
+      net.ipv4.tcp_timestamps = 0
+      net.ipv4.tcp_syncookies = 1
+      net.ipv4.tcp_rfc1337 = 1
+      
+      # Memory protection
+      kernel.exec-shield = 1
+      kernel.randomize_va_space = 2
+    dest: /etc/sysctl.d/99-network-security.conf
+    mode: '0644'
+  notify: reload sysctl
+  tags: kernel, network
+
+- name: Configure kernel parameters for security
+  copy:
+    content: |
+      # Kernel security hardening
+      kernel.kexec_load_disabled = 1
+      kernel.unprivileged_bpf_disabled = 1
+      net.core.bpf_jit_harden = 2
+      kernel.unprivileged_userns_clone = 0
+      kernel.perf_event_paranoid = 3
+      vm.mmap_rnd_bits = 32
+      vm.mmap_rnd_compat_bits = 16
+    dest: /etc/sysctl.d/99-kernel-hardening.conf
+    mode: '0644'
+  notify: reload sysctl
+  tags: kernel, hardening
+
+- name: Set kernel boot parameters for security
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 audit=1 slub_debug=FZP slab_nomerge page_alloc.shuffle=1 pti=on vsyscall=none debugfs=off"'
+    backup: yes
+  notify: update grub
+  when: ansible_facts['virtualization_type'] != "container"
+  tags: kernel, boot
+
+- name: Configure kernel modules loading security
+  copy:
+    content: |
+      # Restrict kernel module loading
+      kernel.modules_disabled = 1
+    dest: /etc/sysctl.d/99-module-loading.conf
+    mode: '0644'
+  notify: reload sysctl
+  when: disable_kernel_modules | default(false)
+  tags: kernel, modules
+
+- name: Create security limits configuration
+  copy:
+    content: |
+      # Security limits
+      *               soft    core            0
+      *               hard    core            0
+      *               soft    nproc           65536
+      *               hard    nproc           65536
+      *               soft    nofile          65536
+      *               hard    nofile          65536
+      root            soft    nproc           unlimited
+      root            hard    nproc           unlimited
+    dest: /etc/security/limits.d/99-security.conf
+    mode: '0644'
+  tags: kernel, limits
+
+- name: Disable core dumps globally
+  copy:
+    content: |
+      # Disable core dumps for security
+      * soft core 0
+      * hard core 0
+    dest: /etc/security/limits.d/10-disable-core-dumps.conf
+    mode: '0644'
+  tags: kernel, coredumps
+
+- name: Configure systemd to disable core dumps
+  copy:
+    content: |
+      [Manager]
+      DumpCore=no
+      CrashShell=no
+    dest: /etc/systemd/system.conf.d/disable-dumps.conf
+    mode: '0644'
+  notify: reload systemd
+  tags: kernel, systemd

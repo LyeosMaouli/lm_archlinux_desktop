@@ -1,0 +1,109 @@
+---
+# Yay AUR helper installation tasks
+
+- name: Check if yay is already installed
+  command: which yay
+  register: yay_installed
+  changed_when: false
+  failed_when: false
+  become_user: "{{ aur_user }}"
+  become: yes
+  tags: yay
+
+- name: Clone yay repository
+  git:
+    repo: https://aur.archlinux.org/yay.git
+    dest: "/tmp/yay-install"
+    force: yes
+  become_user: "{{ aur_user }}"
+  become: yes
+  when: yay_installed.rc != 0
+  tags: yay
+
+- name: Build and install yay
+  shell: |
+    cd /tmp/yay-install
+    makepkg -si --noconfirm --needed
+  become_user: "{{ aur_user }}"
+  become: yes
+  when: yay_installed.rc != 0
+  register: yay_install_result
+  tags: yay
+
+- name: Clean up yay installation files
+  file:
+    path: /tmp/yay-install
+    state: absent
+  when: yay_installed.rc != 0
+  tags: yay
+
+- name: Verify yay installation
+  command: yay --version
+  become_user: "{{ aur_user }}"
+  become: yes
+  changed_when: false
+  register: yay_version
+  tags: yay
+
+- name: Display yay version
+  debug:
+    msg: "Yay installed successfully: {{ yay_version.stdout }}"
+  when: yay_version.stdout is defined
+  tags: yay
+
+- name: Configure yay settings
+  copy:
+    content: |
+      {
+        "aururl": "https://aur.archlinux.org",
+        "buildDir": "{{ yay_config.build_dir }}",
+        "editor": "{{ yay_config.editor }}",
+        "editorflags": "",
+        "makepkgbin": "makepkg",
+        "makepkgconf": "",
+        "pacmanbin": "pacman",
+        "pacmanconf": "",
+        "tarbin": "bsdtar",
+        "redownload": "no",
+        "rebuild": "no",
+        "answerclean": "",
+        "answerdiff": "{{ 'All' if yay_config.diff_menu else 'None' }}",
+        "answeredit": "None",
+        "answerupgrade": "{{ 'All' if yay_config.upgrade_menu else 'None' }}",
+        "gitbin": "git",
+        "gpgbin": "gpg",
+        "gpgflags": "",
+        "mflags": "",
+        "sortby": "votes",
+        "searchby": "name-desc",
+        "gitflags": "",
+        "removemake": "ask",
+        "sudobin": "sudo",
+        "sudoflags": "",
+        "version": "12.0.0",
+        "bottomup": true,
+        "completionrefreshtime": 7,
+        "maxconcurrentdownloads": 1,
+        "noconfirm": false,
+        "provides": {{ yay_config.provides | lower }},
+        "pgpfetch": {{ yay_config.pgp_fetch | lower }},
+        "cleanmenu": {{ yay_config.clean_menu | lower }},
+        "diffmenu": {{ yay_config.diff_menu | lower }},
+        "editmenu": false,
+        "upgrademenu": {{ yay_config.upgrade_menu | lower }},
+        "cleanafter": {{ yay_config.clean_after | lower }}
+      }
+    dest: "/home/{{ aur_user }}/.config/yay/config.json"
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0644'
+  tags: yay, configure
+
+- name: Create yay config directory
+  file:
+    path: "/home/{{ aur_user }}/.config/yay"
+    state: directory
+    owner: "{{ aur_user }}"
+    group: "{{ aur_user }}"
+    mode: '0755'
+  tags: yay, configure
