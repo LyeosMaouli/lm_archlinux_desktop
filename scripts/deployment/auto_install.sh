@@ -14,6 +14,38 @@ NC='\033[0m' # No Color
 # Configuration file path
 CONFIG_FILE="${CONFIG_FILE:-/tmp/deployment_config.yml}"
 LOG_FILE="/var/log/auto_install.log"
+VERBOSE_LOG="/var/log/auto_install_verbose.log"
+
+# Enhanced logging setup - capture EVERYTHING
+setup_comprehensive_logging() {
+    # Create log directory if it doesn't exist
+    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$VERBOSE_LOG")"
+    
+    # Start comprehensive logging - capture ALL output
+    exec > >(tee -a "$VERBOSE_LOG")
+    exec 2> >(tee -a "$VERBOSE_LOG" >&2)
+    
+    # Also log to standard log file
+    exec 19>&1
+    exec 20>&2
+    exec 1> >(tee -a "$LOG_FILE" >&19)
+    exec 2> >(tee -a "$LOG_FILE" >&20)
+    
+    echo "=== AUTO INSTALL VERBOSE LOG STARTED: $(date) ===" >> "$VERBOSE_LOG"
+    echo "=== Command: $0 $* ===" >> "$VERBOSE_LOG"
+    echo "=== Environment Variables ===" >> "$VERBOSE_LOG"
+    env | sort >> "$VERBOSE_LOG"
+    echo "=== System Information ===" >> "$VERBOSE_LOG"
+    uname -a >> "$VERBOSE_LOG" 2>&1 || true
+    lsblk >> "$VERBOSE_LOG" 2>&1 || true
+    free -h >> "$VERBOSE_LOG" 2>&1 || true
+    echo "=== Network Interfaces ===" >> "$VERBOSE_LOG"
+    ip addr show >> "$VERBOSE_LOG" 2>&1 || true
+    echo "=== DNS Configuration ===" >> "$VERBOSE_LOG"
+    cat /etc/resolv.conf >> "$VERBOSE_LOG" 2>&1 || true
+    echo "=== Starting Installation Process ===" >> "$VERBOSE_LOG"
+}
 
 # Logging function
 log() {
@@ -731,7 +763,8 @@ install_base_system() {
     
     # Test package database access with force refresh
     info "Testing package database access with forced refresh..."
-    if ! timeout 60 pacman -Syy --noconfirm 2>/dev/null; then
+    echo "=== PACMAN DATABASE SYNC ATTEMPT ===" >> "$VERBOSE_LOG"
+    if ! timeout 60 pacman -Syy --noconfirm 2>&1 | tee -a "$VERBOSE_LOG"; then
         warn "Initial database sync failed, trying alternative approach..."
         
         # Try with different mirror if available
@@ -754,7 +787,13 @@ EOF
     
     # Try pacstrap with better error handling and diagnostics
     info "Starting package installation with pacstrap..."
-    if ! timeout 1800 pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode; then
+    echo "=== PACSTRAP INSTALLATION ATTEMPT ===" >> "$VERBOSE_LOG"
+    echo "Target: /mnt" >> "$VERBOSE_LOG"
+    echo "Packages: base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode" >> "$VERBOSE_LOG"
+    echo "Mirror list being used:" >> "$VERBOSE_LOG"
+    cat /etc/pacman.d/mirrorlist >> "$VERBOSE_LOG" 2>&1
+    echo "=== PACSTRAP OUTPUT ===" >> "$VERBOSE_LOG"
+    if ! timeout 1800 pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode 2>&1 | tee -a "$VERBOSE_LOG"; then
         warn "Full package installation failed"
         
         # Show more diagnostic information
@@ -986,7 +1025,12 @@ copy_configs() {
 
 # Main installation function
 main() {
-    info "Starting automated Arch Linux installation..."
+    # Setup comprehensive logging FIRST
+    setup_comprehensive_logging
+    
+    info "Starting automated Arch Linux installation with comprehensive logging..."
+    info "Verbose log: $VERBOSE_LOG"
+    info "Standard log: $LOG_FILE"
     
     # Clear any cached disk device information for fresh start
     unset DISK_DEVICE EFI_PARTITION ROOT_PARTITION ENCRYPTED_ROOT ENCRYPTION_ENABLED

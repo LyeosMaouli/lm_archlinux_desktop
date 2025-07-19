@@ -15,7 +15,29 @@ NC='\033[0m' # No Color
 REPO_URL="https://github.com/LyeosMaouli/lm_archlinux_desktop.git"
 CONFIG_FILE="${CONFIG_FILE:-/tmp/vm_deployment_config.yml}"
 LOG_FILE="/var/log/auto_vm_test.log"
+VERBOSE_LOG="/var/log/auto_vm_test_verbose.log"
 INSTALL_DIR="$HOME/lm_archlinux_desktop"
+
+# Enhanced logging setup for VM testing
+setup_vm_logging() {
+    # Create log directory
+    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$VERBOSE_LOG")"
+    
+    # Start comprehensive logging
+    exec > >(tee -a "$VERBOSE_LOG")
+    exec 2> >(tee -a "$VERBOSE_LOG" >&2)
+    
+    echo "=== VM TEST VERBOSE LOG STARTED: $(date) ===" >> "$VERBOSE_LOG"
+    echo "=== VM Environment Information ===" >> "$VERBOSE_LOG"
+    dmidecode -s system-product-name >> "$VERBOSE_LOG" 2>&1 || echo "dmidecode failed" >> "$VERBOSE_LOG"
+    lscpu | head -10 >> "$VERBOSE_LOG" 2>&1 || true
+    free -h >> "$VERBOSE_LOG" 2>&1 || true
+    lsblk >> "$VERBOSE_LOG" 2>&1 || true
+    echo "=== Network Status ===" >> "$VERBOSE_LOG"
+    ip addr show >> "$VERBOSE_LOG" 2>&1 || true
+    echo "=== Starting VM Test Process ===" >> "$VERBOSE_LOG"
+}
 
 # VM-specific settings
 VM_DISK="/dev/sda"
@@ -428,12 +450,14 @@ EOF
         fi
         
         info "Updating package database with enhanced settings..."
-        timeout 120 pacman -Syy --noconfirm || {
+        echo "=== VM PACMAN DATABASE SYNC ===" >> "$VERBOSE_LOG"
+        timeout 120 pacman -Syy --noconfirm 2>&1 | tee -a "$VERBOSE_LOG" || {
             warn "Package database update failed, trying to continue..."
         }
         
         info "Installing Git package..."
-        timeout 300 pacman -S --noconfirm git || {
+        echo "=== VM GIT INSTALLATION ===" >> "$VERBOSE_LOG"
+        timeout 300 pacman -S --noconfirm git 2>&1 | tee -a "$VERBOSE_LOG" || {
             warn "Git installation failed. Checking if it's actually installed..."
             
             # Sometimes the package exists but path is not updated
@@ -671,7 +695,12 @@ EOF
 
 # Main VM testing function
 main() {
-    info "Starting automated VirtualBox testing..."
+    # Setup comprehensive logging FIRST
+    setup_vm_logging
+    
+    info "Starting automated VirtualBox testing with comprehensive logging..."
+    info "Verbose log: $VERBOSE_LOG"
+    info "Standard log: $LOG_FILE"
     
     # Detect environment
     detect_vm
