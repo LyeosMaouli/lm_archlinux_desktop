@@ -439,14 +439,13 @@ ensure_git() {
         info "Checking and fixing pacman keyring..."
         fix_vm_keyring
         
-        # Add download timeout configuration if not already present
+        # Add download timeout configuration in correct section
         if ! grep -q "XferCommand.*curl.*retry" /etc/pacman.conf; then
             info "Adding download reliability settings to pacman..."
-            cat >> /etc/pacman.conf << 'EOF'
-
-# Enhanced download settings for VM environment
-XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u
-EOF
+            # Remove any existing XferCommand lines
+            sed -i '/^XferCommand/d' /etc/pacman.conf
+            # Add XferCommand in the [options] section
+            sed -i '/^ParallelDownloads/a XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u' /etc/pacman.conf
         fi
         
         info "Updating package database with enhanced settings..."
