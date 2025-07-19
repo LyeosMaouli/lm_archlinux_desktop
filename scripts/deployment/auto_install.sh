@@ -470,35 +470,58 @@ mount_filesystems() {
 get_best_mirrors() {
     info "Attempting to get optimal mirrors..."
     
-    # Try to fetch mirror status first
+    # Clear any proxy settings that might interfere
+    unset http_proxy https_proxy ftp_proxy rsync_proxy HTTP_PROXY HTTPS_PROXY FTP_PROXY RSYNC_PROXY
+    
+    # Configure DNS if needed
+    if ! ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+        info "Configuring DNS servers..."
+        echo "nameserver 8.8.8.8" > /etc/resolv.conf
+        echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+    fi
+    
+    # Try to fetch mirror status with better error handling
     local mirror_json="/tmp/mirror_status.json"
-    if curl -s --max-time 15 "https://archlinux.org/mirrors/status/json/" > "$mirror_json" 2>/dev/null; then
+    if curl -f -s --max-time 30 --retry 3 --retry-delay 2 "https://archlinux.org/mirrors/status/json/" > "$mirror_json" 2>/dev/null; then
         info "✓ Mirror status downloaded successfully"
         
-        # Simple extraction of HTTPS mirrors from JSON
+        # Extract HTTPS mirrors with better filtering
         local extracted_mirrors
-        extracted_mirrors=$(grep -o '"url": "https://[^"]*"' "$mirror_json" | \
-                           sed 's/"url": "//g; s/"//g' | \
-                           head -10)
+        extracted_mirrors=$(python3 -c "
+import json, sys
+try:
+    with open('$mirror_json') as f:
+        data = json.load(f)
+    mirrors = []
+    for mirror in data.get('urls', []):
+        if mirror.get('protocol') == 'https' and mirror.get('completion_pct', 0) >= 99.0:
+            mirrors.append(mirror['url'])
+        if len(mirrors) >= 8:
+            break
+    for m in mirrors:
+        print(m)
+except:
+    sys.exit(1)
+" 2>/dev/null)
         
         if [[ -n "$extracted_mirrors" ]]; then
-            info "Found mirrors from status page"
+            info "Found high-quality mirrors from status page"
             echo "$extracted_mirrors"
             return 0
         fi
     fi
     
-    # Fallback to curated list of reliable mirrors
+    # Fallback to curated list of highly reliable mirrors (updated 2025)
     info "Using curated list of reliable mirrors..."
     cat << 'EOF'
 https://geo.mirror.pkgbuild.com/
-https://archlinux.mailtunnel.eu/
-https://mirror.rackspace.com/archlinux/
 https://mirrors.kernel.org/archlinux/
-https://america.mirror.pkgbuild.com/
-https://europe.mirror.pkgbuild.com/
-https://asia.mirror.pkgbuild.com/
+https://mirror.rackspace.com/archlinux/
+https://archlinux.uk.mirror.allworldit.com/archlinux/
 https://mirror.leaseweb.net/archlinux/
+https://ftp.halifax.rwth-aachen.de/archlinux/
+https://europe.mirror.pkgbuild.com/
+https://america.mirror.pkgbuild.com/
 EOF
 }
 
@@ -592,17 +615,36 @@ install_base_system() {
     info "Installing base system packages..."
     info "This may take several minutes depending on internet speed..."
     
-    # Test package database access first
-    info "Testing package database access..."
-    if ! pacman -Sy --noconfirm 2>/dev/null; then
-        warn "Package database sync failed, but continuing with installation attempt..."
+    # Clear pacman cache and force database refresh
+    info "Clearing package cache and forcing database refresh..."
+    rm -rf /var/lib/pacman/sync/*
+    
+    # Test package database access with force refresh
+    info "Testing package database access with forced refresh..."
+    if ! timeout 60 pacman -Syy --noconfirm 2>/dev/null; then
+        warn "Initial database sync failed, trying alternative approach..."
+        
+        # Try with different mirror if available
+        if [[ -f /etc/pacman.d/mirrorlist.backup ]]; then
+            info "Trying backup mirror list..."
+            cp /etc/pacman.d/mirrorlist.backup /etc/pacman.d/mirrorlist
+            timeout 60 pacman -Syy --noconfirm 2>/dev/null || warn "Backup mirrors also failed"
+        fi
     else
         info "✓ Package database sync successful"
     fi
     
+    # Configure pacman for better download handling
+    info "Configuring pacman for reliable downloads..."
+    cat >> /etc/pacman.conf << 'EOF'
+
+# Timeout and retry settings for reliable downloads
+XferCommand = /usr/bin/curl -L -C - -f --retry 5 --retry-delay 3 --connect-timeout 60 -o %o %u
+EOF
+    
     # Try pacstrap with better error handling and diagnostics
     info "Starting package installation with pacstrap..."
-    if ! pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode; then
+    if ! timeout 1800 pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode; then
         warn "Full package installation failed"
         
         # Show more diagnostic information
@@ -613,14 +655,22 @@ install_base_system() {
         info "Testing network connectivity to package servers:"
         ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 && info "✓ archlinux.org reachable" || warn "✗ archlinux.org unreachable"
         
-        # Try minimal installation first
-        warn "Attempting minimal installation..."
-        if ! pacstrap -c /mnt base linux linux-firmware networkmanager; then
+        # Try minimal installation first with extended timeout
+        warn "Attempting minimal installation with essential packages only..."
+        if ! timeout 2400 pacstrap -c /mnt base linux networkmanager; then
             # Show current mirror list for debugging
             info "Current mirrors being used:"
             grep -v '^#' /etc/pacman.d/mirrorlist | head -5 || warn "Could not display mirrors"
             
-            error "Even minimal package installation failed. This suggests mirror or network issues."
+            # Try one more time with just base system
+            warn "Attempting absolute minimal installation (base only)..."
+            if ! timeout 1800 pacstrap -c /mnt base; then
+                error "Even minimal package installation failed. This suggests mirror or network issues."
+            else
+                info "✓ Minimal base installation succeeded"
+            fi
+        else
+            info "✓ Essential packages installation succeeded"
         fi
         
         # Install additional packages in chroot if minimal succeeded
