@@ -1,0 +1,115 @@
+---
+# Power Management Role Defaults
+# Laptop power optimization and thermal management
+
+# TLP Configuration
+tlp:
+  enabled: true
+  start_charge_thresh_bat0: 40
+  stop_charge_thresh_bat0: 80
+  cpu_scaling_governor_on_ac: "performance"
+  cpu_scaling_governor_on_bat: "powersave"
+  cpu_energy_perf_policy_on_ac: "performance"
+  cpu_energy_perf_policy_on_bat: "power"
+  sched_powersave_on_ac: 0
+  sched_powersave_on_bat: 1
+  nmi_watchdog: 0
+  wifi_pwr_on_ac: "off"
+  wifi_pwr_on_bat: "on"
+  wol_disable: "Y"
+  sound_power_save_on_ac: 0
+  sound_power_save_on_bat: 1
+  sound_power_save_controller: "Y"
+  bay_poweroff_on_bat: 0
+  bay_device: "sr0"
+  runtime_pm_on_ac: "on"
+  runtime_pm_on_bat: "auto"
+  usb_autosuspend: 1
+  usb_blacklist_btusb: 0
+  usb_blacklist_phone: 0
+  restore_device_state_on_startup: 0
+
+# Intel GPU Configuration
+intel_gpu:
+  enabled: true
+  enable_guc: 2
+  enable_huc: 1
+  disable_power_well: 0
+  enable_dc: -1
+  enable_fbc: 1
+  enable_psr: 1
+  enable_gvt: 0
+
+# CPU Configuration
+cpu:
+  governor_ac: "performance"
+  governor_battery: "powersave"
+  turbo_boost_ac: true
+  turbo_boost_battery: false
+  min_perf_pct_ac: 0
+  max_perf_pct_ac: 100
+  min_perf_pct_battery: 0
+  max_perf_pct_battery: 30
+
+# Thermal Management
+thermal:
+  enabled: true
+  trip_point_0_temp: 75000
+  trip_point_0_type: "passive"
+  trip_point_1_temp: 85000
+  trip_point_1_type: "active"
+  polling_delay: 1000
+  passive_delay: 10000
+
+# Power Profiles Daemon
+power_profiles_daemon:
+  enabled: true
+  default_profile: "balanced"
+
+# System Sleep Configuration
+sleep:
+  suspend_then_hibernate: true
+  hibernate_delay_sec: 3600
+  hybrid_sleep_mode: "suspend"
+  hybrid_sleep_state: "disk"
+
+# Audio Power Management
+audio:
+  power_save: true
+  power_save_time_ac: 0
+  power_save_time_battery: 1
+  controller_power_save: true
+
+# Network Power Management
+network:
+  wifi_power_save_ac: false
+  wifi_power_save_battery: true
+  ethernet_wol: false
+  bluetooth_autosuspend: true
+
+# USB Power Management
+usb:
+  autosuspend: true
+  autosuspend_delay: 2
+  blacklist_devices: []
+
+# SATA Power Management
+sata:
+  link_power_mgmt: "med_power_with_dipm"
+  aggressive_lpm: true
+
+# Display Power Management
+display:
+  dpms_enabled: true
+  brightness_ac: 100
+  brightness_battery: 50
+  adaptive_brightness: true
+
+# Performance Tuning
+performance:
+  laptop_mode: true
+  vm_dirty_writeback_centisecs: 6000
+  vm_dirty_expire_centisecs: 3000
+  vm_dirty_ratio: 15
+  vm_dirty_background_ratio: 5
+  kernel_nmi_watchdog: false

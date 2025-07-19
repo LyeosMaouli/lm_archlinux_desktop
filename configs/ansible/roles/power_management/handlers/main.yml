@@ -1,0 +1,40 @@
+---
+# Power Management Handlers
+
+- name: restart tlp
+  systemd:
+    name: tlp
+    state: restarted
+  become: true
+
+- name: restart thermald
+  systemd:
+    name: thermald
+    state: restarted
+  become: true
+
+- name: restart systemd-logind
+  systemd:
+    name: systemd-logind
+    state: restarted
+  become: true
+
+- name: reload sysctl
+  command: sysctl --system
+  become: true
+
+- name: rebuild initramfs
+  command: mkinitcpio -P
+  become: true
+
+- name: reload udev
+  command: udevadm control --reload-rules
+  become: true
+
+- name: enable power monitor timer
+  systemd:
+    name: power-monitor.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

@@ -1,0 +1,30 @@
+---
+# Power Management Role Metadata
+
+galaxy_info:
+  author: Arch Linux Hyprland Automation
+  description: Laptop power management and thermal optimization for Arch Linux
+  company: Personal Project
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: ArchLinux
+      versions:
+        - all
+  galaxy_tags:
+    - power
+    - laptop
+    - thermal
+    - tlp
+    - intel
+    - cpu
+    - battery
+
+dependencies:
+  - role: base_system
+    when: base_system_configured is not defined
+  - role: aur_packages
+    when: aur_helper_installed is not defined
+
+collections:
+  - community.general

@@ -1,0 +1,339 @@
+---
+# Maintenance Playbook for Arch Linux Hyprland System
+# Handles system updates, cleanup, health checks, and maintenance tasks
+
+- name: System Maintenance Tasks
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  
+  vars:
+    maintenance_log: "/var/log/system-maintenance.log"
+    backup_retention_days: 30
+    cache_cleanup_threshold_gb: 5
+    log_cleanup_days: 7
+    
+  tasks:
+    - name: Start maintenance logging
+      lineinfile:
+        path: "{{ maintenance_log }}"
+        line: "=== Maintenance started at {{ ansible_date_time.iso8601 }} ==="
+        create: true
+        mode: '0644'
+      tags:
+        - always
+
+    # System Update Tasks
+    - name: Update pacman package database
+      pacman:
+        update_cache: true
+        upgrade: false
+      register: pacman_update
+      tags:
+        - updates
+        - packages
+
+    - name: List available package updates
+      command: pacman -Qu
+      register: available_updates
+      changed_when: false
+      failed_when: false
+      tags:
+        - updates
+        - info
+
+    - name: Display available updates
+      debug:
+        msg: "{{ available_updates.stdout_lines | default(['No updates available']) }}"
+      tags:
+        - updates
+        - info
+
+    - name: Upgrade system packages (with confirmation)
+      pacman:
+        upgrade: true
+        update_cache: true
+      when: 
+        - available_updates.stdout != ""
+        - maintenance_auto_upgrade | default(false) | bool
+      tags:
+        - updates
+        - packages
+
+    - name: Update AUR packages
+      shell: |
+        sudo -u {{ ansible_user | default('lyeosmaouli') }} yay -Syu --noconfirm --aur
+      when: maintenance_update_aur | default(true) | bool
+      register: aur_updates
+      changed_when: "'there is nothing to do' not in aur_updates.stdout"
+      tags:
+        - updates
+        - aur
+
+    # System Cleanup Tasks
+    - name: Clean pacman cache
+      command: pacman -Sc --noconfirm
+      tags:
+        - cleanup
+        - cache
+
+    - name: Clean orphaned packages
+      shell: |
+        ORPHANS=$(pacman -Qtdq)
+        if [[ -n "$ORPHANS" ]]; then
+          echo "$ORPHANS" | pacman -Rns --noconfirm -
+          echo "Removed orphaned packages: $ORPHANS"
+        else
+          echo "No orphaned packages found"
+        fi
+      register: orphan_cleanup
+      changed_when: "'No orphaned packages found' not in orphan_cleanup.stdout"
+      tags:
+        - cleanup
+        - packages
+
+    - name: Clean user cache directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/home/{{ ansible_user | default('lyeosmaouli') }}/.cache/yay"
+        - "/home/{{ ansible_user | default('lyeosmaouli') }}/.cache/thumbnails"
+        - "/tmp/*"
+      ignore_errors: true
+      tags:
+        - cleanup
+        - cache
+
+    - name: Clean system logs older than {{ log_cleanup_days }} days
+      shell: |
+        journalctl --vacuum-time={{ log_cleanup_days }}d
+        find /var/log -name "*.log" -type f -mtime +{{ log_cleanup_days }} -delete
+      tags:
+        - cleanup
+        - logs
+
+    - name: Check disk usage
+      shell: df -h /
+      register: disk_usage
+      changed_when: false
+      tags:
+        - health
+        - disk
+
+    - name: Display disk usage
+      debug:
+        msg: "{{ disk_usage.stdout_lines }}"
+      tags:
+        - health
+        - disk
+
+    # Health Check Tasks
+    - name: Check system services
+      systemd:
+        name: "{{ item }}"
+      register: service_status
+      loop:
+        - NetworkManager
+        - sshd
+        - tlp
+        - thermald
+        - sddm
+      ignore_errors: true
+      tags:
+        - health
+        - services
+
+    - name: Display failed services
+      debug:
+        msg: "Service {{ item.item }} is not running"
+      loop: "{{ service_status.results }}"
+      when: item.status is defined and item.status.ActiveState != "active"
+      tags:
+        - health
+        - services
+
+    - name: Check system errors in journal
+      shell: journalctl --priority=err --since="24 hours ago" --no-pager
+      register: system_errors
+      changed_when: false
+      tags:
+        - health
+        - logs
+
+    - name: Display recent system errors
+      debug:
+        msg: "{{ system_errors.stdout_lines | default(['No recent errors']) }}"
+      when: system_errors.stdout != ""
+      tags:
+        - health
+        - logs
+
+    - name: Check memory usage
+      shell: free -h
+      register: memory_usage
+      changed_when: false
+      tags:
+        - health
+        - memory
+
+    - name: Display memory usage
+      debug:
+        msg: "{{ memory_usage.stdout_lines }}"
+      tags:
+        - health
+        - memory
+
+    - name: Check CPU temperature
+      shell: |
+        if command -v sensors >/dev/null 2>&1; then
+          sensors | grep -E "(Core|Package)" | head -5
+        else
+          echo "lm-sensors not installed, install with: pacman -S lm-sensors"
+        fi
+      register: cpu_temp
+      changed_when: false
+      tags:
+        - health
+        - temperature
+
+    - name: Display CPU temperature
+      debug:
+        msg: "{{ cpu_temp.stdout_lines }}"
+      tags:
+        - health
+        - temperature
+
+    # Security Updates
+    - name: Update security configurations
+      include_role:
+        name: system_hardening
+        tasks_from: audit.yml
+      when: maintenance_update_security | default(false) | bool
+      tags:
+        - security
+        - updates
+
+    - name: Check for failed login attempts
+      shell: journalctl --unit=sshd --since="24 hours ago" | grep -i "failed\|invalid" | wc -l
+      register: failed_logins
+      changed_when: false
+      tags:
+        - security
+        - audit
+
+    - name: Display failed login attempts
+      debug:
+        msg: "Failed login attempts in last 24h: {{ failed_logins.stdout }}"
+      tags:
+        - security
+        - audit
+
+    # Backup Tasks
+    - name: Create system configuration backup
+      archive:
+        path:
+          - /etc
+          - /home/{{ ansible_user | default('lyeosmaouli') }}/.config
+          - /usr/local
+        dest: "/backup/system-config-{{ ansible_date_time.date }}.tar.gz"
+        mode: '0600'
+      when: maintenance_create_backup | default(false) | bool
+      tags:
+        - backup
+        - configuration
+
+    - name: Clean old backups
+      find:
+        paths: /backup
+        patterns: "system-config-*.tar.gz"
+        age: "{{ backup_retention_days }}d"
+        file_type: file
+      register: old_backups
+      when: maintenance_create_backup | default(false) | bool
+      tags:
+        - backup
+        - cleanup
+
+    - name: Remove old backups
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_backups.files | default([]) }}"
+      when: maintenance_create_backup | default(false) | bool
+      tags:
+        - backup
+        - cleanup
+
+    # Performance Optimization
+    - name: Update file database
+      command: updatedb
+      tags:
+        - optimization
+        - database
+
+    - name: Optimize SSD (TRIM)
+      command: fstrim -av
+      when: ansible_devices | selectattr('rotational', 'equalto', false) | list | length > 0
+      tags:
+        - optimization
+        - ssd
+
+    - name: Check and repair file system errors
+      shell: |
+        for device in $(lsblk -rno NAME,TYPE | awk '$2=="part"{print $1}'); do
+          if mountpoint -q "/dev/$device"; then
+            echo "Skipping mounted device: /dev/$device"
+          else
+            echo "Checking /dev/$device"
+            fsck -n "/dev/$device" 2>/dev/null || echo "Cannot check /dev/$device"
+          fi
+        done
+      register: fsck_results
+      changed_when: false
+      tags:
+        - health
+        - filesystem
+
+    - name: Display filesystem check results
+      debug:
+        msg: "{{ fsck_results.stdout_lines }}"
+      tags:
+        - health
+        - filesystem
+
+    # Final Status Report
+    - name: Generate maintenance report
+      template:
+        src: maintenance-report.j2
+        dest: "/tmp/maintenance-report-{{ ansible_date_time.date }}.txt"
+        mode: '0644'
+      vars:
+        report_date: "{{ ansible_date_time.iso8601 }}"
+        packages_updated: "{{ available_updates.stdout_lines | default([]) | length }}"
+        orphans_removed: "{{ orphan_cleanup.stdout | default('None') }}"
+        disk_usage_info: "{{ disk_usage.stdout }}"
+        memory_info: "{{ memory_usage.stdout }}"
+        failed_services: "{{ service_status.results | selectattr('status.ActiveState', 'defined') | selectattr('status.ActiveState', 'ne', 'active') | map(attribute='item') | list }}"
+        recent_errors: "{{ system_errors.stdout_lines | default([]) | length }}"
+        failed_login_count: "{{ failed_logins.stdout }}"
+      tags:
+        - report
+        - summary
+
+    - name: End maintenance logging
+      lineinfile:
+        path: "{{ maintenance_log }}"
+        line: "=== Maintenance completed at {{ ansible_date_time.iso8601 }} ==="
+      tags:
+        - always
+
+    - name: Display maintenance completion
+      debug:
+        msg: 
+          - "System maintenance completed successfully!"
+          - "Report generated: /tmp/maintenance-report-{{ ansible_date_time.date }}.txt"
+          - "Log file: {{ maintenance_log }}"
+      tags:
+        - always

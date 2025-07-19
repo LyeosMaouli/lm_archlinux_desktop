@@ -1,0 +1,290 @@
+---
+# Power Management Tasks
+# Optimize laptop power consumption and thermal management
+
+- name: Install power management packages
+  package:
+    name:
+      - tlp
+      - tlp-rdw
+      - powertop
+      - thermald
+      - intel-gpu-tools
+      - acpi
+      - acpi_call
+      - cpupower
+      - auto-cpufreq
+    state: present
+  become: true
+  tags:
+    - power
+    - packages
+
+- name: Install AUR power management tools
+  aur:
+    name:
+      - tlpui
+      - power-profiles-daemon
+    state: present
+    use: yay
+  become: false
+  tags:
+    - power
+    - aur
+
+- name: Configure TLP
+  template:
+    src: tlp.conf.j2
+    dest: /etc/tlp.conf
+    backup: true
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: restart tlp
+  tags:
+    - power
+    - tlp
+
+- name: Configure Intel GPU module parameters
+  template:
+    src: i915.conf.j2
+    dest: /etc/modprobe.d/i915.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: rebuild initramfs
+  tags:
+    - power
+    - gpu
+    - intel
+
+- name: Configure CPU frequency scaling
+  template:
+    src: cpufreq.conf.j2
+    dest: /etc/default/cpufreq
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  tags:
+    - power
+    - cpu
+
+- name: Configure thermal management
+  template:
+    src: thermal-conf.xml.j2
+    dest: /etc/thermald/thermal-conf.xml
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: restart thermald
+  tags:
+    - power
+    - thermal
+
+- name: Configure kernel parameters for power saving
+  template:
+    src: 99-power.conf.j2
+    dest: /etc/sysctl.d/99-power.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: reload sysctl
+  tags:
+    - power
+    - kernel
+
+- name: Configure logind for laptop lid and power events
+  template:
+    src: logind.conf.j2
+    dest: /etc/systemd/logind.conf
+    backup: true
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: restart systemd-logind
+  tags:
+    - power
+    - systemd
+
+- name: Configure sleep and hibernation
+  template:
+    src: sleep.conf.j2
+    dest: /etc/systemd/sleep.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  tags:
+    - power
+    - sleep
+
+- name: Create power management scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  loop:
+    - power-profile-performance
+    - power-profile-balanced
+    - power-profile-powersave
+    - battery-check
+  tags:
+    - power
+    - scripts
+
+- name: Enable power management services
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  become: true
+  loop:
+    - tlp
+    - thermald
+    - power-profiles-daemon
+  tags:
+    - power
+    - services
+
+- name: Disable conflicting services
+  systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  become: true
+  loop:
+    - laptop-mode-tools
+    - power-profiles-daemon  # Only if using TLP
+  ignore_errors: true
+  tags:
+    - power
+    - services
+
+- name: Configure udev rules for power management
+  template:
+    src: 99-power-management.rules.j2
+    dest: /etc/udev/rules.d/99-power-management.rules
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: reload udev
+  tags:
+    - power
+    - udev
+
+- name: Create power monitoring script
+  template:
+    src: power-monitor.sh.j2
+    dest: /usr/local/bin/power-monitor
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  tags:
+    - power
+    - monitoring
+
+- name: Setup power monitoring service
+  template:
+    src: power-monitor.service.j2
+    dest: /etc/systemd/system/power-monitor.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  tags:
+    - power
+    - monitoring
+
+- name: Setup power monitoring timer
+  template:
+    src: power-monitor.timer.j2
+    dest: /etc/systemd/system/power-monitor.timer
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: enable power monitor timer
+  tags:
+    - power
+    - monitoring
+
+- name: Configure laptop mode
+  lineinfile:
+    path: /proc/sys/vm/laptop_mode
+    line: "{{ '5' if performance.laptop_mode else '0' }}"
+    create: false
+  become: true
+  when: performance.laptop_mode is defined
+  tags:
+    - power
+    - laptop-mode
+
+- name: Optimize system for battery life
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  become: true
+  loop:
+    - { key: "vm.dirty_writeback_centisecs", value: "{{ performance.vm_dirty_writeback_centisecs | default(6000) }}" }
+    - { key: "vm.dirty_expire_centisecs", value: "{{ performance.vm_dirty_expire_centisecs | default(3000) }}" }
+    - { key: "vm.dirty_ratio", value: "{{ performance.vm_dirty_ratio | default(15) }}" }
+    - { key: "vm.dirty_background_ratio", value: "{{ performance.vm_dirty_background_ratio | default(5) }}" }
+    - { key: "kernel.nmi_watchdog", value: "{{ '0' if not performance.kernel_nmi_watchdog else '1' }}" }
+  tags:
+    - power
+    - sysctl
+
+- name: Configure Intel P-State driver
+  template:
+    src: intel-pstate.conf.j2
+    dest: /etc/modprobe.d/intel-pstate.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: rebuild initramfs
+  tags:
+    - power
+    - cpu
+    - intel
+
+- name: Create power profile switching desktop entries
+  template:
+    src: "{{ item }}.desktop.j2"
+    dest: "/usr/share/applications/{{ item }}.desktop"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  loop:
+    - power-performance
+    - power-balanced
+    - power-powersave
+  tags:
+    - power
+    - desktop
+
+- name: Setup battery health monitoring
+  template:
+    src: battery-health.sh.j2
+    dest: /usr/local/bin/battery-health
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  tags:
+    - power
+    - battery

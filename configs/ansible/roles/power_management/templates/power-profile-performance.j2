@@ -1,0 +1,47 @@
+#!/bin/bash
+# Power Profile: Performance Mode
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+# Check if running as root
+if [[ $EUID -eq 0 ]]; then
+    echo "Setting performance power profile..."
+    
+    # Set CPU governor to performance
+    echo "performance" | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
+    
+    # Set Intel P-State performance level
+    echo 0 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+    echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    
+    # Enable CPU turbo boost
+    echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+    
+    # Set Intel GPU to maximum performance
+    if [[ -f /sys/class/drm/card0/gt_max_freq_mhz ]]; then
+        MAX_FREQ=$(cat /sys/class/drm/card0/gt_max_freq_mhz)
+        echo $MAX_FREQ > /sys/class/drm/card0/gt_min_freq_mhz
+    fi
+    
+    # Disable WiFi power saving
+    for interface in /sys/class/net/*/wireless; do
+        if [[ -d "$interface" ]]; then
+            iwconfig "${interface%/wireless}" power off 2>/dev/null || true
+        fi
+    done
+    
+    # Set disk performance mode
+    for disk in /sys/block/sd* /sys/block/nvme*; do
+        if [[ -d "$disk" ]]; then
+            echo mq-deadline > "$disk/queue/scheduler" 2>/dev/null || true
+            echo 0 > "$disk/queue/add_random" 2>/dev/null || true
+        fi
+    done
+    
+    echo "Performance profile activated!"
+    notify-send "Power Profile" "Performance mode enabled" --icon=battery
+else
+    # Run as root via sudo
+    sudo "$0"
+fi

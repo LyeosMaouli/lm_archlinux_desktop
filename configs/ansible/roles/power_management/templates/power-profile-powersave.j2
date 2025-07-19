@@ -1,0 +1,60 @@
+#!/bin/bash
+# Power Profile: Power Save Mode
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+# Check if running as root
+if [[ $EUID -eq 0 ]]; then
+    echo "Setting power save profile..."
+    
+    # Set CPU governor to powersave
+    echo "powersave" | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
+    
+    # Set Intel P-State to power saving mode
+    echo 0 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+    echo {{ cpu.max_perf_pct_battery }} > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    
+    # Disable CPU turbo boost
+    echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
+    
+    # Set Intel GPU to minimum frequency
+    if [[ -f /sys/class/drm/card0/gt_min_freq_mhz ]]; then
+        MIN_FREQ=$(cat /sys/class/drm/card0/gt_min_freq_mhz)
+        echo $MIN_FREQ > /sys/class/drm/card0/gt_max_freq_mhz
+    fi
+    
+    # Enable WiFi power saving
+    for interface in /sys/class/net/*/wireless; do
+        if [[ -d "$interface" ]]; then
+            iwconfig "${interface%/wireless}" power on 2>/dev/null || true
+        fi
+    done
+    
+    # Enable USB autosuspend
+    for usb_device in /sys/bus/usb/devices/*/power/autosuspend; do
+        if [[ -f "$usb_device" ]]; then
+            echo 2 > "$usb_device" 2>/dev/null || true
+        fi
+    done
+    
+    # Set aggressive power management for disks
+    for disk in /sys/block/sd* /sys/block/nvme*; do
+        if [[ -d "$disk" ]]; then
+            echo 1 > "$disk/queue/add_random" 2>/dev/null || true
+        fi
+    done
+    
+    # Enable runtime PM for all PCI devices
+    for pci_device in /sys/bus/pci/devices/*/power/control; do
+        if [[ -f "$pci_device" ]]; then
+            echo auto > "$pci_device" 2>/dev/null || true
+        fi
+    done
+    
+    echo "Power save profile activated!"
+    notify-send "Power Profile" "Power save mode enabled" --icon=battery-low
+else
+    # Run as root via sudo
+    sudo "$0"
+fi

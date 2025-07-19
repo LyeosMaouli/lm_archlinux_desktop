@@ -1,0 +1,70 @@
+#!/bin/bash
+# Power Profile: Balanced Mode
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+# Check if running as root
+if [[ $EUID -eq 0 ]]; then
+    echo "Setting balanced power profile..."
+    
+    # Set CPU governor to ondemand or schedutil
+    if [[ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors ]]; then
+        if grep -q "schedutil" /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
+            echo "schedutil" | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
+        else
+            echo "ondemand" | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null
+        fi
+    fi
+    
+    # Set Intel P-State to balanced performance
+    echo 0 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+    echo 80 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    
+    # Enable CPU turbo boost but with limits
+    echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+    
+    # Set Intel GPU to balanced frequency
+    if [[ -f /sys/class/drm/card0/gt_max_freq_mhz ]] && [[ -f /sys/class/drm/card0/gt_min_freq_mhz ]]; then
+        MAX_FREQ=$(cat /sys/class/drm/card0/gt_max_freq_mhz)
+        MIN_FREQ=$(cat /sys/class/drm/card0/gt_min_freq_mhz)
+        MID_FREQ=$(( (MAX_FREQ + MIN_FREQ) / 2 ))
+        echo $MIN_FREQ > /sys/class/drm/card0/gt_min_freq_mhz
+        echo $MID_FREQ > /sys/class/drm/card0/gt_max_freq_mhz
+    fi
+    
+    # WiFi power saving depends on AC/Battery
+    if [[ -f /sys/class/power_supply/ADP*/online ]]; then
+        AC_ONLINE=$(cat /sys/class/power_supply/ADP*/online 2>/dev/null | head -1)
+        for interface in /sys/class/net/*/wireless; do
+            if [[ -d "$interface" ]]; then
+                if [[ "$AC_ONLINE" == "1" ]]; then
+                    # AC connected - disable WiFi power saving
+                    iwconfig "${interface%/wireless}" power off 2>/dev/null || true
+                else
+                    # On battery - enable WiFi power saving
+                    iwconfig "${interface%/wireless}" power on 2>/dev/null || true
+                fi
+            fi
+        done
+    fi
+    
+    # Balanced disk scheduling
+    for disk in /sys/block/sd* /sys/block/nvme*; do
+        if [[ -d "$disk" ]]; then
+            if [[ -f "$disk/queue/scheduler" ]]; then
+                if grep -q "mq-deadline" "$disk/queue/scheduler"; then
+                    echo mq-deadline > "$disk/queue/scheduler"
+                elif grep -q "deadline" "$disk/queue/scheduler"; then
+                    echo deadline > "$disk/queue/scheduler"
+                fi
+            fi
+        fi
+    done
+    
+    echo "Balanced profile activated!"
+    notify-send "Power Profile" "Balanced mode enabled" --icon=battery-good
+else
+    # Run as root via sudo
+    sudo "$0"
+fi
