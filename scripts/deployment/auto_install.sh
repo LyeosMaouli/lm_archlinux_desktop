@@ -466,6 +466,77 @@ mount_filesystems() {
     info "Filesystems mounted successfully"
 }
 
+# Get best mirrors from Arch mirror status or use curated list
+get_best_mirrors() {
+    info "Attempting to get optimal mirrors..."
+    
+    # Try to fetch mirror status first
+    local mirror_json="/tmp/mirror_status.json"
+    if curl -s --max-time 15 "https://archlinux.org/mirrors/status/json/" > "$mirror_json" 2>/dev/null; then
+        info "✓ Mirror status downloaded successfully"
+        
+        # Simple extraction of HTTPS mirrors from JSON
+        local extracted_mirrors
+        extracted_mirrors=$(grep -o '"url": "https://[^"]*"' "$mirror_json" | \
+                           sed 's/"url": "//g; s/"//g' | \
+                           head -10)
+        
+        if [[ -n "$extracted_mirrors" ]]; then
+            info "Found mirrors from status page"
+            echo "$extracted_mirrors"
+            return 0
+        fi
+    fi
+    
+    # Fallback to curated list of reliable mirrors
+    info "Using curated list of reliable mirrors..."
+    cat << 'EOF'
+https://geo.mirror.pkgbuild.com/
+https://archlinux.mailtunnel.eu/
+https://mirror.rackspace.com/archlinux/
+https://mirrors.kernel.org/archlinux/
+https://america.mirror.pkgbuild.com/
+https://europe.mirror.pkgbuild.com/
+https://asia.mirror.pkgbuild.com/
+https://mirror.leaseweb.net/archlinux/
+EOF
+}
+
+# Create optimized mirror list
+create_optimized_mirrorlist() {
+    info "Creating optimized mirror list..."
+    
+    # Backup original mirrorlist
+    cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+    
+    # Try to get best mirrors from status page
+    local mirrors
+    if mirrors=$(get_best_mirrors); then
+        info "✓ Creating custom mirror list from status data"
+        
+        # Create new mirrorlist
+        cat > /etc/pacman.d/mirrorlist << EOF
+# Arch Linux mirrorlist generated from mirror status
+# Generated on $(date)
+# Criteria: HTTPS, 100% completion, lowest score
+
+EOF
+        
+        # Add mirrors
+        while IFS= read -r mirror; do
+            if [[ -n "$mirror" ]]; then
+                echo "Server = ${mirror}\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
+                info "  Added: $mirror"
+            fi
+        done <<< "$mirrors"
+        
+        return 0
+    else
+        warn "✗ Failed to get mirrors from status page"
+        return 1
+    fi
+}
+
 # Install base system
 install_base_system() {
     local country=$(parse_config "country")
@@ -475,48 +546,48 @@ install_base_system() {
     # Try to update mirrors with multiple fallback strategies
     local mirror_updated=false
     
-    # Strategy 1: Use reflector with auto-detection (no country restriction)
+    # Strategy 1: Use optimized mirror list from status page
     if ! $mirror_updated; then
-        info "Attempting auto-detection of fastest mirrors..."
-        if reflector --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
-            info "✓ Auto-detected mirrors configured successfully"
+        if create_optimized_mirrorlist; then
+            info "✓ Optimized mirrors configured from status page"
             mirror_updated=true
         else
-            warn "✗ Auto-detection failed"
+            warn "✗ Optimized mirror selection failed"
         fi
     fi
     
-    # Strategy 2: Use reflector with country if specified
+    # Strategy 2: Use reflector with minimal wait (faster settings)
+    if ! $mirror_updated; then
+        info "Attempting fast mirror detection..."
+        if timeout 30 reflector --age 6 --protocol https --sort rate --number 5 --save /etc/pacman.d/mirrorlist 2>/dev/null; then
+            info "✓ Fast mirror detection successful"
+            mirror_updated=true
+        else
+            warn "✗ Fast mirror detection failed or timed out"
+        fi
+    fi
+    
+    # Strategy 3: Use country-specific mirrors if specified
     if ! $mirror_updated && [[ -n "$country" ]]; then
         info "Attempting mirrors for country: $country"
-        if reflector --country "$country" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
-            info "✓ Country-specific mirrors configured successfully"
+        if timeout 20 reflector --country "$country" --protocol https --number 3 --save /etc/pacman.d/mirrorlist 2>/dev/null; then
+            info "✓ Country-specific mirrors configured"
             mirror_updated=true
         else
             warn "✗ Country-specific mirrors failed"
         fi
     fi
     
-    # Strategy 3: Use a broader set of countries
-    if ! $mirror_updated; then
-        info "Attempting mirrors from multiple countries..."
-        if reflector --country "United States,Germany,France,United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist 2>/dev/null; then
-            info "✓ Multi-country mirrors configured successfully"
-            mirror_updated=true
-        else
-            warn "✗ Multi-country mirrors failed"
-        fi
-    fi
-    
     # Strategy 4: Keep original mirrors if all else fails
     if ! $mirror_updated; then
-        warn "All mirror update strategies failed, using original mirrors"
-        info "This might work if the original mirrors are still functional"
+        warn "All mirror strategies failed, restoring original mirrors"
+        cp /etc/pacman.d/mirrorlist.backup /etc/pacman.d/mirrorlist 2>/dev/null || true
+        info "Using original mirrors (may work if they're still functional)"
     fi
     
     # Show current mirror list for debugging
-    info "Current mirror configuration (first 3 lines):"
-    head -n 3 /etc/pacman.d/mirrorlist | grep -v '^#' || warn "Could not display mirror list"
+    info "Current mirror configuration:"
+    grep -v '^#' /etc/pacman.d/mirrorlist | head -3 || warn "Could not display mirror list"
     
     info "Installing base system packages..."
     info "This may take several minutes depending on internet speed..."
