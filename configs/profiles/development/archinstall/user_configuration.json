@@ -1,0 +1,68 @@
+{
+    "!users": [
+        {
+            "username": "lyeosmaouli",
+            "!password": null,
+            "sudo": true
+        }
+    ],
+    "archinstall-language": "English",
+    "audio_config": {
+        "audio": "pipewire"
+    },
+    "bootloader": "systemd-bootctl",
+    "config_version": "2.6.0",
+    "debug": false,
+    "disk_config": {
+        "config_type": "manual_partitioning",
+        "device_modifications": []
+    },
+    "hostname": "phoenix-dev",
+    "kernels": [
+        "linux",
+        "linux-zen"
+    ],
+    "locale_config": {
+        "kb_layout": "fr",
+        "sys_enc": "UTF-8",
+        "sys_lang": "en_US"
+    },
+    "mirror_config": {
+        "custom_mirrors": [],
+        "mirror_regions": {
+            "Worldwide": [
+                "https://mirror.rackspace.com/archlinux/$repo/os/$arch"
+            ]
+        }
+    },
+    "network_config": {
+        "type": "nm"
+    },
+    "no_pkg_lookups": false,
+    "ntp": true,
+    "offline": false,
+    "packages": [
+        "base-devel",
+        "git",
+        "openssh",
+        "reflector",
+        "networkmanager",
+        "sudo",
+        "neovim",
+        "htop",
+        "docker",
+        "nodejs",
+        "npm",
+        "python",
+        "python-pip",
+        "rust",
+        "go"
+    ],
+    "parallel downloads": 5,
+    "profile_config": null,
+    "script": "guided",
+    "silent": false,
+    "swap": true,
+    "timezone": "Europe/Paris",
+    "version": "2.6.0"
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=System maintenance timer
+Requires=maintenance.service
+
+[Timer]
+OnCalendar={{ maintenance_schedule | default("weekly") }}
+Persistent=true
+RandomizedDelaySec={{ maintenance_randomize | default("1h") }}
+
+[Install]
+WantedBy=timers.target

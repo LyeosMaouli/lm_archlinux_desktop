@@ -1,0 +1,16 @@
+[Unit]
+Description=System maintenance service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart={{ maintenance_script_path | default("/usr/local/bin/system-maintenance.sh") }}
+Environment=MAINTENANCE_LOG=/var/log/maintenance.log
+Environment=CLEANUP_ORPHANS={{ cleanup_orphans | default("true") }}
+Environment=UPDATE_MIRRORS={{ update_mirrors | default("true") }}
+Environment=VACUUM_JOURNALS={{ vacuum_journals | default("true") }}
+
+[Install]
+WantedBy=multi-user.target

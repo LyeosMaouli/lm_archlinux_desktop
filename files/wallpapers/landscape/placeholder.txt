@@ -1,0 +1,3 @@
+Landscape wallpapers directory
+Place landscape orientation wallpapers here (1920x1080, 2560x1440, 3840x2160)
+Recommended: nature scenes, cityscapes, mountains, oceans

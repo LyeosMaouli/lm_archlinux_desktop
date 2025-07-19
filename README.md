@@ -26,7 +26,7 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 - **SSH Hardening** - Secure remote access configuration
 
 ### 📦 Package Management
-- **Pacman** - Official Arch repositories with UK mirrors
+- **Pacman** - Official Arch repositories with fastest mirrors
 - **Yay** - Secure AUR helper with verification
 - **Security Scanning** - Package integrity verification
 - **Auto-Updates** - Optional automated update system
@@ -59,23 +59,48 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 - **Bootloader**: systemd-boot (UEFI)
 - **Filesystem**: ext4 with optional LUKS encryption
 - **Swap**: Hybrid zram + hibernation swapfile
-- **Locale**: UK mirrors, en_US.UTF-8, AZERTY keyboard
+- **Locale**: Fastest mirrors, en_US.UTF-8, AZERTY keyboard
 - **Timezone**: Europe/Paris
 
 ## 🚀 Quick Start
 
-### 🤖 Fully Automated Installation (Zero Manual Steps!)
-**NEW**: Complete automation from ISO to desktop in one command!
+### 🌟 **Zero-Touch Installation (3 Questions = Complete Desktop!)**
+**REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland!
 
 ```bash
 # 1. Boot from Arch Linux ISO
-# 2. Run the master automation:
+# 2. Run this single command:
 
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh | bash
+
+# Answer just 3 questions:
+# 👤 Your username
+# 💻 Computer name  
+# 🔒 Enable encryption? (Y/n)
+#
+# Everything else is auto-detected!
+# 30-60 minutes later: Complete modern desktop ready!
+```
+
+**What makes it special:**
+- ✅ **Auto-detects**: Timezone, keyboard, best disk, hardware
+- ✅ **Smart networking**: Ethernet auto-connect, WiFi setup if needed
+- ✅ **Secure passwords**: Prompted safely, never stored in files
+- ✅ **Zero configuration**: No YAML files to edit
+- ✅ **Complete automation**: From ISO to desktop in one command
+
+### 🤖 Alternative Options
+
+**Quick Setup (5 questions):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/quick_deploy.sh | bash
+```
+
+**Advanced/Custom (manual config):**
+```bash
 curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
 chmod +x deploy.sh
 ./deploy.sh auto
-
-# That's it! 30-60 minutes later: Complete Hyprland desktop ready!
 ```
 
 **Features:**

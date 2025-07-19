@@ -1,0 +1,14 @@
+[Unit]
+Description=Power monitoring service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/power-monitor monitor
+Restart=always
+RestartSec=30
+User=root
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

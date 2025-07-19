@@ -64,7 +64,7 @@ desktop:
 # Package Configuration
 packages:
   mirrors:
-    country: "United Kingdom"
+    # country: "United Kingdom"  # Commented out to auto-detect fastest mirrors
     protocol: "https"
     age: 12
   aur:
@@ -94,10 +94,10 @@ security:
 
 # Automation Configuration
 automation:
-  skip_confirmations: false  # Set to true for fully unattended
-  auto_reboot: false  # Auto reboot after installation
+  skip_confirmations: true   # Set to true for fully unattended
+  auto_reboot: true          # Auto reboot after installation
   backup_configs: true
-  log_level: "info"  # debug, info, warning, error
+  log_level: "info"          # debug, info, warning, error
 
 # VirtualBox Testing Configuration (when running in VM)
 virtualbox:

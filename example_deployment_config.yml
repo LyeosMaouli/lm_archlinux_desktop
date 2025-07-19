@@ -3,38 +3,38 @@
 
 # System Configuration
 system:
-  hostname: "phoenix"                    # Your computer name
-  timezone: "Europe/Paris"               # Your timezone
+  hostname: "workstation"               # Your computer name
+  timezone: "America/New_York"           # Your timezone
   locale: "en_US.UTF-8"                 # System language
-  keymap: "fr"                          # Keyboard layout (us, fr, de, etc.)
-  country: "United Kingdom"             # For package mirrors
+  keymap: "us"                          # Keyboard layout (us, fr, de, etc.)
+  # country: "United States"           # For package mirrors (auto-detect fastest if commented)
 
 # User Configuration
 user:
-  username: "lyeosmaouli"               # Your username
+  username: "john"                      # Your username
   password: ""                          # Leave empty to be prompted securely
-  shell: "/bin/bash"                    # Your preferred shell
+  shell: "/bin/zsh"                     # Your preferred shell
 
 # Network Configuration (for automatic setup)
 network:
   wifi:
     enabled: true                       # Enable WiFi auto-connection
-    ssid: "Your-WiFi-Network"          # Your WiFi network name
-    password: "your-wifi-password"      # Your WiFi password
-    security: "wpa2"                   # wpa2, wpa3, or open
+    ssid: "HomeNetwork_5G"              # Your WiFi network name
+    password: "MySecureWiFiPassword123"  # Your WiFi password
+    security: "wpa3"                   # wpa2, wpa3, or open
   ethernet:
     enabled: true                       # Enable ethernet (usually automatic)
     dhcp: true
 
 # Disk Configuration
 disk:
-  device: "/dev/nvme0n1"               # Your primary disk (/dev/sda for older systems)
+  device: "/dev/sda"                   # Your primary disk (/dev/nvme0n1 for NVMe, /dev/sda for SATA)
   encryption:
     enabled: true                       # Enable full disk encryption (recommended)
     passphrase: ""                     # Leave empty to be prompted securely
   partitions:
-    efi_size: "512M"                   # EFI partition size
-    swap_size: "4G"                    # Hibernation swapfile size
+    efi_size: "1G"                     # EFI partition size
+    swap_size: "8G"                    # Hibernation swapfile size (match RAM size)
 
 # Desktop Configuration
 desktop:
@@ -42,14 +42,18 @@ desktop:
   display_manager: "sddm"              # Login manager
   theme: "catppuccin-mocha"           # Color theme
   auto_login: false                    # Enable automatic login (not recommended)
+  wallpaper: "nature-landscape"        # Default wallpaper category
 
 # Package Configuration
 packages:
   aur:
     packages:                          # AUR packages to install
       - visual-studio-code-bin
+      - firefox-developer-edition
       - discord
-      - zoom
+      - spotify
+      - slack-desktop
+      - docker-desktop
       - hyprpaper
       - bibata-cursor-theme
 
@@ -80,8 +84,8 @@ virtualbox:
 # Development Tools (optional)
 development:
   git:
-    username: ""                      # Your Git username (for git config)
-    email: ""                         # Your Git email (for git config)
+    username: "John Doe"              # Your Git username (for git config)
+    email: "john.doe@example.com"     # Your Git email (for git config)
   ssh_keys:
     generate: true                    # Generate SSH keys automatically
     type: "ed25519"                  # SSH key type (ed25519 recommended)
@@ -91,6 +95,9 @@ development:
     - htop
     - tree
     - ripgrep
+    - docker
+    - kubectl
+    - terraform
 
 # SECURITY: SSH keys are automatically generated - no manual key management needed
 # The system creates secure SSH keys and configures them properly for you

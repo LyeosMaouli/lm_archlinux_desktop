@@ -159,3 +159,7 @@ Each profile has its own archinstall and ansible variable configurations.
 ## Maintenance Guidelines
 
 - Always keep github up to date
+
+## Automation Philosophy
+
+- The user should have the least amount of action to take. Everything should be automated.

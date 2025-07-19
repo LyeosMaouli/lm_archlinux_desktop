@@ -1,0 +1,16 @@
+[Unit]
+Description=Zram swap
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/bash -c 'echo {{ zram_algorithm | default("zstd") }} > /sys/block/zram0/comp_algorithm'
+ExecStart=/usr/bin/bash -c 'echo {{ zram_size | default("4G") }} > /sys/block/zram0/disksize'
+ExecStart=/usr/bin/mkswap /dev/zram0
+ExecStart=/usr/bin/swapon -p {{ zram_priority | default(100) }} /dev/zram0
+ExecStop=/usr/bin/swapoff /dev/zram0
+ExecStop=/usr/bin/bash -c 'echo 1 > /sys/block/zram0/reset'
+
+[Install]
+WantedBy=multi-user.target
