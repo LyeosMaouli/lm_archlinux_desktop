@@ -134,15 +134,48 @@ update_clock() {
     info "System clock synchronized"
 }
 
+# Detect available disk devices
+detect_disk_device() {
+    local config_device=$(parse_nested_config "disk" "device")
+    
+    # If device specified in config and exists, use it
+    if [[ -n "$config_device" ]] && [[ -b "$config_device" ]]; then
+        echo "$config_device"
+        return 0
+    fi
+    
+    # Auto-detect common disk devices
+    local devices=("/dev/nvme0n1" "/dev/sda" "/dev/vda" "/dev/hda")
+    
+    for device in "${devices[@]}"; do
+        if [[ -b "$device" ]]; then
+            echo "$device"
+            return 0
+        fi
+    done
+    
+    # If no device found, return config device anyway (will error later)
+    echo "${config_device:-/dev/sda}"
+}
+
+# Get partition naming based on device type
+get_partition_name() {
+    local device="$1"
+    local part_num="$2"
+    
+    # NVMe devices use p prefix (nvme0n1p1, nvme0n1p2)
+    if [[ "$device" =~ nvme ]]; then
+        echo "${device}p${part_num}"
+    else
+        # SATA/SCSI devices use direct numbering (sda1, sda2)
+        echo "${device}${part_num}"
+    fi
+}
+
 # Setup disk partitioning
 setup_partitions() {
-    local disk_device=$(parse_nested_config "disk" "device")
+    local disk_device=$(detect_disk_device)
     local efi_size=$(parse_nested_config "disk" "efi_size")
-    
-    if [[ -z "$disk_device" ]]; then
-        disk_device="/dev/nvme0n1"
-        warn "No disk device specified, using default: $disk_device"
-    fi
     
     if [[ -z "$efi_size" ]]; then
         efi_size="512M"
@@ -150,26 +183,68 @@ setup_partitions() {
     
     info "Setting up partitions on $disk_device..."
     
+    # Verify device exists
+    if [[ ! -b "$disk_device" ]]; then
+        error "Disk device $disk_device does not exist or is not accessible"
+    fi
+    
+    # Show current disk info
+    info "Disk information:"
+    lsblk "$disk_device" || warn "Could not display disk information"
+    
     # Unmount any existing mounts
     umount -R /mnt 2>/dev/null || true
     
+    # Close any existing LUKS mappings
+    cryptsetup close cryptroot 2>/dev/null || true
+    
     # Create partition table
+    info "Creating GPT partition table..."
     parted "$disk_device" --script mklabel gpt
+    
+    info "Creating EFI partition (${efi_size})..."
     parted "$disk_device" --script mkpart ESP fat32 1MiB "${efi_size}"
     parted "$disk_device" --script set 1 esp on
+    
+    info "Creating root partition..."
     parted "$disk_device" --script mkpart primary ext4 "${efi_size}" 100%
     
-    info "Partitions created successfully"
+    # Wait for partition creation
+    sleep 2
+    partprobe "$disk_device" || warn "partprobe failed"
+    sleep 1
+    
+    # Export partition names for use by other functions
+    export EFI_PARTITION=$(get_partition_name "$disk_device" "1")
+    export ROOT_PARTITION=$(get_partition_name "$disk_device" "2")
+    export DISK_DEVICE="$disk_device"
+    
+    info "Partitions created successfully:"
+    info "  EFI: $EFI_PARTITION"
+    info "  Root: $ROOT_PARTITION"
+    
+    # Verify partitions exist
+    if [[ ! -b "$EFI_PARTITION" ]]; then
+        error "EFI partition $EFI_PARTITION was not created"
+    fi
+    
+    if [[ ! -b "$ROOT_PARTITION" ]]; then
+        error "Root partition $ROOT_PARTITION was not created"
+    fi
 }
 
 # Setup encryption
 setup_encryption() {
-    local disk_device=$(parse_nested_config "disk" "device")
     local encryption_enabled=$(parse_nested_config "disk" "enabled")
     local passphrase=$(parse_nested_config "disk" "passphrase")
     
     if [[ "$encryption_enabled" == "true" ]]; then
-        info "Setting up LUKS encryption..."
+        info "Setting up LUKS encryption on $ROOT_PARTITION..."
+        
+        # Verify root partition exists
+        if [[ ! -b "$ROOT_PARTITION" ]]; then
+            error "Root partition $ROOT_PARTITION does not exist"
+        fi
         
         # Prompt for passphrase if not provided
         if [[ -z "$passphrase" ]]; then
@@ -185,50 +260,71 @@ setup_encryption() {
             fi
         fi
         
-        # Setup LUKS
-        echo -n "$passphrase" | cryptsetup luksFormat "${disk_device}p2" -
-        echo -n "$passphrase" | cryptsetup open "${disk_device}p2" cryptroot -
+        # Wipe any existing filesystem signatures
+        wipefs -a "$ROOT_PARTITION" || warn "Failed to wipe filesystem signatures"
+        
+        # Setup LUKS with more explicit parameters
+        info "Creating LUKS container..."
+        echo -n "$passphrase" | cryptsetup luksFormat \
+            --type luks2 \
+            --cipher aes-xts-plain64 \
+            --key-size 512 \
+            --hash sha512 \
+            --use-random \
+            "$ROOT_PARTITION" - || error "Failed to create LUKS container"
+        
+        info "Opening LUKS container..."
+        echo -n "$passphrase" | cryptsetup open "$ROOT_PARTITION" cryptroot - || error "Failed to open LUKS container"
         
         export ENCRYPTED_ROOT="/dev/mapper/cryptroot"
         export ENCRYPTION_ENABLED="true"
         
-        info "LUKS encryption configured"
+        info "LUKS encryption configured successfully"
     else
-        export ENCRYPTED_ROOT="${disk_device}p2"
+        export ENCRYPTED_ROOT="$ROOT_PARTITION"
         export ENCRYPTION_ENABLED="false"
-        info "Encryption disabled, using plain partition"
+        info "Encryption disabled, using plain partition: $ROOT_PARTITION"
     fi
 }
 
 # Format filesystems
 format_filesystems() {
-    local disk_device=$(parse_nested_config "disk" "device")
-    
     info "Formatting filesystems..."
     
     # Format EFI partition
-    mkfs.fat -F32 "${disk_device}p1"
+    info "Formatting EFI partition: $EFI_PARTITION"
+    mkfs.fat -F32 "$EFI_PARTITION" || error "Failed to format EFI partition"
     
     # Format root partition
-    mkfs.ext4 "$ENCRYPTED_ROOT"
+    info "Formatting root partition: $ENCRYPTED_ROOT"
+    mkfs.ext4 -F "$ENCRYPTED_ROOT" || error "Failed to format root partition"
     
-    info "Filesystems formatted"
+    info "Filesystems formatted successfully"
 }
 
 # Mount filesystems
 mount_filesystems() {
-    local disk_device=$(parse_nested_config "disk" "device")
-    
     info "Mounting filesystems..."
     
     # Mount root
-    mount "$ENCRYPTED_ROOT" /mnt
+    info "Mounting root filesystem: $ENCRYPTED_ROOT"
+    mount "$ENCRYPTED_ROOT" /mnt || error "Failed to mount root filesystem"
     
     # Create and mount EFI
+    info "Creating EFI mount point and mounting: $EFI_PARTITION"
     mkdir -p /mnt/boot
-    mount "${disk_device}p1" /mnt/boot
+    mount "$EFI_PARTITION" /mnt/boot || error "Failed to mount EFI partition"
     
-    info "Filesystems mounted"
+    # Verify mounts
+    if ! mountpoint -q /mnt; then
+        error "Root filesystem not properly mounted"
+    fi
+    
+    if ! mountpoint -q /mnt/boot; then
+        error "EFI partition not properly mounted"
+    fi
+    
+    info "Filesystems mounted successfully"
 }
 
 # Install base system
@@ -299,8 +395,6 @@ EOF
 
 # Configure bootloader
 configure_bootloader() {
-    local disk_device=$(parse_nested_config "disk" "device")
-    
     info "Configuring systemd-boot..."
     
     # Create bootloader configuration script
@@ -326,7 +420,7 @@ title    Arch Linux
 linux    /vmlinuz-linux
 initrd   /intel-ucode.img
 initrd   /initramfs-linux.img
-options  cryptdevice=${disk_device}p2:cryptroot root=/dev/mapper/cryptroot rw quiet
+options  cryptdevice=$ROOT_PARTITION:cryptroot root=/dev/mapper/cryptroot rw quiet
 ENTRY_EOF
 else
     cat > /boot/loader/entries/arch.conf << 'ENTRY_EOF'
@@ -334,7 +428,7 @@ title    Arch Linux
 linux    /vmlinuz-linux
 initrd   /intel-ucode.img
 initrd   /initramfs-linux.img
-options  root=${disk_device}p2 rw quiet
+options  root=$ROOT_PARTITION rw quiet
 ENTRY_EOF
 fi
 
