@@ -628,10 +628,9 @@ create_optimized_mirrorlist() {
     # Backup original mirrorlist
     cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
     
-    # Try to get best mirrors from status page
-    info "Attempting to get optimal mirrors..."
+    # Try to get best mirrors from status page (no logging during capture)
     local mirrors
-    if mirrors=$(get_best_mirrors); then
+    if mirrors=$(get_best_mirrors 2>/dev/null); then
         info "✓ Mirror status downloaded successfully"
         info "✓ Creating custom mirror list from status data"
         
@@ -643,15 +642,23 @@ create_optimized_mirrorlist() {
 
 EOF
         
-        # Add mirrors (clean URLs only, no log pollution)
+        # Add mirrors (clean URLs only, validate format)
+        local mirror_count=0
         while IFS= read -r mirror; do
-            if [[ -n "$mirror" && "$mirror" =~ ^https?:// ]]; then
+            if [[ -n "$mirror" && "$mirror" =~ ^https://[a-zA-Z0-9.-]+/ ]]; then
                 echo "Server = ${mirror}\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
                 info "  Added: $mirror"
+                mirror_count=$((mirror_count + 1))
             fi
         done <<< "$mirrors"
         
-        return 0
+        if [[ $mirror_count -gt 0 ]]; then
+            info "✓ Added $mirror_count mirrors to mirrorlist"
+            return 0
+        else
+            warn "✗ No valid mirrors found in mirror status"
+            return 1
+        fi
     else
         warn "✗ Failed to get mirrors from status page"
         return 1
