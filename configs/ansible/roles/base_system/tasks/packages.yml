@@ -16,6 +16,7 @@
              --age 12 \
              --protocol https \
              --sort rate \
+             --completion-percent 100 \
              --save /etc/pacman.d/mirrorlist
   changed_when: true
   notify: update package cache
