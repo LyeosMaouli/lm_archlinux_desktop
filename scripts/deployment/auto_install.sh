@@ -157,12 +157,62 @@ setup_wifi_iwctl() {
     sleep 5
 }
 
-# Update system clock
+# Update system clock with comprehensive time sync
 update_clock() {
-    info "Updating system clock..."
+    info "Updating system clock with comprehensive synchronization..."
+    
+    # Check current time status
+    info "Current system time status:"
+    timedatectl status || warn "Failed to get time status"
+    
+    # Enable NTP synchronization with timeout
+    info "Enabling NTP synchronization..."
     timedatectl set-ntp true
-    sleep 2
-    info "System clock synchronized"
+    
+    # Wait for time synchronization with longer timeout
+    info "Waiting for time synchronization (up to 60 seconds)..."
+    local sync_timeout=60
+    local sync_count=0
+    
+    while [[ $sync_count -lt $sync_timeout ]]; do
+        if timedatectl status | grep -q "synchronized: yes"; then
+            success "System clock synchronized successfully"
+            break
+        elif timedatectl status | grep -q "NTP synchronized: yes"; then
+            success "NTP synchronization confirmed"
+            break
+        fi
+        
+        sleep 1
+        sync_count=$((sync_count + 1))
+        
+        # Show progress every 15 seconds
+        if [[ $((sync_count % 15)) == 0 ]]; then
+            info "Still waiting for time sync... ($sync_count/$sync_timeout seconds)"
+        fi
+    done
+    
+    # Manual time sync if automatic fails
+    if [[ $sync_count -ge $sync_timeout ]]; then
+        warn "Automatic time sync timed out, attempting manual sync..."
+        
+        # Try to sync with multiple NTP servers
+        local ntp_servers=("time.cloudflare.com" "pool.ntp.org" "time.google.com")
+        for server in "${ntp_servers[@]}"; do
+            info "Trying NTP server: $server"
+            if timeout 10 ntpd -qg -p "$server" 2>/dev/null; then
+                success "Manual time sync successful with $server"
+                break
+            fi
+        done
+    fi
+    
+    # Final time check and display
+    info "Final system time status:"
+    date
+    timedatectl status | head -5 || warn "Failed to display final time status"
+    
+    info "System clock configuration complete"
 }
 
 # Simplified disk device detection
@@ -560,6 +610,62 @@ EOF
     fi
 }
 
+# Fix pacman keyring issues (critical for 2025)
+fix_pacman_keyring() {
+    info "Fixing pacman keyring and signature issues..."
+    
+    # Check if keyring directory exists and has issues
+    if [[ -d "/etc/pacman.d/gnupg" ]]; then
+        info "Existing keyring found, checking for corruption..."
+        
+        # Test keyring integrity
+        if ! pacman-key --list-keys >/dev/null 2>&1; then
+            warn "Keyring appears corrupted, resetting..."
+            rm -rf /etc/pacman.d/gnupg/*
+        fi
+    fi
+    
+    # Kill any running gpg-agent processes that might interfere
+    info "Stopping any running GPG agents..."
+    killall gpg-agent 2>/dev/null || true
+    
+    # Initialize keyring if needed
+    if [[ ! -f "/etc/pacman.d/gnupg/pubring.gpg" ]]; then
+        info "Initializing pacman keyring..."
+        pacman-key --init || {
+            warn "Keyring init failed, trying alternative approach..."
+            rm -rf /etc/pacman.d/gnupg
+            pacman-key --init || error "Failed to initialize keyring"
+        }
+    fi
+    
+    # Populate with Arch Linux keys
+    info "Populating keyring with Arch Linux keys..."
+    pacman-key --populate archlinux || {
+        warn "Key population failed, trying manual approach..."
+        
+        # Alternative approach: manually refresh keys
+        info "Attempting manual key refresh..."
+        pacman-key --refresh-keys || warn "Manual key refresh failed"
+    }
+    
+    # Verify keyring is working
+    info "Verifying keyring functionality..."
+    if pacman-key --list-keys | grep -q "Arch Linux"; then
+        success "Keyring successfully configured"
+    else
+        warn "Keyring verification inconclusive, proceeding with caution"
+    fi
+    
+    # Update archlinux-keyring package if possible
+    info "Attempting to update archlinux-keyring package..."
+    if timeout 120 pacman -Sy --noconfirm archlinux-keyring 2>/dev/null; then
+        success "Keyring package updated successfully"
+    else
+        warn "Could not update keyring package, continuing with existing keys"
+    fi
+}
+
 # Install base system
 install_base_system() {
     local country=$(parse_config "country")
@@ -614,6 +720,10 @@ install_base_system() {
     
     info "Installing base system packages..."
     info "This may take several minutes depending on internet speed..."
+    
+    # Fix potential keyring issues first (critical for 2025)
+    info "Initializing and updating pacman keyring..."
+    fix_pacman_keyring
     
     # Clear pacman cache and force database refresh
     info "Clearing package cache and forcing database refresh..."

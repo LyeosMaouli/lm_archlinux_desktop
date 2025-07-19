@@ -372,6 +372,27 @@ automated_disk_setup() {
     success "VM disk configuration updated"
 }
 
+# Fix pacman keyring issues in VM environment
+fix_vm_keyring() {
+    info "Fixing pacman keyring for VM environment..."
+    
+    # Kill any gpg-agent processes
+    killall gpg-agent 2>/dev/null || true
+    
+    # Check keyring status
+    if [[ ! -d "/etc/pacman.d/gnupg" ]] || ! pacman-key --list-keys >/dev/null 2>&1; then
+        info "Keyring missing or corrupted, initializing..."
+        rm -rf /etc/pacman.d/gnupg 2>/dev/null || true
+        pacman-key --init || warn "Keyring init failed"
+        pacman-key --populate archlinux || warn "Key population failed"
+    fi
+    
+    # Try to update keyring package
+    timeout 60 pacman -Sy --noconfirm archlinux-keyring 2>/dev/null || warn "Could not update keyring package"
+    
+    success "Keyring configuration complete"
+}
+
 # Install Git if needed with enhanced mirror handling
 ensure_git() {
     # Check if git is already available (it should be on live ISO)
@@ -391,6 +412,10 @@ ensure_git() {
         # Clear pacman cache and configure for better downloads
         info "Configuring pacman for reliable package installation..."
         rm -rf /var/lib/pacman/sync/* 2>/dev/null || true
+        
+        # Fix keyring issues first (critical for 2025)
+        info "Checking and fixing pacman keyring..."
+        fix_vm_keyring
         
         # Add download timeout configuration if not already present
         if ! grep -q "XferCommand.*curl.*retry" /etc/pacman.conf; then
