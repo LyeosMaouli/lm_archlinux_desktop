@@ -117,7 +117,9 @@ chmod +x vm_test.sh
 ### 📚 Quick Links
 - **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions
 - **[VirtualBox Testing](docs/virtualbox-testing-guide.md)** - Safe testing environment setup
-- **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - Project status and completion checklist
+- **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
+- **[Project Structure](docs/project-structure.md)** - Complete codebase documentation
+- **[Security Policy](SECURITY.md)** - Security guidelines and best practices
 
 ### 🎯 Available Make Targets
 ```bash

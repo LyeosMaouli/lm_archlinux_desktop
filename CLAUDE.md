@@ -13,11 +13,17 @@ This is an Arch Linux desktop automation project that uses Ansible to transform 
 
 The project is organized around infrastructure automation best practices:
 
-- `configs/archinstall/` - Archinstall configuration files for Stage 1
-- `configs/ansible/` - Ansible playbooks, roles, and configuration for Stage 2
+- `configs/ansible/` - Ansible playbooks, roles, and configuration
 - `scripts/` - Automation scripts for deployment, maintenance, and utilities
+- `docs/` - Complete project documentation and guides
 - `templates/` - Jinja2 templates for system configuration files
 - `files/` - Static files (wallpapers, fonts, themes)
+
+## Documentation
+
+- **Main documentation**: See `docs/README.md` for complete index
+- **Key guides**: `docs/installation-guide.md`, `docs/project-structure.md`
+- **Security**: `SECURITY.md` contains security policies and guidelines
 
 ## Key Architecture Decisions
 
