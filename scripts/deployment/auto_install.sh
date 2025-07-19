@@ -96,11 +96,42 @@ setup_network() {
         fi
     fi
     
-    # Test connectivity
-    if ping -c 3 archlinux.org >/dev/null 2>&1; then
+    # Test connectivity with detailed reporting
+    info "Testing internet connectivity..."
+    
+    # Try multiple connectivity tests
+    local connectivity_ok=false
+    
+    if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+        info "✓ DNS server (8.8.8.8) reachable"
+        connectivity_ok=true
+    else
+        warn "✗ Cannot reach DNS server (8.8.8.8)"
+    fi
+    
+    if ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
+        info "✓ Arch Linux website reachable"
+        connectivity_ok=true
+    else
+        warn "✗ Cannot reach archlinux.org"
+    fi
+    
+    if ping -c 1 -W 5 google.com >/dev/null 2>&1; then
+        info "✓ Google.com reachable"
+        connectivity_ok=true
+    else
+        warn "✗ Cannot reach google.com"
+    fi
+    
+    if [[ "$connectivity_ok" == true ]]; then
         info "Internet connectivity confirmed"
     else
-        error "No internet connectivity. Please check network configuration."
+        # Show network interface status for debugging
+        info "Network interface status:"
+        ip addr show | grep -E "(inet|link/ether)" || warn "Failed to show network interfaces"
+        info "Routing table:"
+        ip route show || warn "Failed to show routing table"
+        error "No internet connectivity. Please check VM network settings."
     fi
 }
 
@@ -134,38 +165,38 @@ update_clock() {
     info "System clock synchronized"
 }
 
-# Detect available disk devices
+# Simplified disk device detection
 detect_disk_device() {
     local config_device=$(parse_nested_config "disk" "device")
     
-    info "Disk detection debug:"
-    info "  Config device: '$config_device'"
+    info "Detecting disk device..." >&2
+    info "Config specified: '$config_device'" >&2
     
-    # If device specified in config and exists, use it
-    if [[ -n "$config_device" ]] && [[ -b "$config_device" ]]; then
-        info "  Using config device: $config_device"
-        echo "$config_device"
-        return 0
-    fi
-    
-    # Auto-detect common disk devices
-    local devices=("/dev/nvme0n1" "/dev/sda" "/dev/vda" "/dev/hda")
-    
-    info "  Checking available devices:"
-    for device in "${devices[@]}"; do
-        if [[ -b "$device" ]]; then
-            info "  ✓ Found: $device"
-            echo "$device"
+    # If device specified in config, use it
+    if [[ -n "$config_device" ]]; then
+        if [[ -b "$config_device" ]]; then
+            info "Using config device: $config_device" >&2
+            echo "$config_device"
             return 0
         else
-            info "  ✗ Missing: $device"
+            warn "Config device $config_device not accessible, auto-detecting..." >&2
+        fi
+    fi
+    
+    # Auto-detect by trying devices in order
+    local devices=("/dev/sda" "/dev/vda" "/dev/nvme0n1" "/dev/hda")
+    
+    for device in "${devices[@]}"; do
+        if [[ -b "$device" ]]; then
+            info "Auto-detected device: $device" >&2
+            echo "$device"
+            return 0
         fi
     done
     
-    # If no device found, return default
-    local default_device="/dev/sda"
-    warn "No disk device found, using default: $default_device"
-    echo "$default_device"
+    # Last resort - use /dev/sda even if not detected
+    warn "No devices auto-detected, defaulting to /dev/sda" >&2
+    echo "/dev/sda"
 }
 
 # Get partition naming based on device type
@@ -185,6 +216,7 @@ get_partition_name() {
 # Setup disk partitioning
 setup_partitions() {
     local disk_device=$(detect_disk_device)
+    info "Using disk device: $disk_device"
     local efi_size=$(parse_nested_config "disk" "efi_size")
     
     if [[ -z "$efi_size" ]]; then
@@ -193,10 +225,21 @@ setup_partitions() {
     
     info "Setting up partitions on $disk_device..."
     
-    # Verify device exists
-    if [[ ! -b "$disk_device" ]]; then
-        error "Disk device $disk_device does not exist or is not accessible"
+    # Verify device exists and is accessible with detailed debugging
+    info "Verifying disk device access: $disk_device"
+    
+    if [[ ! -e "$disk_device" ]]; then
+        error "Disk device $disk_device does not exist at all"
+    elif [[ ! -b "$disk_device" ]]; then
+        error "Disk device $disk_device exists but is not a block device ($(file "$disk_device" 2>/dev/null))"
+    elif [[ ! -r "$disk_device" ]]; then
+        error "Disk device $disk_device exists but is not readable (permissions: $(stat -c %A "$disk_device" 2>/dev/null))"
+    else
+        info "✓ Disk device $disk_device is accessible"
     fi
+    
+    info "Disk device verified: $disk_device"
+    info "Disk size: $(lsblk -b -d -n -o SIZE "$disk_device" 2>/dev/null | numfmt --to=iec || echo 'unknown')"
     
     # Show current disk info
     info "Disk information:"
@@ -219,9 +262,19 @@ setup_partitions() {
     info "Creating root partition..."
     parted "$disk_device" --script mkpart primary ext4 "${efi_size}" 100%
     
-    # Wait for partition creation
-    sleep 2
+    # Wait for partition creation and ensure system recognizes them
+    info "Waiting for partition table to be recognized..."
+    sleep 3
     partprobe "$disk_device" || warn "partprobe failed"
+    
+    # Force kernel to re-read partition table
+    blockdev --rereadpt "$disk_device" 2>/dev/null || warn "blockdev rereadpt failed"
+    
+    # Wait a bit more for devices to appear
+    sleep 2
+    
+    # Try to trigger udev to create device nodes
+    udevadm settle || warn "udevadm settle failed"
     sleep 1
     
     # Export partition names for use by other functions
@@ -233,20 +286,56 @@ setup_partitions() {
     info "  EFI: $EFI_PARTITION"
     info "  Root: $ROOT_PARTITION"
     
-    # Verify partitions exist
+    # Verify partitions exist with retry logic
+    info "Verifying partition creation..."
+    local max_retries=10
+    local retry_count=0
+    
+    while [[ $retry_count -lt $max_retries ]]; do
+        if [[ -b "$EFI_PARTITION" ]] && [[ -b "$ROOT_PARTITION" ]]; then
+            info "✓ All partitions created successfully"
+            break
+        fi
+        
+        retry_count=$((retry_count + 1))
+        warn "Partition verification attempt $retry_count/$max_retries - waiting for devices..."
+        sleep 1
+        
+        # Show what devices we can see
+        info "Available block devices:"
+        ls -la /dev/sd* /dev/vd* /dev/nvme* 2>/dev/null || echo "No devices found"
+    done
+    
+    # Final verification
     if [[ ! -b "$EFI_PARTITION" ]]; then
-        error "EFI partition $EFI_PARTITION was not created"
+        error "EFI partition $EFI_PARTITION was not created after $max_retries attempts"
     fi
     
     if [[ ! -b "$ROOT_PARTITION" ]]; then
-        error "Root partition $ROOT_PARTITION was not created"
+        error "Root partition $ROOT_PARTITION was not created after $max_retries attempts"
     fi
+    
+    info "✓ Partition verification successful:"
+    info "  EFI: $EFI_PARTITION"
+    info "  Root: $ROOT_PARTITION"
 }
 
 # Setup encryption
 setup_encryption() {
-    local encryption_enabled=$(parse_nested_config "disk" "enabled")
-    local passphrase=$(parse_nested_config "disk" "passphrase")
+    # Try to parse encryption config from nested structure
+    local encryption_enabled=$(parse_nested_config "encryption" "enabled")
+    local passphrase=$(parse_nested_config "encryption" "passphrase")
+    
+    # If not found, try alternative parsing
+    if [[ -z "$encryption_enabled" ]]; then
+        encryption_enabled=$(awk '/^disk:/,/^[a-zA-Z]/{if(/encryption:/){flag=1; next} if(flag && /enabled:/){print $2; exit}}' "$CONFIG_FILE" | tr -d '"')
+    fi
+    
+    if [[ -z "$passphrase" ]]; then
+        passphrase=$(awk '/^disk:/,/^[a-zA-Z]/{if(/encryption:/){flag=1; next} if(flag && /passphrase:/){print $2; exit}}' "$CONFIG_FILE" | tr -d '"')
+    fi
+    
+    info "Encryption configuration: enabled=$encryption_enabled"
     
     if [[ "$encryption_enabled" == "true" ]]; then
         info "Setting up LUKS encryption on $ROOT_PARTITION..."
@@ -256,7 +345,10 @@ setup_encryption() {
             error "Root partition $ROOT_PARTITION does not exist"
         fi
         
-        # Prompt for passphrase if not provided
+        info "Root partition verified: $ROOT_PARTITION"
+        lsblk "$ROOT_PARTITION" || warn "Could not display partition info"
+        
+        # Use passphrase from config or prompt
         if [[ -z "$passphrase" ]]; then
             echo -n "Enter LUKS encryption passphrase: "
             read -s passphrase
@@ -268,46 +360,70 @@ setup_encryption() {
             if [[ "$passphrase" != "$passphrase_confirm" ]]; then
                 error "Passphrases do not match"
             fi
+        else
+            info "Using passphrase from configuration"
         fi
         
         # Wipe any existing filesystem signatures
+        info "Wiping existing filesystem signatures..."
         wipefs -a "$ROOT_PARTITION" || warn "Failed to wipe filesystem signatures"
         
         # Setup LUKS with more explicit parameters
-        info "Creating LUKS container..."
+        info "Creating LUKS container (this may take a few minutes)..."
         echo -n "$passphrase" | cryptsetup luksFormat \
             --type luks2 \
             --cipher aes-xts-plain64 \
             --key-size 512 \
             --hash sha512 \
             --use-random \
+            --verbose \
             "$ROOT_PARTITION" - || error "Failed to create LUKS container"
         
         info "Opening LUKS container..."
         echo -n "$passphrase" | cryptsetup open "$ROOT_PARTITION" cryptroot - || error "Failed to open LUKS container"
         
+        # Verify LUKS device was created
+        if [[ ! -b "/dev/mapper/cryptroot" ]]; then
+            error "LUKS device /dev/mapper/cryptroot was not created"
+        fi
+        
         export ENCRYPTED_ROOT="/dev/mapper/cryptroot"
         export ENCRYPTION_ENABLED="true"
         
-        info "LUKS encryption configured successfully"
+        info "LUKS encryption configured successfully: $ENCRYPTED_ROOT"
     else
         export ENCRYPTED_ROOT="$ROOT_PARTITION"
         export ENCRYPTION_ENABLED="false"
         info "Encryption disabled, using plain partition: $ROOT_PARTITION"
     fi
+    
+    info "Root device for formatting: $ENCRYPTED_ROOT"
 }
 
 # Format filesystems
 format_filesystems() {
     info "Formatting filesystems..."
     
+    # Verify devices exist before formatting
+    if [[ ! -b "$EFI_PARTITION" ]]; then
+        error "EFI partition $EFI_PARTITION does not exist"
+    fi
+    
+    if [[ ! -b "$ENCRYPTED_ROOT" ]]; then
+        error "Root device $ENCRYPTED_ROOT does not exist"
+    fi
+    
     # Format EFI partition
     info "Formatting EFI partition: $EFI_PARTITION"
-    mkfs.fat -F32 "$EFI_PARTITION" || error "Failed to format EFI partition"
+    mkfs.fat -F32 -v "$EFI_PARTITION" || error "Failed to format EFI partition"
     
     # Format root partition
     info "Formatting root partition: $ENCRYPTED_ROOT"
-    mkfs.ext4 -F "$ENCRYPTED_ROOT" || error "Failed to format root partition"
+    mkfs.ext4 -F -v "$ENCRYPTED_ROOT" || error "Failed to format root partition"
+    
+    # Verify formatting
+    info "Verifying filesystem creation..."
+    lsblk -f "$EFI_PARTITION" "$ENCRYPTED_ROOT" || warn "Could not verify filesystems"
     
     info "Filesystems formatted successfully"
 }
@@ -316,23 +432,36 @@ format_filesystems() {
 mount_filesystems() {
     info "Mounting filesystems..."
     
+    # Unmount any existing mounts first
+    info "Cleaning up any existing mounts..."
+    umount -R /mnt 2>/dev/null || true
+    
     # Mount root
     info "Mounting root filesystem: $ENCRYPTED_ROOT"
     mount "$ENCRYPTED_ROOT" /mnt || error "Failed to mount root filesystem"
     
+    # Verify root mount
+    if ! mountpoint -q /mnt; then
+        error "Root filesystem not properly mounted at /mnt"
+    fi
+    info "✓ Root filesystem mounted successfully"
+    
     # Create and mount EFI
-    info "Creating EFI mount point and mounting: $EFI_PARTITION"
-    mkdir -p /mnt/boot
+    info "Creating EFI mount point: /mnt/boot"
+    mkdir -p /mnt/boot || error "Failed to create /mnt/boot directory"
+    
+    info "Mounting EFI partition: $EFI_PARTITION"
     mount "$EFI_PARTITION" /mnt/boot || error "Failed to mount EFI partition"
     
-    # Verify mounts
-    if ! mountpoint -q /mnt; then
-        error "Root filesystem not properly mounted"
-    fi
-    
+    # Verify EFI mount
     if ! mountpoint -q /mnt/boot; then
-        error "EFI partition not properly mounted"
+        error "EFI partition not properly mounted at /mnt/boot"
     fi
+    info "✓ EFI partition mounted successfully"
+    
+    # Show mount status for debugging
+    info "Current mount status:"
+    mount | grep "/mnt" || warn "No /mnt mounts shown"
     
     info "Filesystems mounted successfully"
 }
@@ -343,16 +472,58 @@ install_base_system() {
     
     info "Updating mirror list..."
     if [[ -n "$country" ]]; then
-        reflector --country "$country" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+        info "Using mirrors for country: $country"
+        reflector --country "$country" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
+            warn "Reflector failed for $country, trying UK mirrors..."
+            reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
+                warn "Reflector failed completely, using default mirrors"
+            }
+        }
     else
-        reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+        info "Using default UK mirrors"
+        reflector --country "United Kingdom" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || {
+            warn "Reflector failed, using default mirrors"
+        }
     fi
     
+    # Show current mirror list for debugging
+    info "Current mirror list (first 5 lines):"
+    head -n 5 /etc/pacman.d/mirrorlist || warn "Could not display mirror list"
+    
     info "Installing base system packages..."
-    pacstrap /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode
+    info "This may take several minutes depending on internet speed..."
+    
+    # Try pacstrap with verbose output and better error handling
+    if ! pacstrap -c /mnt base base-devel linux linux-firmware networkmanager sudo git openssh neovim intel-ucode; then
+        warn "Full package installation failed, trying minimal installation..."
+        
+        # Try minimal installation first
+        if ! pacstrap -c /mnt base linux linux-firmware networkmanager; then
+            error "Even minimal package installation failed. Check network connectivity and mirrors."
+        fi
+        
+        # Install additional packages in chroot if minimal succeeded
+        info "Installing additional packages in chroot..."
+        arch-chroot /mnt pacman -S --noconfirm base-devel sudo git openssh neovim intel-ucode || {
+            warn "Some additional packages failed to install, continuing..."
+        }
+    fi
+    
+    info "Verifying critical packages..."
+    if ! arch-chroot /mnt which systemctl >/dev/null 2>&1; then
+        error "systemctl not found - base system installation incomplete"
+    fi
     
     info "Generating fstab..."
-    genfstab -U /mnt >> /mnt/etc/fstab
+    genfstab -U /mnt >> /mnt/etc/fstab || error "Failed to generate fstab"
+    
+    # Verify fstab was created
+    if [[ ! -s /mnt/etc/fstab ]]; then
+        error "fstab file is empty or was not created"
+    fi
+    
+    info "fstab contents:"
+    cat /mnt/etc/fstab || warn "Could not display fstab"
     
     info "Base system installation complete"
 }
@@ -534,6 +705,10 @@ copy_configs() {
 main() {
     info "Starting automated Arch Linux installation..."
     
+    # Clear any cached disk device information for fresh start
+    unset DISK_DEVICE EFI_PARTITION ROOT_PARTITION ENCRYPTED_ROOT ENCRYPTION_ENABLED
+    info "Starting fresh - cleared all disk variables"
+    
     # Check prerequisites
     check_uefi
     
@@ -543,18 +718,35 @@ main() {
         warn "Using default values and prompting for required information"
     fi
     
-    # Installation steps
-    setup_network
-    update_clock
-    setup_partitions
-    setup_encryption
-    format_filesystems
-    mount_filesystems
-    install_base_system
-    configure_system
-    configure_bootloader
-    setup_users
-    copy_configs
+    # Installation steps with enhanced error reporting
+    info "Step 1/9: Setting up network..."
+    setup_network || error "Network setup failed"
+    
+    info "Step 2/9: Updating system clock..."
+    update_clock || error "Clock update failed"
+    
+    info "Step 3/9: Setting up disk partitions..."
+    setup_partitions || error "Partition setup failed"
+    
+    info "Step 4/9: Configuring encryption..."
+    setup_encryption || error "Encryption setup failed"
+    
+    info "Step 5/9: Formatting filesystems..."
+    format_filesystems || error "Filesystem formatting failed"
+    
+    info "Step 6/9: Mounting filesystems..."
+    mount_filesystems || error "Filesystem mounting failed"
+    
+    info "Step 7/9: Installing base system..."
+    install_base_system || error "Base system installation failed"
+    
+    info "Step 8/9: Configuring system..."
+    configure_system || error "System configuration failed"
+    
+    info "Step 9/9: Setting up bootloader and users..."
+    configure_bootloader || error "Bootloader configuration failed"
+    setup_users || error "User setup failed"
+    copy_configs || error "Configuration copy failed"
     
     info "Base system installation complete!"
     info "You can now reboot and continue with the desktop automation deployment"

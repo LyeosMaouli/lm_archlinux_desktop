@@ -308,11 +308,16 @@ automated_disk_setup() {
     info "Disk size: $(lsblk -b -n -o SIZE "$vm_disk" 2>/dev/null | head -1 | numfmt --to=iec || echo 'unknown')"
     
     # Update configuration with detected disk
+    info "Updating configuration file with detected disk: $vm_disk"
     sed -i "s|device: \"/dev/sda\"|device: \"$vm_disk\"|" "$CONFIG_FILE"
     
     # Verify the configuration was updated
     local updated_device=$(grep "device:" "$CONFIG_FILE" | head -1 | cut -d'"' -f2)
     info "Configuration updated - device: $updated_device"
+    
+    # Show the disk section of the config for debugging
+    info "Current disk configuration:"
+    awk '/^disk:/,/^[a-zA-Z]/' "$CONFIG_FILE" | head -10
     
     success "VM disk configuration updated"
 }
@@ -397,10 +402,23 @@ run_base_installation() {
         error "Base installation script not found: $install_script"
     fi
     
-    # Run the automated installation
+    # Run the automated installation with enhanced debugging
     info "Running base system installation..."
     chmod +x "$install_script"
-    CONFIG_FILE="$CONFIG_FILE" "$install_script" || error "Base installation failed"
+    
+    info "Configuration being used:"
+    if [[ -f "$CONFIG_FILE" ]]; then
+        echo "=== VM Configuration File ==="
+        head -n 20 "$CONFIG_FILE"
+        echo "=========================="
+    else
+        warn "Configuration file not found: $CONFIG_FILE"
+    fi
+    
+    info "Starting installation process..."
+    CONFIG_FILE="$CONFIG_FILE" "$install_script" || {
+        error "Base installation failed. Check the logs for details."
+    }
     
     success "Base installation completed"
 }
@@ -576,7 +594,6 @@ main() {
         # Full installation workflow
         create_vm_config
         check_vm_prerequisites
-        automated_disk_setup
         setup_vm_network
         run_base_installation
         
