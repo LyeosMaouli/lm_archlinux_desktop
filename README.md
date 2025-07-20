@@ -67,6 +67,18 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 ### 🌟 **Zero-Touch Installation with Advanced Password Management**
 **REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
 
+#### **Method 1: USB Deployment (Easiest - No Typing!)**
+```bash
+# 1. Copy usb-deploy.sh to USB stick and edit your settings
+# 2. Boot from Arch Linux ISO  
+# 3. Mount USB: mount /dev/sdX1 /mnt/usb && cd /mnt/usb
+# 4. Run: ./usb-deploy.sh
+#
+# No long commands to type! Everything pre-configured!
+# 30-60 minutes later: Complete modern desktop ready!
+```
+
+#### **Method 2: Direct Download (Original)**
 ```bash
 # 1. Boot from Arch Linux ISO
 # 2. Run this single command:
@@ -163,6 +175,7 @@ chmod +x vm_test.sh
 - **[Password Management](docs/password-management.md)** - Advanced password system documentation
 - **[GitHub Password Storage](docs/github-password-storage.md)** - Step-by-step guide for storing passwords in GitHub
 - **[Target Computer Deployment](docs/target-computer-deployment.md)** - How to deploy on your actual computer using GitHub passwords
+- **[USB Deployment Guide](usb-deployment/README.md)** - Easy USB stick deployment with no typing required
 - **[VirtualBox Testing](docs/virtualbox-testing-guide.md)** - Safe testing environment setup
 - **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
 - **[Project Structure](docs/project-structure.md)** - Complete codebase documentation
