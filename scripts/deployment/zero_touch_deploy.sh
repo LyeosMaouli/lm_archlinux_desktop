@@ -1,6 +1,7 @@
 #!/bin/bash
 # Zero-Touch Deployment Script
 # Completely automated deployment with minimal user interaction
+# Now with advanced password management support
 
 set -euo pipefail
 
@@ -12,6 +13,25 @@ RED='\033[0;31m'
 PURPLE='\033[0;35m'
 NC='\033[0m'
 
+# Script configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PASSWORD_MODE="auto"
+PASSWORD_FILE=""
+FILE_PASSPHRASE=""
+
+# Load password management system
+load_password_manager() {
+    local password_manager="$SCRIPT_DIR/../security/password_manager.sh"
+    if [[ -f "$password_manager" ]]; then
+        source "$password_manager"
+        log_info "Password management system loaded"
+        return 0
+    else
+        echo -e "${RED}❌ Password management system not found${NC}"
+        return 1
+    fi
+}
+
 print_banner() {
     clear
     echo -e "${PURPLE}"
@@ -21,7 +41,7 @@ print_banner() {
 ║     🚀 Arch Linux Hyprland - Zero Touch Deploy            ║
 ║                                                              ║
 ║     The easiest way to get a complete desktop system        ║
-║     Just answer 3 questions and we handle everything!       ║
+║     Advanced password management with multiple modes!       ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
@@ -265,77 +285,64 @@ setup_network_auto() {
     fi
 }
 
-# Password collection with better UX
+# Advanced password collection using password management system
 collect_passwords() {
-    echo -e "${BLUE}🔐 Secure Password Setup${NC}"
-    echo "We need a few passwords to secure your system."
-    echo "All passwords are encrypted and never stored in plain text."
+    echo -e "${BLUE}🔐 Advanced Password Management${NC}"
+    echo "Multiple password input methods available for maximum flexibility."
     echo
     
-    # User password
-    while true; do
-        echo -e "${BLUE}Enter password for user '$username':${NC}"
-        read -s user_password
-        echo
-        echo -e "${BLUE}Confirm password:${NC}"
-        read -s user_password_confirm
-        echo
-        
-        if [[ "$user_password" == "$user_password_confirm" ]]; then
-            if [[ ${#user_password} -ge 8 ]]; then
-                break
-            else
-                echo -e "${RED}❌ Password must be at least 8 characters${NC}"
-            fi
-        else
-            echo -e "${RED}❌ Passwords don't match${NC}"
-        fi
-    done
-    
-    # Root password
-    while true; do
-        echo -e "${BLUE}Enter root password:${NC}"
-        read -s root_password
-        echo
-        echo -e "${BLUE}Confirm root password:${NC}"
-        read -s root_password_confirm
-        echo
-        
-        if [[ "$root_password" == "$root_password_confirm" ]]; then
-            if [[ ${#root_password} -ge 8 ]]; then
-                break
-            else
-                echo -e "${RED}❌ Password must be at least 8 characters${NC}"
-            fi
-        else
-            echo -e "${RED}❌ Passwords don't match${NC}"
-        fi
-    done
-    
-    # Encryption passphrase (if enabled)
-    if [[ "$enable_encryption" == "true" ]]; then
-        while true; do
-            echo -e "${BLUE}Enter disk encryption passphrase:${NC}"
-            echo "(You'll need this every time you boot)"
-            read -s luks_passphrase
-            echo
-            echo -e "${BLUE}Confirm encryption passphrase:${NC}"
-            read -s luks_passphrase_confirm
-            echo
-            
-            if [[ "$luks_passphrase" == "$luks_passphrase_confirm" ]]; then
-                if [[ ${#luks_passphrase} -ge 8 ]]; then
-                    break
-                else
-                    echo -e "${RED}❌ Passphrase must be at least 8 characters${NC}"
-                fi
-            else
-                echo -e "${RED}❌ Passphrases don't match${NC}"
-            fi
-        done
+    # Load password management system
+    if ! load_password_manager; then
+        echo -e "${RED}❌ Failed to load password management system${NC}"
+        return 1
     fi
     
-    echo -e "${GREEN}✅ All passwords collected securely${NC}"
+    # Set configuration for password manager
+    export CONFIG_FILE="$config_file"
+    export PASSWORD_FILE="$PASSWORD_FILE"
+    export FILE_PASSPHRASE="$FILE_PASSPHRASE"
+    
+    # Show password mode information
+    case "$PASSWORD_MODE" in
+        "auto")
+            echo -e "${BLUE}Using automatic password detection:${NC}"
+            echo "  1️⃣ Environment variables (CI/CD)"
+            echo "  2️⃣ Encrypted password file" 
+            echo "  3️⃣ Auto-generated passwords"
+            echo "  4️⃣ Interactive prompts (fallback)"
+            ;;
+        "env")
+            echo -e "${BLUE}Using environment variable passwords${NC}"
+            echo "Checking for DEPLOY_USER_PASSWORD, DEPLOY_ROOT_PASSWORD, etc."
+            ;;
+        "file")
+            echo -e "${BLUE}Using encrypted password file: $PASSWORD_FILE${NC}"
+            ;;
+        "generate")
+            echo -e "${BLUE}Using auto-generated secure passwords${NC}"
+            echo "Passwords will be displayed after generation"
+            ;;
+        "interactive")
+            echo -e "${BLUE}Using interactive password prompts${NC}"
+            ;;
+    esac
+    echo
+    
+    # Collect passwords using the specified method
+    if collect_passwords "$PASSWORD_MODE"; then
+        echo -e "${GREEN}✅ Password collection successful${NC}"
+        
+        # Show password status
+        show_password_status
+        
+        # Export passwords for deployment scripts
+        export_passwords
+        
+        return 0
+    else
+        echo -e "${RED}❌ Password collection failed${NC}"
+        return 1
+    fi
 }
 
 # Download and run deployment
@@ -358,10 +365,12 @@ run_deployment() {
     # Copy configuration
     cp "$config_file" /tmp/lm_archlinux_desktop/deployment_config.yml
     
-    # Set up environment variables for passwords
-    export USER_PASSWORD="$user_password"
-    export ROOT_PASSWORD="$root_password"
-    export LUKS_PASSPHRASE="${luks_passphrase:-}"
+    # Environment variables are already set by password manager
+    # Verify they are available
+    if [[ -z "${USER_PASSWORD:-}" ]] || [[ -z "${ROOT_PASSWORD:-}" ]]; then
+        echo -e "${RED}❌ Required passwords not available${NC}"
+        return 1
+    fi
     
     echo -e "${GREEN}🚀 Starting automated deployment...${NC}"
     echo "This will take 30-60 minutes. Sit back and relax!"
@@ -373,8 +382,87 @@ run_deployment() {
     ./scripts/deployment/master_auto_deploy.sh auto
 }
 
+# Parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --password-mode)
+                PASSWORD_MODE="$2"
+                shift 2
+                ;;
+            --password-file)
+                PASSWORD_FILE="$2"
+                shift 2
+                ;;
+            --file-passphrase)
+                FILE_PASSPHRASE="$2"
+                shift 2
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                echo "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# Show help information
+show_help() {
+    cat << 'EOF'
+Zero-Touch Deployment Script - Advanced Password Management
+
+Usage: zero_touch_deploy.sh [OPTIONS]
+
+Password Management Options:
+  --password-mode MODE        Password input method (auto|env|file|generate|interactive)
+  --password-file FILE        Path to encrypted password file (for file mode)
+  --file-passphrase PHRASE    Passphrase for encrypted file (for file mode)
+
+Password Modes:
+  auto        - Automatic detection (env → file → generate → interactive)
+  env         - Use environment variables (DEPLOY_USER_PASSWORD, etc.)
+  file        - Use encrypted password file
+  generate    - Auto-generate secure passwords
+  interactive - Interactive password prompts (original behavior)
+
+Environment Variables (for env mode):
+  DEPLOY_USER_PASSWORD     - User account password
+  DEPLOY_ROOT_PASSWORD     - Root account password
+  DEPLOY_LUKS_PASSPHRASE   - LUKS encryption passphrase
+  DEPLOY_WIFI_PASSWORD     - WiFi network password
+
+Examples:
+
+1. Automatic mode (tries all methods):
+   ./zero_touch_deploy.sh
+
+2. CI/CD with environment variables:
+   export DEPLOY_USER_PASSWORD="secure_password"
+   export DEPLOY_ROOT_PASSWORD="secure_password"
+   ./zero_touch_deploy.sh --password-mode env
+
+3. Encrypted password file:
+   ./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+
+4. Auto-generated passwords:
+   ./zero_touch_deploy.sh --password-mode generate
+
+5. Traditional interactive mode:
+   ./zero_touch_deploy.sh --password-mode interactive
+
+EOF
+}
+
 # Main execution
 main() {
+    # Parse command line arguments
+    parse_arguments "$@"
+    
     print_banner
     
     # Check we're on Arch Linux
@@ -385,9 +473,9 @@ main() {
     fi
     
     echo -e "${GREEN}Welcome to the easiest Arch Linux Hyprland installation!${NC}"
-    echo "This script will set up a complete modern desktop in 3 steps:"
+    echo "This script will set up a complete modern desktop with advanced password management:"
     echo "1. 📝 Answer 3 quick questions"
-    echo "2. 🔐 Set up passwords securely"  
+    echo "2. 🔐 Handle passwords securely (mode: $PASSWORD_MODE)"  
     echo "3. 🚀 Automated installation (30-60 minutes)"
     echo
     read -p "Ready to get started? [Y/n]: " ready

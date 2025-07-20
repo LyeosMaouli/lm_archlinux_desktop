@@ -1,0 +1,279 @@
+# GitLab CI/CD Pipeline for Arch Linux Deployment
+# Example CI/CD pipeline using environment variable password management
+
+stages:
+  - validate
+  - deploy
+  - notify
+
+variables:
+  # Deployment configuration
+  ANSIBLE_HOST_KEY_CHECKING: "false"
+  ANSIBLE_STDOUT_CALLBACK: "yaml"
+  DEPLOYMENT_TIMEOUT: "3600"  # 1 hour timeout
+
+# Validation stage
+validate_secrets:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash curl
+  script:
+    - echo "🔐 Validating password secrets configuration..."
+    
+    # Check required secrets
+    - |
+      if [[ -z "$DEPLOY_USER_PASSWORD" ]]; then
+        echo "❌ DEPLOY_USER_PASSWORD variable not configured"
+        exit 1
+      fi
+      
+    - |
+      if [[ -z "$DEPLOY_ROOT_PASSWORD" ]]; then
+        echo "❌ DEPLOY_ROOT_PASSWORD variable not configured"
+        exit 1
+      fi
+      
+    # Password strength validation
+    - |
+      if [[ ${#DEPLOY_USER_PASSWORD} -lt 8 ]]; then
+        echo "❌ User password must be at least 8 characters"
+        exit 1
+      fi
+      
+    - |
+      if [[ ${#DEPLOY_ROOT_PASSWORD} -lt 8 ]]; then
+        echo "❌ Root password must be at least 8 characters"
+        exit 1
+      fi
+      
+    # Check encryption requirements
+    - |
+      if [[ "$ENABLE_ENCRYPTION" == "true" ]] && [[ -z "$DEPLOY_LUKS_PASSPHRASE" ]]; then
+        echo "❌ DEPLOY_LUKS_PASSPHRASE required when encryption is enabled"
+        exit 1
+      fi
+      
+    - echo "✅ All password secrets validated successfully"
+    
+  only:
+    - main
+    - develop
+    - /^release\/.*$/
+
+# Main deployment job
+deploy_arch_linux:
+  stage: deploy
+  image: archlinux:latest
+  timeout: 1h
+  
+  before_script:
+    - echo "🔧 Setting up deployment environment..."
+    - pacman -Sy --noconfirm curl bash
+    
+  script:
+    - echo "📥 Downloading zero-touch deployment script..."
+    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
+    - chmod +x zero_touch_deploy.sh
+    
+    - echo "🔍 Validating deployment script..."
+    - ./zero_touch_deploy.sh --help | head -10
+    
+    - echo "🚀 Starting Arch Linux Hyprland deployment..."
+    - echo "Project: $CI_PROJECT_NAME"
+    - echo "Branch: $CI_COMMIT_REF_NAME"
+    - echo "Commit: $CI_COMMIT_SHA"
+    - echo "Pipeline: $CI_PIPELINE_ID"
+    
+    # Run deployment with environment variables
+    - ./zero_touch_deploy.sh --password-mode env
+    
+  after_script:
+    - echo "🔐 Performing security cleanup..."
+    # Clear any temporary files
+    - find /tmp -name "*password*" -type f -delete 2>/dev/null || true
+    - find /tmp -name "*deploy*" -type f -delete 2>/dev/null || true
+    
+  artifacts:
+    when: always
+    paths:
+      - "/var/log/master_auto_deploy.log"
+      - "/tmp/zero_touch_*.log"
+    expire_in: 30 days
+    reports:
+      junit: "deployment_results.xml"
+      
+  only:
+    - main
+    - develop
+    - /^release\/.*$/
+    
+  # Allow manual deployment for other branches
+  when: manual
+  except:
+    - main
+    - develop
+
+# Deployment notification
+notify_completion:
+  stage: notify
+  image: alpine:latest
+  dependencies:
+    - deploy_arch_linux
+    
+  before_script:
+    - apk add --no-cache curl jq
+    
+  script:
+    - |
+      if [[ "$CI_JOB_STATUS" == "success" ]]; then
+        echo "✅ Deployment completed successfully!"
+        
+        # Send success notification
+        if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"🎉 Arch Linux deployment completed successfully!\nProject: '"$CI_PROJECT_NAME"'\nBranch: '"$CI_COMMIT_REF_NAME"'\nPipeline: '"$CI_PIPELINE_URL"'"}' \
+            "$SLACK_WEBHOOK_URL"
+        fi
+        
+        # Send email notification if configured
+        if [[ -n "$DEPLOY_EMAIL_RECIPIENT" ]]; then
+          echo "📧 Sending deployment success email..."
+          # Email sending logic would go here
+        fi
+      else
+        echo "❌ Deployment failed!"
+        
+        # Send failure notification
+        if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"❌ Arch Linux deployment failed!\nProject: '"$CI_PROJECT_NAME"'\nBranch: '"$CI_COMMIT_REF_NAME"'\nPipeline: '"$CI_PIPELINE_URL"'\nPlease check the logs for details."}' \
+            "$SLACK_WEBHOOK_URL"
+        fi
+      fi
+      
+  when: always
+  only:
+    - main
+    - develop
+    - /^release\/.*$/
+
+# Manual deployment with custom parameters
+deploy_custom:
+  stage: deploy
+  image: archlinux:latest
+  
+  script:
+    - echo "🎯 Custom deployment with parameters:"
+    - echo "Target Environment: $TARGET_ENVIRONMENT"
+    - echo "Enable Encryption: $ENABLE_ENCRYPTION"
+    - echo "Custom Configuration: $CUSTOM_CONFIG"
+    
+    # Download and run deployment
+    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
+    - chmod +x zero_touch_deploy.sh
+    
+    # Apply custom configuration if provided
+    - |
+      if [[ -n "$CUSTOM_CONFIG" ]]; then
+        echo "📝 Applying custom configuration..."
+        echo "$CUSTOM_CONFIG" | base64 -d > custom_config.yml
+        export CONFIG_FILE="./custom_config.yml"
+      fi
+      
+    - ./zero_touch_deploy.sh --password-mode env
+    
+  when: manual
+  allow_failure: false
+
+# Environment-specific deployments
+.deploy_template: &deploy_template
+  stage: deploy
+  image: archlinux:latest
+  script:
+    - echo "🌍 Deploying to environment: $DEPLOYMENT_ENVIRONMENT"
+    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
+    - chmod +x zero_touch_deploy.sh
+    - ./zero_touch_deploy.sh --password-mode env
+  artifacts:
+    when: always
+    paths:
+      - "/var/log/master_auto_deploy.log"
+    expire_in: 7 days
+
+deploy_development:
+  <<: *deploy_template
+  variables:
+    DEPLOYMENT_ENVIRONMENT: "development"
+  environment:
+    name: development
+    url: https://dev.example.com
+  only:
+    - develop
+
+deploy_staging:
+  <<: *deploy_template
+  variables:
+    DEPLOYMENT_ENVIRONMENT: "staging"
+  environment:
+    name: staging
+    url: https://staging.example.com
+  only:
+    - /^release\/.*$/
+  when: manual
+
+deploy_production:
+  <<: *deploy_template
+  variables:
+    DEPLOYMENT_ENVIRONMENT: "production"
+  environment:
+    name: production
+    url: https://example.com
+  only:
+    - main
+  when: manual
+
+# Security scan job
+security_scan:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache bash git
+  script:
+    - echo "🔍 Running security checks..."
+    
+    # Check for secrets in code
+    - |
+      if git log --oneline | grep -i "password\|secret\|key" | grep -v "password-management\|examples"; then
+        echo "⚠️  Found potential secrets in commit messages"
+      fi
+      
+    # Validate configuration files
+    - |
+      if find . -name "*.yml" -o -name "*.yaml" | xargs grep -l "password.*:" | grep -v examples; then
+        echo "⚠️  Found potential passwords in configuration files"
+      fi
+      
+    - echo "✅ Security scan completed"
+    
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Required GitLab CI/CD Variables:
+# Settings > CI/CD > Variables
+#
+# Required variables:
+# - DEPLOY_USER_PASSWORD (Protected, Masked): User account password
+# - DEPLOY_ROOT_PASSWORD (Protected, Masked): Root account password
+#
+# Optional variables:
+# - DEPLOY_LUKS_PASSPHRASE (Protected, Masked): Disk encryption passphrase
+# - DEPLOY_WIFI_PASSWORD (Protected, Masked): WiFi network password
+# - SLACK_WEBHOOK_URL (Protected): Slack webhook for notifications
+# - DEPLOY_EMAIL_RECIPIENT: Email for deployment notifications
+# - ENABLE_ENCRYPTION: Enable disk encryption (true/false)
+# - TARGET_ENVIRONMENT: Target deployment environment
+# - CUSTOM_CONFIG (File): Base64 encoded custom configuration

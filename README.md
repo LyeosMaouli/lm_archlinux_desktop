@@ -64,8 +64,8 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 
 ## 🚀 Quick Start
 
-### 🌟 **Zero-Touch Installation (3 Questions = Complete Desktop!)**
-**REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland!
+### 🌟 **Zero-Touch Installation with Advanced Password Management**
+**REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
 
 ```bash
 # 1. Boot from Arch Linux ISO
@@ -79,21 +79,40 @@ curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/ma
 # 🔒 Enable encryption? (Y/n)
 #
 # Everything else is auto-detected!
+# Advanced password management handles security automatically!
 # 30-60 minutes later: Complete modern desktop ready!
 ```
 
 **What makes it special:**
 - ✅ **Auto-detects**: Timezone, keyboard, best disk, hardware
 - ✅ **Smart networking**: Ethernet auto-connect, WiFi setup if needed
-- ✅ **Secure passwords**: Prompted safely, never stored in files
+- ✅ **Advanced password management**: 4 secure methods (env vars, encrypted files, auto-gen, interactive)
+- ✅ **Enterprise ready**: CI/CD integration, encrypted storage, audit logging
 - ✅ **Zero configuration**: No YAML files to edit
 - ✅ **Complete automation**: From ISO to desktop in one command
 
-### 🤖 Alternative Options
+### 🤖 Password Management Options
 
-**Quick Setup (5 questions):**
+**Environment Variables (CI/CD):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/quick_deploy.sh | bash
+export DEPLOY_USER_PASSWORD="secure_password"
+export DEPLOY_ROOT_PASSWORD="secure_password"
+./zero_touch_deploy.sh --password-mode env
+```
+
+**Encrypted Password File:**
+```bash
+# Create encrypted file
+./scripts/utilities/create_password_file.sh --output passwords.enc
+
+# Deploy with encrypted file
+./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+```
+
+**Auto-Generated Passwords:**
+```bash
+# Generate secure passwords automatically
+./zero_touch_deploy.sh --password-mode generate
 ```
 
 **Advanced/Custom (manual config):**
@@ -141,6 +160,7 @@ chmod +x vm_test.sh
 
 ### 📚 Quick Links
 - **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions
+- **[Password Management](docs/password-management.md)** - Advanced password system documentation
 - **[VirtualBox Testing](docs/virtualbox-testing-guide.md)** - Safe testing environment setup
 - **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
 - **[Project Structure](docs/project-structure.md)** - Complete codebase documentation

@@ -1,0 +1,180 @@
+# GitHub Actions Workflow for Arch Linux Deployment
+# Example CI/CD pipeline using environment variable password management
+
+name: Deploy Arch Linux Hyprland
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+      enable_encryption:
+        description: 'Enable disk encryption'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  # Deployment configuration
+  ANSIBLE_HOST_KEY_CHECKING: false
+  ANSIBLE_STDOUT_CALLBACK: yaml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target_environment }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH key
+      if: env.DEPLOY_SSH_KEY != ''
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+        
+    - name: Validate password secrets
+      run: |
+        echo "🔐 Validating required password secrets..."
+        
+        # Check required secrets
+        if [[ -z "${{ secrets.DEPLOY_USER_PASSWORD }}" ]]; then
+          echo "❌ DEPLOY_USER_PASSWORD secret not configured"
+          exit 1
+        fi
+        
+        if [[ -z "${{ secrets.DEPLOY_ROOT_PASSWORD }}" ]]; then
+          echo "❌ DEPLOY_ROOT_PASSWORD secret not configured"
+          exit 1
+        fi
+        
+        if [[ "${{ github.event.inputs.enable_encryption }}" == "true" ]] && [[ -z "${{ secrets.DEPLOY_LUKS_PASSPHRASE }}" ]]; then
+          echo "❌ DEPLOY_LUKS_PASSPHRASE secret required for encryption"
+          exit 1
+        fi
+        
+        echo "✅ All required password secrets are configured"
+        
+    - name: Setup password environment
+      run: |
+        echo "🔐 Setting up password environment..."
+        
+        # Password length validation
+        if [[ ${#DEPLOY_USER_PASSWORD} -lt 8 ]]; then
+          echo "❌ User password must be at least 8 characters"
+          exit 1
+        fi
+        
+        if [[ ${#DEPLOY_ROOT_PASSWORD} -lt 8 ]]; then
+          echo "❌ Root password must be at least 8 characters"
+          exit 1
+        fi
+        
+        echo "✅ Password environment validated"
+      env:
+        DEPLOY_USER_PASSWORD: ${{ secrets.DEPLOY_USER_PASSWORD }}
+        DEPLOY_ROOT_PASSWORD: ${{ secrets.DEPLOY_ROOT_PASSWORD }}
+        DEPLOY_LUKS_PASSPHRASE: ${{ secrets.DEPLOY_LUKS_PASSPHRASE }}
+        DEPLOY_WIFI_PASSWORD: ${{ secrets.DEPLOY_WIFI_PASSWORD }}
+        
+    - name: Download deployment script
+      run: |
+        echo "📥 Downloading zero-touch deployment script..."
+        curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
+        chmod +x zero_touch_deploy.sh
+        
+    - name: Validate deployment script
+      run: |
+        echo "🔍 Validating deployment script..."
+        
+        # Check script exists and is executable
+        if [[ ! -x "zero_touch_deploy.sh" ]]; then
+          echo "❌ Deployment script not found or not executable"
+          exit 1
+        fi
+        
+        # Check script help
+        ./zero_touch_deploy.sh --help | head -10
+        
+        echo "✅ Deployment script validated"
+        
+    - name: Deploy Arch Linux system
+      run: |
+        echo "🚀 Starting Arch Linux Hyprland deployment..."
+        echo "Environment: ${{ github.event.inputs.target_environment }}"
+        echo "Encryption: ${{ github.event.inputs.enable_encryption }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Commit: ${{ github.sha }}"
+        
+        # Run deployment with environment variable passwords
+        ./zero_touch_deploy.sh --password-mode env
+        
+      env:
+        DEPLOY_USER_PASSWORD: ${{ secrets.DEPLOY_USER_PASSWORD }}
+        DEPLOY_ROOT_PASSWORD: ${{ secrets.DEPLOY_ROOT_PASSWORD }}
+        DEPLOY_LUKS_PASSPHRASE: ${{ secrets.DEPLOY_LUKS_PASSPHRASE }}
+        DEPLOY_WIFI_PASSWORD: ${{ secrets.DEPLOY_WIFI_PASSWORD }}
+        # Optional email delivery
+        DEPLOY_EMAIL_RECIPIENT: ${{ secrets.DEPLOY_EMAIL_RECIPIENT }}
+        DEPLOY_SMTP_SERVER: ${{ secrets.DEPLOY_SMTP_SERVER }}
+        DEPLOY_SMTP_USERNAME: ${{ secrets.DEPLOY_SMTP_USERNAME }}
+        DEPLOY_SMTP_PASSWORD: ${{ secrets.DEPLOY_SMTP_PASSWORD }}
+        
+    - name: Upload deployment logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-logs-${{ github.run_number }}
+        path: |
+          /var/log/master_auto_deploy.log
+          /tmp/zero_touch_*.log
+        retention-days: 30
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [[ "${{ job.status }}" == "success" ]]; then
+          echo "✅ Deployment completed successfully!"
+          echo "🎉 Arch Linux Hyprland system is ready"
+        else
+          echo "❌ Deployment failed"
+          echo "🔍 Check logs for details"
+        fi
+        
+    - name: Security cleanup
+      if: always()
+      run: |
+        echo "🔐 Performing security cleanup..."
+        
+        # Clear any temporary password files
+        find /tmp -name "*password*" -type f -delete 2>/dev/null || true
+        find /tmp -name "*deploy*" -type f -delete 2>/dev/null || true
+        
+        # Clear environment variables
+        unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_PASSWORD
+        
+        echo "✅ Security cleanup completed"
+
+# Required secrets configuration in GitHub repository:
+# Settings > Secrets and variables > Actions > Repository secrets
+#
+# Required secrets:
+# - DEPLOY_USER_PASSWORD: User account password (minimum 8 characters)
+# - DEPLOY_ROOT_PASSWORD: Root account password (minimum 8 characters)
+#
+# Optional secrets:
+# - DEPLOY_LUKS_PASSPHRASE: Disk encryption passphrase (required if encryption enabled)
+# - DEPLOY_WIFI_PASSWORD: WiFi network password
+# - DEPLOY_SSH_KEY: SSH private key for remote deployment
+# - DEPLOY_EMAIL_RECIPIENT: Email for deployment notifications
+# - DEPLOY_SMTP_SERVER: SMTP server for email delivery
+# - DEPLOY_SMTP_USERNAME: SMTP username
+# - DEPLOY_SMTP_PASSWORD: SMTP password or app password
