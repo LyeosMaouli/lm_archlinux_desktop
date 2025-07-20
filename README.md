@@ -162,6 +162,7 @@ chmod +x vm_test.sh
 - **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions
 - **[Password Management](docs/password-management.md)** - Advanced password system documentation
 - **[GitHub Password Storage](docs/github-password-storage.md)** - Step-by-step guide for storing passwords in GitHub
+- **[Target Computer Deployment](docs/target-computer-deployment.md)** - How to deploy on your actual computer using GitHub passwords
 - **[VirtualBox Testing](docs/virtualbox-testing-guide.md)** - Safe testing environment setup
 - **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
 - **[Project Structure](docs/project-structure.md)** - Complete codebase documentation
