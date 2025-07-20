@@ -5,7 +5,22 @@
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?logo=ansible&logoColor=fff&style=flat)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-A comprehensive Ansible automation system that transforms a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with enterprise-grade security and modern development tools.
+**🚀 REVOLUTIONARY ARCH LINUX AUTOMATION** - Transform a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with **enterprise-grade security**, **advanced password management**, and **zero-touch deployment**. Features revolutionary **USB deployment system** that eliminates typing errors in the Arch console!
+
+## ✨ Revolutionary Features
+
+### 🔒 **Advanced Hybrid Password Management System**
+- **4 Secure Methods**: Environment variables, encrypted files, auto-generation, interactive
+- **Enterprise CI/CD Integration**: GitHub Actions workflow templates
+- **AES-256 Encryption**: PBKDF2 key derivation for password files
+- **Email & QR Delivery**: Multiple secure password delivery methods
+- **Zero-Touch Deployment**: Complete automation from ISO to desktop
+
+### 📱 **USB Deployment System** *(No More Typing Errors!)*
+- **Pre-configured Scripts**: Edit settings on your main computer, deploy on target
+- **Zero Console Typing**: No long commands to type in Arch Linux console
+- **Error-Free Deployment**: Eliminates human error in manual command entry
+- **Multiple Password Modes**: Supports all password management methods
 
 ## 🚀 Features
 
@@ -42,6 +57,18 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 - **Language Support** - Python, Node.js, Rust, Go ready
 - **Terminal Tools** - Enhanced CLI experience
 
+### ⚡ Power Management & Performance
+- **TLP** - Advanced laptop power management
+- **Intel GPU Optimization** - Hardware-specific tuning
+- **CPU Frequency Scaling** - Performance and power balance
+- **Thermal Management** - Temperature monitoring and control
+
+### 🔧 System Tools & Utilities
+- **Comprehensive Hardware Validation** - Compatibility checking
+- **Backup & Restore System** - Full system backup with verification
+- **Package Management Tools** - Unified pacman/AUR interface
+- **System Information Dashboard** - Real-time status monitoring
+
 ## 📋 System Requirements
 
 ### Hardware
@@ -64,21 +91,26 @@ A comprehensive Ansible automation system that transforms a minimal Arch Linux i
 
 ## 🚀 Quick Start
 
-### 🌟 **Zero-Touch Installation with Advanced Password Management**
+### 🌟 **Zero-Touch Installation with Revolutionary Features**
 **REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
 
-#### **Method 1: USB Deployment (Easiest - No Typing!)**
+#### **Method 1: USB Deployment (🔥 GAME CHANGER - No Typing!)**
 ```bash
-# 1. Copy usb-deploy.sh to USB stick and edit your settings
-# 2. Boot from Arch Linux ISO  
-# 3. Mount USB: mount /dev/sdX1 /mnt/usb && cd /mnt/usb
-# 4. Run: ./usb-deploy.sh
-#
-# No long commands to type! Everything pre-configured!
+# STEP 1: On your main computer
+# - Download usb-deployment/ folder to USB stick
+# - Edit usb-deploy.sh configuration section with your preferences
+# - Save and safely eject USB
+
+# STEP 2: On target computer
+# - Boot from Arch Linux ISO
+# - Mount USB: mount /dev/sdX1 /mnt/usb && cd /mnt/usb
+# - Run: ./usb-deploy.sh
+
+# THAT'S IT! Zero typing errors, zero command memorization!
 # 30-60 minutes later: Complete modern desktop ready!
 ```
 
-#### **Method 2: Direct Download (Original)**
+#### **Method 2: Direct Download (Traditional)**
 ```bash
 # 1. Boot from Arch Linux ISO
 # 2. Run this single command:
@@ -95,36 +127,56 @@ curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/ma
 # 30-60 minutes later: Complete modern desktop ready!
 ```
 
-**What makes it special:**
-- ✅ **Auto-detects**: Timezone, keyboard, best disk, hardware
-- ✅ **Smart networking**: Ethernet auto-connect, WiFi setup if needed
-- ✅ **Advanced password management**: 4 secure methods (env vars, encrypted files, auto-gen, interactive)
-- ✅ **Enterprise ready**: CI/CD integration, encrypted storage, audit logging
-- ✅ **Zero configuration**: No YAML files to edit
-- ✅ **Complete automation**: From ISO to desktop in one command
+#### **Method 3: GitHub CI/CD Pipeline (Enterprise)**
+```bash
+# Use GitHub Secrets for secure deployment
+# Perfect for enterprise environments and remote deployment
+# Supports environment variables and encrypted password files
+# See docs/github-password-storage.md for complete setup
+```
 
-### 🤖 Password Management Options
+**🎯 What makes it revolutionary:**
+- ✅ **USB Deployment**: Edit config on main PC, deploy on target with zero typing
+- ✅ **Advanced Password Management**: 4 secure methods with encryption
+- ✅ **Auto-detects Everything**: Timezone, keyboard, best disk, hardware
+- ✅ **Smart Networking**: Ethernet auto-connect, WiFi setup if needed  
+- ✅ **Enterprise Ready**: CI/CD integration, encrypted storage, audit logging
+- ✅ **Zero Configuration**: No YAML files to edit manually
+- ✅ **Complete Automation**: From ISO to desktop in one command
 
-**Environment Variables (CI/CD):**
+### 🤖 Advanced Password Management Options
+
+**🔐 Method 1: Environment Variables (CI/CD Integration)**
 ```bash
 export DEPLOY_USER_PASSWORD="secure_password"
 export DEPLOY_ROOT_PASSWORD="secure_password"
+export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
 ./zero_touch_deploy.sh --password-mode env
 ```
 
-**Encrypted Password File:**
+**🗃️ Method 2: Encrypted Password File (AES-256)**
 ```bash
-# Create encrypted file
-./scripts/utilities/create_password_file.sh --output passwords.enc
+# Create encrypted file with PBKDF2 key derivation
+./scripts/security/create_password_file.sh --output passwords.enc
 
 # Deploy with encrypted file
 ./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
 ```
 
-**Auto-Generated Passwords:**
+**🎲 Method 3: Auto-Generated Passwords (Cryptographically Secure)**
 ```bash
-# Generate secure passwords automatically
+# Generate cryptographically secure passwords automatically
+# Supports email delivery, QR codes, and secure file storage
 ./zero_touch_deploy.sh --password-mode generate
+
+# With email delivery
+DEPLOY_EMAIL_RECIPIENT="user@example.com" ./zero_touch_deploy.sh --password-mode generate
+```
+
+**💬 Method 4: Interactive Mode (Traditional)**
+```bash
+# Interactive prompts for manual password entry
+./zero_touch_deploy.sh --password-mode interactive
 ```
 
 **Advanced/Custom (manual config):**
@@ -206,13 +258,23 @@ lm_archlinux_desktop/
 │   │   ├── users_security/  # User management & SSH
 │   │   ├── hyprland_desktop/# Desktop environment
 │   │   ├── aur_packages/    # AUR package management
-│   │   └── system_hardening/# Security hardening
+│   │   ├── system_hardening/# Security hardening
+│   │   └── power_management/# Laptop power optimization
 │   ├── playbooks/          # Deployment playbooks
 │   ├── inventory/          # Host configurations
 │   └── group_vars/         # Global variables
 ├── scripts/                # Utility scripts
-├── docs/                   # Documentation
-└── ssh/                   # SSH keys for repository access
+│   ├── deployment/         # Main deployment scripts
+│   ├── security/           # Password management & security
+│   ├── testing/            # Validation and testing
+│   ├── maintenance/        # System maintenance
+│   └── utilities/          # System utilities
+├── usb-deployment/         # USB deployment system
+├── tools/                  # System management tools
+├── templates/              # Jinja2 configuration templates
+├── files/                  # Static files and assets
+├── docs/                   # Comprehensive documentation
+└── examples/               # CI/CD and configuration examples
 ```
 
 ### 🔧 Core Components
@@ -223,12 +285,26 @@ lm_archlinux_desktop/
 - **hyprland_desktop** - Complete Wayland desktop with applications
 - **aur_packages** - Secure AUR management with yay
 - **system_hardening** - Firewall, fail2ban, audit, kernel security
+- **power_management** - TLP, thermal management, Intel GPU optimization
+
+#### Deployment Scripts
+- **zero_touch_deploy.sh** - Revolutionary single-command deployment
+- **master_auto_deploy.sh** - Advanced deployment with profile support
+- **auto_install.sh** - Automated base system installation
+- **auto_post_install.sh** - Post-installation configuration and validation
+
+#### Password Management System
+- **password_manager.sh** - Core hybrid password management
+- **encrypted_file_handler.sh** - AES-256 encryption for password files
+- **create_password_file.sh** - Password file creation utility
+- **GitHub CI/CD Integration** - Enterprise deployment workflows
 
 #### Playbooks
 - **local.yml** - Main playbook with interactive prompts
 - **bootstrap.yml** - Initial system configuration
 - **desktop.yml** - Desktop environment deployment
 - **security.yml** - Security hardening application
+- **maintenance.yml** - System maintenance automation
 
 ## 🎮 Desktop Experience
 

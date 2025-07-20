@@ -1,29 +1,61 @@
 # Installation Guide: Arch Linux Hyprland Desktop Automation
 
-The **easiest way** to get a complete, secure, modern Arch Linux desktop system. From bare ISO to fully configured Hyprland desktop in just one command!
+🚀 **REVOLUTIONARY ARCH LINUX AUTOMATION** - The **easiest way** to get a complete, secure, modern Arch Linux desktop system. Features **advanced password management**, **USB deployment system**, and **zero-touch deployment**!
 
-## 🌟 Revolutionary Zero-Touch Installation
+## ✨ Revolutionary Features Overview
 
-**BREAKTHROUGH**: Answer just 3 questions and get a complete desktop system!
+### 🔒 **Advanced Password Management System**
+- **4 Secure Methods**: Environment variables, encrypted files (AES-256), auto-generation, interactive
+- **Enterprise CI/CD Integration**: GitHub Actions workflows with secure password storage
+- **Email & QR Delivery**: Multiple password delivery methods
+- **PBKDF2 Encryption**: Military-grade security for password files
 
-### What Makes This Special
-- ✅ **No configuration files** to edit
-- ✅ **Auto-detects everything** (timezone, keyboard, hardware)
-- ✅ **Smart networking** (auto-connects ethernet, simple WiFi setup)
-- ✅ **Secure by design** (passwords prompted safely, never stored)
-- ✅ **Complete automation** (30-60 minutes from ISO to desktop)
-- ✅ **Enterprise security** (firewall, encryption, hardening)
-- ✅ **Modern tools** (Hyprland, VS Code, development stack)
+### 📱 **USB Deployment System** *(GAME CHANGER)*
+- **Zero Console Typing**: Edit config on your main PC, deploy with zero typing errors
+- **Pre-configured Scripts**: All settings configured before deployment
+- **Error-Free Deployment**: Eliminates human error in manual command entry
 
-## Overview
+### 🌟 **Zero-Touch Installation**
+- ✅ **Advanced Password Management**: 4 secure password methods with encryption
+- ✅ **USB Deployment**: No typing errors, pre-configured settings
+- ✅ **Auto-detects Everything**: Timezone, keyboard, hardware, best mirrors
+- ✅ **Smart Networking**: Ethernet auto-connect, WiFi setup if needed
+- ✅ **Enterprise Security**: Firewall, encryption, audit logging, hardening
+- ✅ **Complete Automation**: From ISO to desktop in one command
+- ✅ **CI/CD Ready**: GitHub Actions integration for enterprise deployment
 
-This automation system transforms a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with:
+## System Overview
 
-- **Desktop Environment**: Hyprland Wayland compositor with Waybar, Wofi, Mako, Kitty
-- **Security**: UFW firewall, fail2ban, audit logging, system hardening
-- **Applications**: Firefox, VS Code, Discord, Zoom, and essential development tools
-- **Audio**: PipeWire with Bluetooth support
-- **Package Management**: Secure AUR integration with yay
+This revolutionary automation system transforms a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with:
+
+### 🖥️ **Desktop Environment**
+- **Hyprland** - Modern Wayland compositor with intelligent tiling
+- **Waybar** - Highly customizable status bar
+- **Wofi** - Application launcher with search
+- **Mako** - Notification daemon
+- **Kitty** - GPU-accelerated terminal
+- **SDDM** - Display manager with Wayland support
+
+### 🔒 **Enterprise Security**
+- **UFW Firewall** - Configured with restrictive defaults
+- **fail2ban** - Intrusion prevention system
+- **Audit System** - Comprehensive security logging
+- **Kernel Hardening** - Security-focused parameters
+- **File Permissions** - Properly secured system files
+- **SSH Hardening** - Secure remote access
+
+### 📦 **Applications & Tools**
+- **Visual Studio Code** - Modern development environment
+- **Firefox** - Secure web browser
+- **Discord, Zoom** - Communication tools
+- **Development Stack** - Python, Node.js, Git, Docker ready
+- **System Tools** - Hardware validation, backup management
+
+### ⚡ **Performance & Power**
+- **PipeWire** - Low-latency audio system
+- **TLP** - Advanced laptop power management
+- **Intel GPU Optimization** - Hardware-specific tuning
+- **Bluetooth Support** - Full audio and device support
 
 ## Prerequisites
 
@@ -41,21 +73,71 @@ This automation system transforms a minimal Arch Linux installation into a fully
 
 ## Installation Methods
 
-### Method 1: 🌟 Zero-Touch Installation (RECOMMENDED)
-**3 questions = Complete desktop!** Ultimate simplicity.
+### Method 1: 📱 USB Deployment (🔥 GAME CHANGER)
+**Zero typing errors!** Edit config on main PC, deploy with no console typing.
 
-### Method 2: ⚡ Quick Setup 
-5 questions with more customization options.
+### Method 2: 🌟 Zero-Touch Installation (EASIEST)
+**3 questions = Complete desktop!** Ultimate simplicity with auto-detection.
 
-### Method 3: 🤖 Advanced Automated
-Manual configuration file editing for power users.
+### Method 3: 🤖 Enterprise CI/CD Deployment
+**GitHub Secrets integration** for automated remote deployment.
 
-### Method 4: 🔧 Traditional Manual
-Step-by-step manual installation (for troubleshooting).
+### Method 4: ⚡ Advanced Password Management
+**4 secure methods** - Environment variables, encrypted files, auto-generation, interactive.
+
+### Method 5: 🔧 Traditional Manual
+Step-by-step installation for troubleshooting and learning.
 
 ---
 
-## Method 1: 🌟 Zero-Touch Installation (REVOLUTIONARY!)
+## Method 1: 📱 USB Deployment (REVOLUTIONARY!)
+
+**🔥 GAME CHANGER**: Edit settings on your main computer, deploy with ZERO typing errors!
+
+### Step 1: Prepare USB Deployment System
+```bash
+# 1. Download usb-deployment folder to USB stick
+# 2. Edit usb-deploy.sh configuration section with your preferences:
+#    - Username, hostname, timezone
+#    - Password management method
+#    - WiFi credentials (if needed)
+#    - Disk encryption settings
+
+# Configuration section in usb-deploy.sh:
+USER_NAME="your_username"
+HOST_NAME="your_hostname"
+TIMEZONE="Europe/Paris"
+KEYMAP="fr"
+PASSWORD_MODE="generate"  # or "interactive", "env", "file"
+ENABLE_ENCRYPTION="true"
+WIFI_SSID="Your_WiFi_Name"  # Optional
+WIFI_PASSWORD="wifi_password"  # Optional
+```
+
+### Step 2: Deploy on Target Computer
+1. **Boot from Arch Linux ISO**
+2. **Mount USB and run:**
+```bash
+# Mount USB drive
+mount /dev/sdX1 /mnt/usb
+cd /mnt/usb
+
+# Run deployment (all settings pre-configured!)
+./usb-deploy.sh
+```
+
+3. **That's it!** No typing, no errors, complete automation!
+
+### Benefits:
+- ✅ **Zero typing errors** - All commands pre-configured
+- ✅ **Pre-configured settings** - Edit comfortably on main PC
+- ✅ **No memorization** - No need to remember long commands
+- ✅ **Error-free deployment** - Eliminates human input errors
+- ✅ **Supports all password modes** - Full flexibility
+
+---
+
+## Method 2: 🌟 Zero-Touch Installation (EASIEST)
 
 **The ultimate in simplicity** - Answer 3 questions, get a complete desktop!
 
@@ -86,35 +168,87 @@ curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/ma
 4. **Sit back and relax!** ☕
 
 ### What Happens Automatically:
-- ✅ **Auto-detects**: Timezone, keyboard layout, best disk
-- ✅ **Network setup**: Ethernet auto-connects, WiFi menu if needed
-- ✅ **Secure passwords**: Prompted safely (never stored in files)
-- ✅ **Complete installation**: Base system + desktop + apps + security
+- ✅ **Auto-detects**: Timezone, keyboard layout, best disk, fastest mirrors
+- ✅ **Smart networking**: Ethernet auto-connects, WiFi menu if needed
+- ✅ **Advanced password management**: Secure password generation with multiple delivery options
+- ✅ **Complete installation**: Base system + desktop + apps + security + power management
+- ✅ **Enterprise security**: Firewall, fail2ban, audit logging, system hardening
 - ✅ **Ready to use**: 30-60 minutes later, complete modern desktop!
 
-**No configuration files to edit. No manual network setup. No password management. Just works!**
+**Revolutionary features**: Advanced password management, auto-hardware detection, enterprise-grade security!
 
 ---
 
-## Method 2: ⚡ Quick Setup (5 Questions)
+## Method 3: 🤖 Enterprise CI/CD Deployment
 
-More customization options:
+**Perfect for enterprise environments and remote deployment:**
 
+### GitHub Secrets Integration
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/quick_deploy.sh | bash
+# Store passwords securely in GitHub repository secrets:
+# DEPLOY_USER_PASSWORD
+# DEPLOY_ROOT_PASSWORD
+# DEPLOY_LUKS_PASSPHRASE
+# DEPLOY_WIFI_PASSWORD
+
+# Deploy using environment variables
+export DEPLOY_USER_PASSWORD="secure_password"
+export DEPLOY_ROOT_PASSWORD="secure_password"
+./zero_touch_deploy.sh --password-mode env
 ```
 
-**Additional questions:**
-- 🌍 Timezone
-- ⌨️ Keyboard layout
+### GitHub Actions Workflow
+See `examples/ci-cd/github-actions.yml` for complete CI/CD pipeline setup.
+
+**For complete setup guide:** [GitHub Password Storage](github-password-storage.md)
 
 ---
 
-## Method 3: 🤖 Advanced Automated Installation
+## Method 4: ⚡ Advanced Password Management
+
+**Choose from 4 secure password methods:**
+
+### 🔐 Method A: Environment Variables (CI/CD)
+```bash
+export DEPLOY_USER_PASSWORD="secure_password"
+export DEPLOY_ROOT_PASSWORD="secure_password"
+export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
+./zero_touch_deploy.sh --password-mode env
+```
+
+### 🗃️ Method B: Encrypted File (AES-256)
+```bash
+# Create encrypted password file
+./scripts/security/create_password_file.sh --output passwords.enc
+
+# Deploy with encrypted file
+./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+```
+
+### 🎲 Method C: Auto-Generated (Cryptographically Secure)
+```bash
+# Generate secure passwords automatically
+./zero_touch_deploy.sh --password-mode generate
+
+# With email delivery
+DEPLOY_EMAIL_RECIPIENT="user@example.com" ./zero_touch_deploy.sh --password-mode generate
+```
+
+### 💬 Method D: Interactive (Traditional)
+```bash
+# Interactive prompts
+./zero_touch_deploy.sh --password-mode interactive
+```
+
+**For detailed password management guide:** [Password Management](password-management.md)
+
+---
+
+## Method 5: 🔧 Traditional Manual Installation
 
 For users who want to edit configuration files manually:
 
-### Create Configuration File
+### Create Configuration File (Advanced Users)
 ```bash
 # Download template
 curl -O https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/example_deployment_config.yml
