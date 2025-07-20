@@ -77,7 +77,7 @@ Traditional secure password prompting:
 
 ## 🚀 Quick Start Examples
 
-### Enterprise CI/CD Pipeline
+### GitHub CI/CD Pipeline
 ```yaml
 # GitHub Actions / GitLab CI
 - name: Deploy Arch Linux System

@@ -226,7 +226,7 @@ export DEPLOY_WIFI_PASSWORD="wifi_password"
 
 ## Usage Examples
 
-### Enterprise CI/CD Pipeline
+### GitHub CI/CD Pipeline
 ```yaml
 # GitHub Actions / GitLab CI
 - name: Deploy Arch Linux System
