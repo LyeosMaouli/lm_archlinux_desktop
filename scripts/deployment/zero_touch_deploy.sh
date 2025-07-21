@@ -21,13 +21,33 @@ FILE_PASSPHRASE=""
 
 # Load password management system
 load_password_manager() {
-    local password_manager="$SCRIPT_DIR/../security/password_manager.sh"
-    if [[ -f "$password_manager" ]]; then
-        source "$password_manager"
-        log_info "Password management system loaded"
+    local password_manager_paths=(
+        "$SCRIPT_DIR/../security/password_manager.sh"
+        "./scripts/security/password_manager.sh"
+        "/tmp/password_manager.sh"
+    )
+    
+    for password_manager in "${password_manager_paths[@]}"; do
+        if [[ -f "$password_manager" ]]; then
+            source "$password_manager"
+            echo -e "${GREEN}✅ Password management system loaded from: $password_manager${NC}"
+            return 0
+        fi
+    done
+    
+    # If not found locally, try to download from GitHub
+    echo -e "${YELLOW}⚠️ Password management system not found locally, downloading...${NC}"
+    local github_url="https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/security/password_manager.sh"
+    
+    if curl -fsSL "$github_url" -o "/tmp/password_manager.sh"; then
+        chmod +x "/tmp/password_manager.sh"
+        source "/tmp/password_manager.sh"
+        echo -e "${GREEN}✅ Password management system downloaded and loaded${NC}"
         return 0
     else
-        echo -e "${RED}❌ Password management system not found${NC}"
+        echo -e "${RED}❌ Failed to load password management system${NC}"
+        echo -e "${RED}   Tried paths: ${password_manager_paths[*]}${NC}"
+        echo -e "${RED}   GitHub download failed: $github_url${NC}"
         return 1
     fi
 }
