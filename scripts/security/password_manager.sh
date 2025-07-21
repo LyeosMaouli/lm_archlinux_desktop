@@ -55,7 +55,7 @@ secure_cleanup() {
     done
     
     # Clear environment variables if they exist
-    unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_PASSWORD 2>/dev/null || true
+    unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_SSID DEPLOY_WIFI_PASSWORD 2>/dev/null || true
     
     # Clear any temporary files
     find /tmp -name "password_*_$$" -type f -delete 2>/dev/null || true
@@ -130,6 +130,13 @@ detect_env_passwords() {
     if [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
         SECURE_PASSWORDS[wifi]="$DEPLOY_WIFI_PASSWORD"
         log_success "WiFi password found in environment"
+        found_any=true
+    fi
+    
+    # Export WiFi SSID if available (doesn't need to be in SECURE_PASSWORDS array)
+    if [[ -n "${DEPLOY_WIFI_SSID:-}" ]]; then
+        export DEPLOY_WIFI_SSID="$DEPLOY_WIFI_SSID"
+        log_success "WiFi SSID found in environment"
         found_any=true
     fi
     
@@ -377,6 +384,7 @@ Environment Variables:
   DEPLOY_USER_PASSWORD     - User account password
   DEPLOY_ROOT_PASSWORD     - Root account password
   DEPLOY_LUKS_PASSPHRASE   - LUKS encryption passphrase
+  DEPLOY_WIFI_SSID         - WiFi network name (SSID)
   DEPLOY_WIFI_PASSWORD     - WiFi network password
 
 Functions:

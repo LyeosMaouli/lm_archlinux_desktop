@@ -67,14 +67,19 @@ Click **"New repository secret"** for each of these:
 - **Secret**: Your disk encryption passphrase (minimum 12 characters)
 - **Example**: `My-Very-Secure-Disk-Encryption-Passphrase-2024!`
 
-**4. DEPLOY_WIFI_PASSWORD** (if you need WiFi setup)
+**4. DEPLOY_WIFI_SSID** (if you need WiFi setup)
+- **Name**: `DEPLOY_WIFI_SSID`
+- **Secret**: Your WiFi network name (SSID)
+- **Example**: `MyHomeNetwork_5G`
+
+**5. DEPLOY_WIFI_PASSWORD** (if you need WiFi setup)
 - **Name**: `DEPLOY_WIFI_PASSWORD`
 - **Secret**: Your WiFi network password
 - **Example**: `YourWiFiPassword123`
 
 #### Notification Secrets (Optional)
 
-**5. Email Notifications** (if you want deployment status emails)
+**6. Email Notifications** (if you want deployment status emails)
 - **DEPLOY_EMAIL_RECIPIENT**: `your-email@example.com`
 - **DEPLOY_SMTP_SERVER**: `smtp.gmail.com`
 - **DEPLOY_SMTP_USERNAME**: `your-sender@gmail.com`

@@ -211,11 +211,12 @@ load_encrypted_passwords() {
     local decrypted_content
     if decrypted_content=$(decrypt_password_file "$file_path" "$file_passphrase"); then
         # Parse password data
-        local user_password root_password luks_passphrase wifi_password
+        local user_password root_password luks_passphrase wifi_ssid wifi_password
         
         user_password=$(echo "$decrypted_content" | grep -E "^user_password:" | cut -d':' -f2- | xargs | tr -d '"' || echo "")
         root_password=$(echo "$decrypted_content" | grep -E "^root_password:" | cut -d':' -f2- | xargs | tr -d '"' || echo "")
         luks_passphrase=$(echo "$decrypted_content" | grep -E "^luks_passphrase:" | cut -d':' -f2- | xargs | tr -d '"' || echo "")
+        wifi_ssid=$(echo "$decrypted_content" | grep -E "^wifi_ssid:" | cut -d':' -f2- | xargs | tr -d '"' || echo "")
         wifi_password=$(echo "$decrypted_content" | grep -E "^wifi_password:" | cut -d':' -f2- | xargs | tr -d '"' || echo "")
         
         # Export passwords
@@ -239,8 +240,14 @@ load_encrypted_passwords() {
             ((passwords_loaded++))
         fi
         
+        if [[ -n "$wifi_ssid" ]]; then
+            export DEPLOY_WIFI_SSID="$wifi_ssid"
+            log_success "WiFi SSID loaded from encrypted file"
+            ((passwords_loaded++))
+        fi
+        
         if [[ -n "$wifi_password" ]]; then
-            export WIFI_PASSWORD="$wifi_password"
+            export DEPLOY_WIFI_PASSWORD="$wifi_password"
             log_success "WiFi password loaded from encrypted file"
             ((passwords_loaded++))
         fi
@@ -297,6 +304,15 @@ create_password_file_interactive() {
     read -s luks_passphrase
     if [[ -n "$luks_passphrase" ]]; then
         echo "luks_passphrase: \"$luks_passphrase\"" >> "$temp_passwords"
+    fi
+    echo
+    
+    # WiFi SSID (optional)
+    echo -e "${BLUE}WiFi network name/SSID (optional, press Enter to skip):${NC}"
+    local wifi_ssid
+    read wifi_ssid
+    if [[ -n "$wifi_ssid" ]]; then
+        echo "wifi_ssid: \"$wifi_ssid\"" >> "$temp_passwords"
     fi
     echo
     

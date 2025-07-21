@@ -226,6 +226,51 @@ EOF
     echo "$config_file"
 }
 
+# Automatic WiFi connection function
+connect_wifi_auto() {
+    local ssid="$1"
+    local password="$2"
+    
+    echo "Connecting to WiFi network: $ssid"
+    
+    # Get WiFi device
+    local wifi_device
+    wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
+    
+    if [[ -z "$wifi_device" ]]; then
+        echo "No WiFi device found"
+        return 1
+    fi
+    
+    # Scan for networks
+    iwctl station "$wifi_device" scan >/dev/null 2>&1
+    sleep 3
+    
+    # Check if network is available
+    if ! iwctl station "$wifi_device" get-networks | grep -q "$ssid"; then
+        echo "Network '$ssid' not found in scan results"
+        return 1
+    fi
+    
+    # Connect to network
+    if echo "$password" | iwctl --passphrase - station "$wifi_device" connect "$ssid" >/dev/null 2>&1; then
+        echo "WiFi connection initiated..."
+        sleep 10
+        
+        # Verify connection
+        if ping -c 3 8.8.8.8 >/dev/null 2>&1; then
+            echo "WiFi connection successful"
+            return 0
+        else
+            echo "WiFi connected but no internet access"
+            return 1
+        fi
+    else
+        echo "Failed to connect to WiFi network"
+        return 1
+    fi
+}
+
 # Network auto-setup
 setup_network_auto() {
     echo -e "${BLUE}🌐 Setting up internet connection...${NC}"
@@ -253,7 +298,18 @@ setup_network_auto() {
     if iwctl device list 2>/dev/null | grep -q "wlan"; then
         echo "Ethernet not available, trying WiFi..."
         
-        # Use the built-in WiFi menu for simplicity
+        # Check for automatic WiFi credentials
+        if [[ -n "${DEPLOY_WIFI_SSID:-}" ]] && [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
+            echo "Found WiFi credentials, connecting automatically..."
+            if connect_wifi_auto "$DEPLOY_WIFI_SSID" "$DEPLOY_WIFI_PASSWORD"; then
+                echo -e "${GREEN}✅ WiFi connected automatically!${NC}"
+                return 0
+            else
+                echo -e "${YELLOW}⚠️  Automatic WiFi connection failed, falling back to manual${NC}"
+            fi
+        fi
+        
+        # Fallback to manual WiFi setup
         echo "Opening WiFi setup..."
         echo "Please connect to your WiFi network and then press Enter to continue"
         wifi-menu || true
@@ -434,6 +490,7 @@ Environment Variables (for env mode):
   DEPLOY_USER_PASSWORD     - User account password
   DEPLOY_ROOT_PASSWORD     - Root account password
   DEPLOY_LUKS_PASSPHRASE   - LUKS encryption passphrase
+  DEPLOY_WIFI_SSID         - WiFi network name (SSID)
   DEPLOY_WIFI_PASSWORD     - WiFi network password
 
 Examples:

@@ -18,6 +18,7 @@ Set passwords as environment variables before running deployment:
 export DEPLOY_USER_PASSWORD="secure_user_password"
 export DEPLOY_ROOT_PASSWORD="secure_root_password"
 export DEPLOY_LUKS_PASSPHRASE="secure_luks_passphrase"
+export DEPLOY_WIFI_SSID="MyWiFiNetwork"
 export DEPLOY_WIFI_PASSWORD="wifi_password"
 
 # Deploy with environment method
