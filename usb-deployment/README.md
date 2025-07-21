@@ -208,6 +208,12 @@ bash -x ./usb-deploy.sh
 - Check ethernet cable connection
 - Verify WiFi credentials if configured
 
+**"No such file or directory" when running script**
+- File has Windows line endings (CRLF) - common when editing on Windows
+- Fix with: `sed -i 's/\r$//' usb-deploy.sh`
+- Make executable: `chmod +x usb-deploy.sh`
+- Always edit shell scripts on Linux or use Linux-compatible editors
+
 ### USB Mount Issues
 ```bash
 # Find USB device
