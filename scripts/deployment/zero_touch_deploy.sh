@@ -132,6 +132,19 @@ load_password_manager() {
     # If not found locally, download entire project from GitHub using git clone
     echo -e "${YELLOW}[WARNING] Password management system not found locally, downloading entire project...${NC}"
     
+    # Install git first before attempting to clone
+    if ! command -v git >/dev/null 2>&1; then
+        echo "[DEBUG] Git not found, installing git..."
+        if pacman -Sy --noconfirm git; then
+            echo "[DEBUG] Git installed successfully"
+        else
+            echo -e "${RED}[ERROR] Failed to install git${NC}"
+            return 1
+        fi
+    else
+        echo "[DEBUG] Git is already available"
+    fi
+    
     local project_dir="/tmp/lm_archlinux_desktop"
     local repo_url="https://github.com/LyeosMaouli/lm_archlinux_desktop.git"
     
@@ -140,16 +153,6 @@ load_password_manager() {
     
     # Remove existing directory if it exists
     rm -rf "$project_dir"
-    
-    # Install git if not available
-    if ! command -v git >/dev/null 2>&1; then
-        echo "[DEBUG] Installing git..."
-        pacman -Sy --noconfirm git || {
-            echo -e "${RED}[ERROR] Failed to install git${NC}"
-            return 1
-        }
-        echo "[DEBUG] Git installed successfully"
-    fi
     
     # Clone the entire project (this gets the absolute latest version)
     if git clone "$repo_url" "$project_dir"; then
