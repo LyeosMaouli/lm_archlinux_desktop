@@ -206,16 +206,42 @@ setup_network() {
 
 # Download deployment script
 download_deployment_script() {
-    log_info "Downloading deployment script..."
+    log_info "Downloading deployment script via git clone (ensures latest version)..."
     
-    local script_url="https://raw.githubusercontent.com/$GITHUB_USERNAME/$GITHUB_REPO/$GITHUB_BRANCH/scripts/deployment/zero_touch_deploy.sh"
+    local temp_repo_dir="$USB_DIR/temp_repo"
+    local repo_url="https://github.com/$GITHUB_USERNAME/$GITHUB_REPO.git"
     
-    if curl -fsSL "$script_url" -o "$USB_DIR/deploy.sh"; then
-        chmod +x "$USB_DIR/deploy.sh"
-        log_success "Deployment script downloaded"
-        return 0
+    # Remove any existing temp directory
+    rm -rf "$temp_repo_dir"
+    
+    # Clone the repository to get the absolute latest version
+    if git clone "$repo_url" "$temp_repo_dir"; then
+        log_success "Repository cloned successfully"
+        
+        # Copy the deployment script
+        if [[ -f "$temp_repo_dir/scripts/deployment/zero_touch_deploy.sh" ]]; then
+            cp "$temp_repo_dir/scripts/deployment/zero_touch_deploy.sh" "$USB_DIR/deploy.sh"
+            chmod +x "$USB_DIR/deploy.sh"
+            
+            # Show commit info for verification
+            cd "$temp_repo_dir"
+            local commit_sha=$(git rev-parse HEAD)
+            local commit_date=$(git log -1 --format="%ci")
+            cd - >/dev/null
+            
+            log_success "Deployment script copied from latest commit: ${commit_sha:0:8}"
+            log_info "Commit date: $commit_date"
+            
+            # Cleanup temp directory
+            rm -rf "$temp_repo_dir"
+            return 0
+        else
+            log_error "Deployment script not found in repository"
+            rm -rf "$temp_repo_dir"
+            return 1
+        fi
     else
-        log_error "Failed to download deployment script from: $script_url"
+        log_error "Failed to clone repository from: $repo_url"
         return 1
     fi
 }
