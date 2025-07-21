@@ -256,8 +256,8 @@ auto_detect_password_method() {
 get_password() {
     local password_type="$1"
     
-    if [[ -n "${SECURE_PASSWORDS[$password_type]:-}" ]]; then
-        echo "${SECURE_PASSWORDS[$password_type]:-}"
+    if [[ -n "${SECURE_PASSWORDS["$password_type"]:-}" ]]; then
+        echo "${SECURE_PASSWORDS["$password_type"]:-}"
         return 0
     else
         log_error "Password not available: $password_type"
@@ -271,7 +271,7 @@ set_password() {
     local password="$2"
     
     if validate_password_strength "$password" 8 "$password_type"; then
-        SECURE_PASSWORDS[$password_type]="$password"
+        SECURE_PASSWORDS["$password_type"]="$password"
         log_success "$password_type password set successfully"
         return 0
     else
@@ -350,8 +350,8 @@ show_password_status() {
     echo -e "${PURPLE}Password Status:${NC}"
     
     for password_type in user root luks wifi; do
-        if [[ -n "${SECURE_PASSWORDS[$password_type]:-}" ]]; then
-            local password_length=${#SECURE_PASSWORDS[$password_type]:-}
+        if [[ -n "${SECURE_PASSWORDS["$password_type"]:-}" ]]; then
+            local password_length=${#SECURE_PASSWORDS["$password_type"]:-}
             echo -e "  ${GREEN}✓${NC} $password_type: Set ($password_length characters)"
         else
             echo -e "  ${YELLOW}○${NC} $password_type: Not set"
