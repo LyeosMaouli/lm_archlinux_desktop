@@ -21,7 +21,7 @@ all:
     
     # Project configuration
     project_name: lm_archlinux_desktop
-    deployment_user: lyeosmaouli
+    deployment_user: "{{ user_username | default('user') }}"
     
     # System configuration
     locale: en_US.UTF-8

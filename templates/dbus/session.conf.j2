@@ -20,7 +20,7 @@
   </policy>
 
   <!-- Hyprland specific policies -->
-  <policy user="{{ hyprland_user | default('lyeosmaouli') }}">
+  <policy user="{{ hyprland_user | default(users.main_user) }}">
     <allow own="org.hyprland.*"/>
     <allow send_destination="org.hyprland.*"/>
     <allow receive_sender="org.hyprland.*"/>

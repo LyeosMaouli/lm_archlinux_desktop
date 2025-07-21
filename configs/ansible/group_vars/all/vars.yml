@@ -10,7 +10,7 @@ system:
   
 # User configuration
 users:
-  main_user: "{{ deployment_user | default('lyeosmaouli') }}"
+  main_user: "{{ deployment_user | default('user') }}"
   groups:
     - wheel
     - audio

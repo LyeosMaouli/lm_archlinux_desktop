@@ -14,7 +14,7 @@ system:
 
 # User Configuration
 user:
-  username: "lyeosmaouli"
+  username: "{{ user_username | default('user') }}"
   shell: "/bin/zsh"  # Developer preference
   groups:
     - wheel

@@ -161,13 +161,13 @@ create_minimal_config() {
     cat > "$CONFIG_FILE" << 'EOF'
 # Minimal Deployment Configuration
 system:
-  hostname: "phoenix"
-  timezone: "Europe/Paris"
+  hostname: "desktop"
+  timezone: "UTC"
   locale: "en_US.UTF-8"
-  keymap: "fr"
+  keymap: "en"
 
 user:
-  username: "lyeosmaouli"
+  username: "user"
   password: ""  # Will be prompted
   shell: "/bin/bash"
 

@@ -40,8 +40,8 @@ read -p "Computer name (hostname) [phoenix]: " hostname
 hostname=${hostname:-phoenix}
 
 # Username  
-read -p "Your username [lyeosmaouli]: " username
-username=${username:-lyeosmaouli}
+read -p "Your username [user]: " username
+username=${username:-user}
 
 # Timezone
 echo

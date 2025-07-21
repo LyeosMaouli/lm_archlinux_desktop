@@ -489,7 +489,7 @@ system-status
 sudo reboot
 
 # System should boot to SDDM login manager
-# Log in as lyeosmaouli and select "Hyprland" session
+# Log in as your user and select "Hyprland" session
 
 # Test key bindings:
 Super + T          # Terminal (Kitty)
@@ -525,7 +525,7 @@ speaker-test -c 2 # Audio test
 #### 5.3 AUR Packages
 ```bash
 # Check AUR package status
-/home/lyeosmaouli/.local/bin/aur-backup
+/home/$USER/.local/bin/aur-backup
 yay -Qm          # List AUR packages
 ```
 
@@ -546,7 +546,7 @@ sudo systemctl enable --now systemd-timer
 # System updates
 sudo pacman -Syu              # Update official packages
 yay -Sua                      # Update AUR packages
-/home/lyeosmaouli/.local/bin/update-aur  # Automated AUR updates
+/home/$USER/.local/bin/update-aur  # Automated AUR updates
 ```
 
 ## Troubleshooting
