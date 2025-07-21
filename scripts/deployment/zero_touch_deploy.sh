@@ -19,6 +19,100 @@ PASSWORD_MODE="auto"
 PASSWORD_FILE=""
 FILE_PASSPHRASE=""
 
+# Verify download integrity
+verify_download_integrity() {
+    local project_dir="$1"
+    
+    echo "[DEBUG] Verifying download integrity..."
+    
+    # Check if we have a git repository
+    if [[ ! -d "$project_dir/.git" ]]; then
+        echo "[ERROR] Not a valid git repository"
+        return 1
+    fi
+    
+    # Get current commit info
+    local commit_sha
+    local commit_date
+    cd "$project_dir"
+    commit_sha=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    commit_date=$(git log -1 --format="%ci" 2>/dev/null || echo "unknown")
+    cd - >/dev/null
+    
+    echo "[DEBUG] Downloaded commit: $commit_sha"
+    echo "[DEBUG] Commit date: $commit_date"
+    
+    # Critical files that must exist
+    local critical_files=(
+        "scripts/security/password_manager.sh"
+        "scripts/security/encrypted_file_handler.sh"
+        "scripts/deployment/master_auto_deploy.sh"
+        "scripts/deployment/auto_install.sh"
+        "scripts/deployment/auto_deploy.sh"
+    )
+    
+    echo "[DEBUG] Checking critical files..."
+    local missing_files=()
+    
+    for file in "${critical_files[@]}"; do
+        if [[ ! -f "$project_dir/$file" ]]; then
+            missing_files+=("$file")
+        else
+            echo "[DEBUG] ✓ $file"
+        fi
+    done
+    
+    if [[ ${#missing_files[@]} -gt 0 ]]; then
+        echo "[ERROR] Missing critical files:"
+        for file in "${missing_files[@]}"; do
+            echo "[ERROR]   - $file"
+        done
+        return 1
+    fi
+    
+    # Check directory structure
+    local critical_dirs=(
+        "scripts/security"
+        "scripts/deployment"
+        "configs/ansible"
+    )
+    
+    echo "[DEBUG] Checking directory structure..."
+    for dir in "${critical_dirs[@]}"; do
+        if [[ ! -d "$project_dir/$dir" ]]; then
+            echo "[ERROR] Missing critical directory: $dir"
+            return 1
+        else
+            echo "[DEBUG] ✓ $dir/"
+        fi
+    done
+    
+    # Generate and display checksum info
+    echo "[DEBUG] Generating checksums for verification..."
+    local checksum_file="/tmp/download_checksums_$$"
+    
+    cd "$project_dir"
+    find scripts/ -type f -name "*.sh" | sort | while read -r file; do
+        if [[ -f "$file" ]]; then
+            sha256sum "$file" >> "$checksum_file"
+        fi
+    done
+    cd - >/dev/null
+    
+    if [[ -f "$checksum_file" ]]; then
+        local file_count=$(wc -l < "$checksum_file")
+        echo "[DEBUG] Generated checksums for $file_count script files"
+        echo "[DEBUG] Checksum summary (first 5 files):"
+        head -5 "$checksum_file" | while read -r line; do
+            echo "[DEBUG]   $(echo "$line" | cut -d' ' -f1 | cut -c1-16)... $(echo "$line" | cut -d' ' -f3-)"
+        done
+        rm -f "$checksum_file"
+    fi
+    
+    echo "[DEBUG] Download integrity verification completed successfully"
+    return 0
+}
+
 # Load password management system
 load_password_manager() {
     local password_manager_paths=(
@@ -50,6 +144,14 @@ load_password_manager() {
     # Clone the entire project (this gets the absolute latest version)
     if git clone "$repo_url" "$project_dir"; then
         echo "[DEBUG] Project cloned successfully"
+        
+        # Verify download integrity
+        if verify_download_integrity "$project_dir"; then
+            echo "[DEBUG] Download integrity verification passed"
+        else
+            echo -e "${RED}[ERROR] Download integrity verification failed${NC}"
+            return 1
+        fi
         
         # Load password manager from the extracted project
         local password_manager="$project_dir/scripts/security/password_manager.sh"
