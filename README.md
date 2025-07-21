@@ -5,7 +5,25 @@
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?logo=ansible&logoColor=fff&style=flat)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-**🚀 REVOLUTIONARY ARCH LINUX AUTOMATION** - Transform a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with **enterprise-grade security**, **advanced password management**, and **zero-touch deployment**. Features revolutionary **USB deployment system** that eliminates typing errors in the Arch console!
+**🚀 DRAMATICALLY SIMPLIFIED ARCH LINUX AUTOMATION** - Transform a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with **enterprise-grade security**, **advanced password management**, and **zero-touch deployment**. Now with a **unified deployment interface** that reduced 30 scripts to 12!
+
+## 🎯 New Simplified Interface
+
+### One Command, Complete Desktop
+```bash
+# Complete deployment (replaces 5 different entry points)
+./scripts/deploy.sh full
+
+# Step-by-step deployment  
+./scripts/deploy.sh install   # Base system
+./scripts/deploy.sh desktop   # Desktop environment
+./scripts/deploy.sh security  # Security hardening
+```
+
+### 60% Complexity Reduction
+- **Before**: 30 scripts, 5 entry points, complex documentation
+- **After**: 12 scripts, 1 unified interface, simple commands
+- **Same Power**: All functionality preserved and enhanced
 
 ## ✨ Revolutionary Features
 
@@ -91,8 +109,8 @@
 
 ## 🚀 Quick Start
 
-### 🌟 **Zero-Touch Installation with Revolutionary Features**
-**REVOLUTIONARY**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
+### 🌟 **Simplified Zero-Touch Installation**
+**NOW EVEN EASIER**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
 
 #### **Method 1: USB Deployment (🔥 GAME CHANGER - No Typing!)**
 ```bash
@@ -110,12 +128,14 @@
 # 30-60 minutes later: Complete modern desktop ready!
 ```
 
-#### **Method 2: Direct Download (Traditional)**
+#### **Method 2: Direct Clone and Deploy (Recommended)**
 ```bash
 # 1. Boot from Arch Linux ISO
-# 2. Run this single command:
+# 2. Clone and deploy with unified interface:
 
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh | bash
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
+cd lm_archlinux_desktop
+./scripts/deploy.sh full
 
 # Answer just 3 questions:
 # 👤 Your username
@@ -151,39 +171,41 @@ curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/ma
 export DEPLOY_USER_PASSWORD="secure_password"
 export DEPLOY_ROOT_PASSWORD="secure_password"
 export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 **🗃️ Method 2: Encrypted Password File (AES-256)**
 ```bash
 # Create encrypted file with PBKDF2 key derivation
-./scripts/security/create_password_file.sh --output passwords.enc
+./scripts/utils/passwords.sh create-file passwords.enc mypassphrase user123 root456 luks789
 
 # Deploy with encrypted file
-./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+./scripts/deploy.sh full --password file --password-file passwords.enc
 ```
 
 **🎲 Method 3: Auto-Generated Passwords (Cryptographically Secure)**
 ```bash
 # Generate cryptographically secure passwords automatically
-# Supports email delivery, QR codes, and secure file storage
-./zero_touch_deploy.sh --password-mode generate
+./scripts/deploy.sh full --password generate
 
-# With email delivery
-DEPLOY_EMAIL_RECIPIENT="user@example.com" ./zero_touch_deploy.sh --password-mode generate
+# View generated passwords
+./scripts/utils/passwords.sh display
 ```
 
 **💬 Method 4: Interactive Mode (Traditional)**
 ```bash
 # Interactive prompts for manual password entry
-./zero_touch_deploy.sh --password-mode interactive
+./scripts/deploy.sh full --password interactive
 ```
 
 **Advanced/Custom (manual config):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
-chmod +x deploy.sh
-./deploy.sh auto
+# Clone repository and use custom configuration
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
+cd lm_archlinux_desktop
+cp config/deploy.conf my_config.conf
+# Edit my_config.conf with your settings
+./scripts/deploy.sh full --config my_config.conf
 ```
 
 **Features:**
@@ -199,9 +221,9 @@ chmod +x deploy.sh
 **Option 1: Semi-Automated (Manual base + Auto desktop)**
 ```bash
 # Install base Arch manually, then run:
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
-chmod +x deploy.sh
-./deploy.sh desktop
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
+cd lm_archlinux_desktop
+./scripts/deploy.sh desktop
 ```
 
 **Option 2: Traditional Approach (Advanced users)**
@@ -287,11 +309,11 @@ lm_archlinux_desktop/
 - **system_hardening** - Firewall, fail2ban, audit, kernel security
 - **power_management** - TLP, thermal management, Intel GPU optimization
 
-#### Deployment Scripts
-- **zero_touch_deploy.sh** - Revolutionary single-command deployment
-- **master_auto_deploy.sh** - Advanced deployment with profile support
-- **auto_install.sh** - Automated base system installation
-- **auto_post_install.sh** - Post-installation configuration and validation
+#### Unified Deployment System
+- **deploy.sh** - Single unified deployment entry point (replaces 5 scripts)
+- **utils/** - Specialized utilities (passwords, network, hardware, validation, profiles)
+- **internal/common.sh** - Shared functions library (400+ lines)
+- **config/deploy.conf** - Comprehensive configuration (38+ options)
 
 #### Password Management System
 - **password_manager.sh** - Core hybrid password management

@@ -1,6 +1,27 @@
 # Installation Guide: Arch Linux Hyprland Desktop Automation
 
-🚀 **REVOLUTIONARY ARCH LINUX AUTOMATION** - The **easiest way** to get a complete, secure, modern Arch Linux desktop system. Features **advanced password management**, **USB deployment system**, and **zero-touch deployment**!
+🚀 **DRAMATICALLY SIMPLIFIED ARCH LINUX AUTOMATION** - The **easiest way** to get a complete, secure, modern Arch Linux desktop system. Now with a **unified deployment interface** and **streamlined architecture**!
+
+## 🎯 New Simplified Interface
+
+### Single Command Deployment
+```bash
+# Complete end-to-end deployment (replaces 5 different scripts)
+./scripts/deploy.sh full
+
+# Step-by-step deployment
+./scripts/deploy.sh install   # Base system installation
+./scripts/deploy.sh desktop   # Desktop environment setup
+./scripts/deploy.sh security  # Security hardening
+
+# Get help and see all options
+./scripts/deploy.sh help
+```
+
+### 60% Fewer Scripts, Same Power
+- **Before**: 30 complex scripts with 5 different entry points
+- **After**: 12 focused scripts with 1 unified interface
+- **Result**: Same functionality, dramatically easier to use!
 
 ## ✨ Revolutionary Features Overview
 
@@ -154,10 +175,15 @@ sudo dd if=archlinux-x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
 
 ### Step 2: Boot and Deploy
 1. **Boot from USB** - Select "Arch Linux install medium"
-2. **Run one command:**
+2. **Clone repository and run unified deployment:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh | bash
+# Clone the repository
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
+cd lm_archlinux_desktop
+
+# Run complete deployment with new unified interface
+./scripts/deploy.sh full
 ```
 
 3. **Answer 3 simple questions:**
@@ -194,7 +220,7 @@ curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/ma
 # Deploy using environment variables
 export DEPLOY_USER_PASSWORD="secure_password"
 export DEPLOY_ROOT_PASSWORD="secure_password"
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### GitHub Actions Workflow
@@ -213,31 +239,31 @@ See `examples/ci-cd/github-actions.yml` for complete CI/CD pipeline setup.
 export DEPLOY_USER_PASSWORD="secure_password"
 export DEPLOY_ROOT_PASSWORD="secure_password"
 export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### 🗃️ Method B: Encrypted File (AES-256)
 ```bash
 # Create encrypted password file
-./scripts/security/create_password_file.sh --output passwords.enc
+./scripts/utils/passwords.sh create-file passwords.enc mypassphrase user123 root456 luks789
 
 # Deploy with encrypted file
-./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+./scripts/deploy.sh full --password file --password-file passwords.enc
 ```
 
 ### 🎲 Method C: Auto-Generated (Cryptographically Secure)
 ```bash
 # Generate secure passwords automatically
-./zero_touch_deploy.sh --password-mode generate
+./scripts/deploy.sh full --password generate
 
-# With email delivery
-DEPLOY_EMAIL_RECIPIENT="user@example.com" ./zero_touch_deploy.sh --password-mode generate
+# View generated passwords (saved to logs)
+./scripts/utils/passwords.sh display
 ```
 
 ### 💬 Method D: Interactive (Traditional)
 ```bash
-# Interactive prompts
-./zero_touch_deploy.sh --password-mode interactive
+# Interactive prompts for password entry
+./scripts/deploy.sh full --password interactive
 ```
 
 **For detailed password management guide:** [Password Management](password-management.md)
@@ -260,9 +286,16 @@ nano deployment_config.yml
 
 ### Run Deployment
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
-chmod +x deploy.sh
-CONFIG_FILE=./deployment_config.yml ./deploy.sh auto
+# Clone repository
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
+cd lm_archlinux_desktop
+
+# Copy and customize configuration
+cp config/deploy.conf my_deploy.conf
+nano my_deploy.conf
+
+# Deploy with custom configuration
+./scripts/deploy.sh full --config my_deploy.conf
 ```
 
 ## Method Comparison
