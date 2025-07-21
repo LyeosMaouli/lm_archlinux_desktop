@@ -158,6 +158,14 @@ detect_env_passwords() {
 check_password_completeness() {
     local missing_passwords=()
     
+    # Defensive array initialization - ensure SECURE_PASSWORDS exists
+    if [[ ! -v SECURE_PASSWORDS ]]; then
+        declare -A SECURE_PASSWORDS
+        SECURE_PASSWORDS["user"]=""
+        SECURE_PASSWORDS["root"]=""
+        SECURE_PASSWORDS["luks"]=""
+    fi
+    
     # Check required passwords
     [[ -z "${SECURE_PASSWORDS[user]:-}" ]] && missing_passwords+=("user")
     [[ -z "${SECURE_PASSWORDS[root]:-}" ]] && missing_passwords+=("root")

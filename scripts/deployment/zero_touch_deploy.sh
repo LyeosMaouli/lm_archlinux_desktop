@@ -362,7 +362,7 @@ setup_network_auto() {
 }
 
 # Advanced password collection using password management system
-collect_passwords() {
+collect_deployment_passwords() {
     echo -e "${BLUE}🔐 Advanced Password Management${NC}"
     echo "Multiple password input methods available for maximum flexibility."
     echo
@@ -581,7 +581,7 @@ main() {
     echo
     
     # Step 4: Password collection
-    collect_passwords
+    collect_deployment_passwords
     echo
     
     # Step 5: Final confirmation
