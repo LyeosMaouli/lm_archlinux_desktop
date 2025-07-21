@@ -60,6 +60,16 @@ NC='\033[0m'
 # Get script directory (USB mount point)
 USB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Setup logging
+LOG_DIR="$USB_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/usb-deploy-$(date +%Y%m%d_%H%M%S).log"
+
+# Function to log to both console and file
+log_to_file() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
 print_banner() {
     clear
     echo -e "${PURPLE}"
@@ -77,18 +87,22 @@ EOF
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
+    log_to_file "[INFO] $1"
 }
 
 log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+    log_to_file "[SUCCESS] $1"
 }
 
 log_warn() {
     echo -e "${YELLOW}[WARN]${NC} $1"
+    log_to_file "[WARN] $1"
 }
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+    log_to_file "[ERROR] $1"
 }
 
 # Validate configuration
@@ -355,7 +369,10 @@ main() {
             print_banner
             
             log_info "Starting USB deployment process..."
+            log_info "USB Directory: $USB_DIR"
+            log_info "Log file: $LOG_FILE"
             echo "USB Directory: $USB_DIR"
+            echo "Log file: $LOG_FILE"
             echo
             
             # Validate configuration
