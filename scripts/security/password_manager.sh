@@ -138,12 +138,12 @@ detect_env_passwords() {
     #     found_any=true
     # fi
     
-    # Export WiFi SSID if available (doesn't need to be in SECURE_PASSWORDS array)
-    if [[ -n "${DEPLOY_WIFI_SSID:-}" ]]; then
-        export DEPLOY_WIFI_SSID="${DEPLOY_WIFI_SSID:-}"
-        log_success "WiFi SSID found in environment"
-        found_any=true
-    fi
+    # WiFi SSID export disabled for wired deployments
+    # if [[ -n "${DEPLOY_WIFI_SSID:-}" ]]; then
+    #     export DEPLOY_WIFI_SSID="${DEPLOY_WIFI_SSID:-}"
+    #     log_success "WiFi SSID found in environment"
+    #     found_any=true
+    # fi
     
     if [[ "$found_any" == true ]]; then
         log_success "Environment variable passwords detected"
@@ -208,9 +208,16 @@ try_password_method() {
             log_info "Trying encrypted file method..."
             if [[ -f "$SCRIPT_DIR/encrypted_file_handler.sh" ]]; then
                 source "$SCRIPT_DIR/encrypted_file_handler.sh"
-                if load_encrypted_passwords && check_password_completeness; then
-                    log_success "Encrypted file method successful"
-                    return 0
+                if load_encrypted_passwords; then
+                    # Transfer exported variables to SECURE_PASSWORDS array
+                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
+                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD" 
+                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    
+                    if check_password_completeness; then
+                        log_success "Encrypted file method successful"
+                        return 0
+                    fi
                 fi
             fi
             log_info "Encrypted file method failed"
@@ -221,9 +228,16 @@ try_password_method() {
             log_info "Trying auto-generation method..."
             if [[ -f "$SCRIPT_DIR/password_generator.sh" ]]; then
                 source "$SCRIPT_DIR/password_generator.sh"
-                if generate_secure_passwords && check_password_completeness; then
-                    log_success "Auto-generation method successful"
-                    return 0
+                if generate_secure_passwords; then
+                    # Transfer generated variables to SECURE_PASSWORDS array
+                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
+                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
+                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    
+                    if check_password_completeness; then
+                        log_success "Auto-generation method successful"
+                        return 0
+                    fi
                 fi
             fi
             log_info "Auto-generation method failed"
@@ -234,9 +248,16 @@ try_password_method() {
             log_info "Using interactive method..."
             if [[ -f "$SCRIPT_DIR/../deployment/secure_prompt_handler.sh" ]]; then
                 source "$SCRIPT_DIR/../deployment/secure_prompt_handler.sh"
-                if collect_interactive_passwords && check_password_completeness; then
-                    log_success "Interactive method successful"
-                    return 0
+                if collect_all_credentials "$CONFIG_FILE"; then
+                    # Transfer collected variables to SECURE_PASSWORDS array
+                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
+                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
+                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    
+                    if check_password_completeness; then
+                        log_success "Interactive method successful"
+                        return 0
+                    fi
                 fi
             fi
             log_error "Interactive method failed"
