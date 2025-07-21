@@ -395,6 +395,13 @@ collect_deployment_passwords() {
     export PASSWORD_FILE="$PASSWORD_FILE"
     export FILE_PASSPHRASE="$FILE_PASSPHRASE"
     
+    # Debug: Show what we're passing to password manager
+    echo "[DEBUG] Exporting to password manager:"
+    echo "[DEBUG]   CONFIG_FILE: $config_file"
+    echo "[DEBUG]   PASSWORD_FILE: ${PASSWORD_FILE:-not set}"
+    echo "[DEBUG]   FILE_PASSPHRASE: ${FILE_PASSPHRASE:+[SET]}${FILE_PASSPHRASE:-not set}"
+    echo "[DEBUG]   PASSWORD_MODE for collection: $PASSWORD_MODE"
+    
     # Show password mode information
     case "$PASSWORD_MODE" in
         "auto")

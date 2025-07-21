@@ -53,9 +53,12 @@ secure_cleanup() {
     done
     
     # Ensure all required keys exist and are empty
-    SECURE_PASSWORDS["user"]=""
-    SECURE_PASSWORDS["root"]=""
-    SECURE_PASSWORDS["luks"]=""
+    # Use safer assignment to avoid unbound variable errors
+    if [[ -v SECURE_PASSWORDS ]]; then
+        SECURE_PASSWORDS["user"]=""
+        SECURE_PASSWORDS["root"]=""
+        SECURE_PASSWORDS["luks"]=""
+    fi
     
     # Clear environment variables if they exist
     unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_SSID DEPLOY_WIFI_PASSWORD 2>/dev/null || true
@@ -239,10 +242,16 @@ try_password_method() {
             if [[ -f "$SCRIPT_DIR/password_generator.sh" ]]; then
                 source "$SCRIPT_DIR/password_generator.sh"
                 if generate_secure_passwords; then
-                    # Transfer generated variables to SECURE_PASSWORDS array
-                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
-                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
-                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    # Transfer generated variables to SECURE_PASSWORDS array (safe assignment)
+                    if [[ -n "${USER_PASSWORD:-}" ]]; then
+                        SECURE_PASSWORDS["user"]="$USER_PASSWORD"
+                    fi
+                    if [[ -n "${ROOT_PASSWORD:-}" ]]; then
+                        SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
+                    fi
+                    if [[ -n "${LUKS_PASSPHRASE:-}" ]]; then
+                        SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    fi
                     
                     if check_password_completeness; then
                         log_success "Auto-generation method successful"
@@ -259,10 +268,16 @@ try_password_method() {
             if [[ -f "$SCRIPT_DIR/../deployment/secure_prompt_handler.sh" ]]; then
                 source "$SCRIPT_DIR/../deployment/secure_prompt_handler.sh"
                 if collect_all_credentials "$CONFIG_FILE"; then
-                    # Transfer collected variables to SECURE_PASSWORDS array
-                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
-                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
-                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    # Transfer collected variables to SECURE_PASSWORDS array (safe assignment)
+                    if [[ -n "${USER_PASSWORD:-}" ]]; then
+                        SECURE_PASSWORDS["user"]="$USER_PASSWORD"
+                    fi
+                    if [[ -n "${ROOT_PASSWORD:-}" ]]; then
+                        SECURE_PASSWORDS["root"]="$ROOT_PASSWORD"
+                    fi
+                    if [[ -n "${LUKS_PASSPHRASE:-}" ]]; then
+                        SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    fi
                     
                     if check_password_completeness; then
                         log_success "Interactive method successful"
@@ -389,22 +404,50 @@ collect_passwords() {
     local mode="${1:-auto}"
     
     log_info "Starting password collection with mode: $mode"
+    log_info "[DEBUG] PASSWORD_FILE for collection: ${PASSWORD_FILE:-not set}"
+    log_info "[DEBUG] FILE_PASSPHRASE for collection: ${FILE_PASSPHRASE:+[SET]}${FILE_PASSPHRASE:-not set}"
     
+    # If specific mode is requested, use it directly - don't fallback to auto-detect
     case "$mode" in
         "auto")
+            log_info "Using auto-detection mode - will try all methods in order"
             auto_detect_password_method
             ;;
         "env")
-            try_password_method "env"
+            log_info "Using environment variable mode exclusively"
+            if try_password_method "env"; then
+                return 0
+            else
+                log_error "Environment variable method failed"
+                return 1
+            fi
             ;;
         "file")
-            try_password_method "file"
+            log_info "Using encrypted file mode exclusively"
+            if try_password_method "file"; then
+                return 0
+            else
+                log_error "Encrypted file method failed"
+                return 1
+            fi
             ;;
         "generate")
-            try_password_method "generate"
+            log_info "Using password generation mode exclusively"
+            if try_password_method "generate"; then
+                return 0
+            else
+                log_error "Password generation method failed"
+                return 1
+            fi
             ;;
         "interactive")
-            try_password_method "interactive"
+            log_info "Using interactive mode exclusively"
+            if try_password_method "interactive"; then
+                return 0
+            else
+                log_error "Interactive method failed"
+                return 1
+            fi
             ;;
         *)
             log_error "Invalid password mode: $mode"
