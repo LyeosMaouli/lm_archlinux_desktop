@@ -103,7 +103,7 @@ update_system() {
 install_packages() {
     local packages=("$@")
     
-    if [[ ${#packages[@]} -eq 0 ]]; then
+    if [[ ${#packages[@]:-0} -eq 0 ]]; then
         print_error "No packages specified"
         return 1
     fi
@@ -124,13 +124,13 @@ install_packages() {
     done
     
     # Install official packages
-    if [[ ${#official_packages[@]} -gt 0 ]]; then
+    if [[ ${#official_packages[@]:-0} -gt 0 ]]; then
         print_info "Installing from official repositories: ${official_packages[*]}"
         sudo pacman -S --needed --noconfirm "${official_packages[@]}"
     fi
     
     # Install AUR packages
-    if [[ ${#aur_packages[@]} -gt 0 ]]; then
+    if [[ ${#aur_packages[@]:-0} -gt 0 ]]; then
         check_aur_helper
         print_info "Installing from AUR: ${aur_packages[*]}"
         $AUR_HELPER -S --needed --noconfirm "${aur_packages[@]}"
@@ -144,7 +144,7 @@ install_packages() {
 remove_packages() {
     local packages=("$@")
     
-    if [[ ${#packages[@]} -eq 0 ]]; then
+    if [[ ${#packages[@]:-0} -eq 0 ]]; then
         print_error "No packages specified"
         return 1
     fi
@@ -162,7 +162,7 @@ remove_packages() {
         fi
     done
     
-    if [[ ${#installed_packages[@]} -gt 0 ]]; then
+    if [[ ${#installed_packages[@]:-0} -gt 0 ]]; then
         sudo pacman -Rns --noconfirm "${installed_packages[@]}"
         print_success "Package removal completed"
         log "Package removal completed: ${installed_packages[*]}"

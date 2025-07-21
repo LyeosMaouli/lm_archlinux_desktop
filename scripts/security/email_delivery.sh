@@ -74,7 +74,7 @@ check_email_dependencies() {
         available_tools+=("gpg")
     fi
     
-    if [[ ${#available_tools[@]} -eq 0 ]]; then
+    if [[ ${#available_tools[@]:-0} -eq 0 ]]; then
         log_error "No email sending tools available"
         log_info "Please install: sendmail, msmtp, or python3"
         return 1

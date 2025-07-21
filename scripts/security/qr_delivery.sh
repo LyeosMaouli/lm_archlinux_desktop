@@ -50,7 +50,7 @@ check_qr_dependencies() {
         available_tools+=("python-qrcode")
     fi
     
-    if [[ ${#available_tools[@]} -eq 0 ]]; then
+    if [[ ${#available_tools[@]:-0} -eq 0 ]]; then
         log_error "No QR code generation tools available"
         log_info "Please install: qrencode or python3-qrcode"
         return 1

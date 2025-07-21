@@ -66,7 +66,7 @@ check_random_sources() {
         random_sources+=("openssl")
     fi
     
-    if [[ ${#random_sources[@]} -eq 0 ]]; then
+    if [[ ${#random_sources[@]:-0} -eq 0 ]]; then
         log_error "No suitable random source found"
         return 1
     fi
@@ -171,7 +171,7 @@ generate_memorable_password() {
     )
     
     local password=""
-    local word_list_length=${#words[@]}
+    local word_list_length=${#words[@]:-0}
     
     # Select random words
     for ((i=0; i<word_count; i++)); do
@@ -212,12 +212,20 @@ generate_secure_passwords() {
     # Generate user password
     log_info "Generating user account password..."
     GENERATED_PASSWORDS[user]=$(generate_secure_password "$DEFAULT_USER_LENGTH" true true)
-    log_success "User password generated (${#GENERATED_PASSWORDS[user]} characters)"
+    if [[ -n "${GENERATED_PASSWORDS[user]:-}" ]]; then
+        log_success "User password generated (${#GENERATED_PASSWORDS[user]} characters)"
+    else
+        log_error "Failed to generate user password"
+    fi
     
     # Generate root password
     log_info "Generating root account password..."
     GENERATED_PASSWORDS[root]=$(generate_secure_password "$DEFAULT_ROOT_LENGTH" true true)
-    log_success "Root password generated (${#GENERATED_PASSWORDS[root]} characters)"
+    if [[ -n "${GENERATED_PASSWORDS[root]:-}" ]]; then
+        log_success "Root password generated (${#GENERATED_PASSWORDS[root]} characters)"
+    else
+        log_error "Failed to generate root password"
+    fi
     
     # Generate LUKS passphrase (if encryption enabled)
     local config_file="${CONFIG_FILE:-}"
@@ -226,14 +234,22 @@ generate_secure_passwords() {
         if [[ "$encryption_enabled" == "true" ]]; then
             log_info "Generating LUKS encryption passphrase..."
             GENERATED_PASSWORDS[luks]=$(generate_memorable_password 6 true)
-            log_success "LUKS passphrase generated (${#GENERATED_PASSWORDS[luks]} characters)"
+            if [[ -n "${GENERATED_PASSWORDS[luks]:-}" ]]; then
+                log_success "LUKS passphrase generated (${#GENERATED_PASSWORDS[luks]} characters)"
+            else
+                log_error "Failed to generate LUKS passphrase"
+            fi
         fi
     fi
     
     # Generate WiFi password (optional)
     log_info "Generating WiFi password..."
     GENERATED_PASSWORDS[wifi]=$(generate_secure_password "$DEFAULT_WIFI_LENGTH" false true)
-    log_success "WiFi password generated (${#GENERATED_PASSWORDS[wifi]} characters)"
+    if [[ -n "${GENERATED_PASSWORDS[wifi]:-}" ]]; then
+        log_success "WiFi password generated (${#GENERATED_PASSWORDS[wifi]} characters)"
+    else
+        log_error "Failed to generate WiFi password"
+    fi
     
     # Export passwords
     export USER_PASSWORD="${GENERATED_PASSWORDS[user]}"
