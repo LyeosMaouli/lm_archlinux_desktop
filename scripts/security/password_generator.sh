@@ -242,20 +242,14 @@ generate_secure_passwords() {
         fi
     fi
     
-    # Generate WiFi password (optional)
-    log_info "Generating WiFi password..."
-    GENERATED_PASSWORDS["wifi"]=$(generate_secure_password "$DEFAULT_WIFI_LENGTH" false true)
-    if [[ -n "${GENERATED_PASSWORDS[wifi]:-}" ]]; then
-        log_success "WiFi password generated (${#GENERATED_PASSWORDS[wifi]} characters)"
-    else
-        log_error "Failed to generate WiFi password"
-    fi
+    # WiFi passwords should NEVER be generated - they must be provided by user
+    log_info "WiFi password generation disabled - use wired connection or provide WiFi credentials"
     
-    # Export passwords
-    export USER_PASSWORD="${GENERATED_PASSWORDS["user"]}"
-    export ROOT_PASSWORD="${GENERATED_PASSWORDS["root"]}"
+    # Export passwords with safe array access to prevent unbound variable errors
+    export USER_PASSWORD="${GENERATED_PASSWORDS[user]:-}"
+    export ROOT_PASSWORD="${GENERATED_PASSWORDS[root]:-}"
     export LUKS_PASSPHRASE="${GENERATED_PASSWORDS[luks]:-}"
-    export WIFI_PASSWORD="${GENERATED_PASSWORDS["wifi"]}"
+    # WiFi password export removed - should never be auto-generated
     
     log_success "All passwords generated and exported"
     return 0

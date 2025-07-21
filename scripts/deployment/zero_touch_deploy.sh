@@ -19,6 +19,133 @@ PASSWORD_MODE="auto"
 PASSWORD_FILE=""
 FILE_PASSPHRASE=""
 
+# Enhanced logging configuration
+USB_MOUNT_POINT=""
+VERBOSE_LOG=""
+
+# Find USB mount point and setup logging
+setup_usb_logging() {
+    # Try to find USB mount point
+    local usb_candidates=("/mnt/usb" "/run/media"/* "/media"/* "/mnt"/* "$(pwd)" "$(dirname "$0")")
+    
+    for candidate in "${usb_candidates[@]}"; do
+        if [[ -d "$candidate" ]] && [[ -w "$candidate" ]]; then
+            # Check if it looks like a USB mount (has our script or logs directory)
+            if [[ -f "$candidate/usb-deploy.sh" ]] || [[ -f "$candidate/deploy.sh" ]] || [[ -d "$candidate/logs" ]]; then
+                USB_MOUNT_POINT="$candidate"
+                break
+            fi
+        fi
+    done
+    
+    # Setup verbose logging to USB
+    if [[ -n "$USB_MOUNT_POINT" ]]; then
+        local log_dir="$USB_MOUNT_POINT/logs"
+        mkdir -p "$log_dir"
+        VERBOSE_LOG="$log_dir/zero_touch_verbose_$(date +%Y%m%d_%H%M%S).log"
+        echo "[$(date)] Zero Touch Deploy Verbose Log Started" > "$VERBOSE_LOG"
+        echo "[$(date)] USB Mount Point: $USB_MOUNT_POINT" >> "$VERBOSE_LOG"
+        echo "[$(date)] Script Directory: $SCRIPT_DIR" >> "$VERBOSE_LOG"
+        echo "[$(date)] Command Line: $0 $*" >> "$VERBOSE_LOG"
+    else
+        # Fallback to system log
+        VERBOSE_LOG="/tmp/zero_touch_verbose_$(date +%Y%m%d_%H%M%S).log"
+        echo "[$(date)] Zero Touch Deploy Verbose Log Started (USB not found)" > "$VERBOSE_LOG"
+    fi
+    
+    echo "[DEBUG] Verbose logging enabled: $VERBOSE_LOG"
+}
+
+# Enhanced logging functions
+log_verbose() {
+    local message="[$(date '+%H:%M:%S')] $1"
+    echo "$message" >> "$VERBOSE_LOG"
+    echo "[VERBOSE] $1"
+}
+
+log_trace() {
+    local message="[$(date '+%H:%M:%S')] [TRACE] $1"
+    echo "$message" >> "$VERBOSE_LOG"
+    echo "[TRACE] $1"
+}
+
+# Validate password file before deployment
+validate_password_file() {
+    local password_file="$1"
+    
+    log_trace "Starting password file validation"
+    log_trace "Password file path: $password_file"
+    
+    # Check if file exists
+    if [[ ! -f "$password_file" ]]; then
+        log_verbose "ERROR: Password file does not exist: $password_file"
+        return 1
+    fi
+    
+    # Check if file is readable
+    if [[ ! -r "$password_file" ]]; then
+        log_verbose "ERROR: Password file is not readable: $password_file"
+        return 1
+    fi
+    
+    # Check file size (should not be empty)
+    local file_size=$(stat -f%z "$password_file" 2>/dev/null || stat -c%s "$password_file" 2>/dev/null || echo "0")
+    if [[ "$file_size" -eq 0 ]]; then
+        log_verbose "ERROR: Password file is empty: $password_file"
+        return 1
+    fi
+    
+    log_trace "Password file exists and is readable (size: $file_size bytes)"
+    
+    # Try to validate it's an encrypted file by checking for encrypted content markers
+    local file_content=$(head -c 100 "$password_file" 2>/dev/null || echo "")
+    if [[ -z "$file_content" ]]; then
+        log_verbose "ERROR: Cannot read password file content"
+        return 1
+    fi
+    
+    # Check if it looks like encrypted content (should have Salted__ prefix for OpenSSL)
+    if [[ "$file_content" =~ Salted__ ]] || [[ "$file_content" =~ ^[A-Za-z0-9+/=]+$ ]]; then
+        log_trace "Password file appears to be properly encrypted"
+        return 0
+    else
+        log_verbose "WARNING: Password file may not be properly encrypted"
+        log_trace "File content preview: ${file_content:0:50}..."
+        return 0  # Continue anyway - might be different encryption format
+    fi
+}
+
+# Test password file decryption
+test_password_file_decryption() {
+    local password_file="$1"
+    
+    log_trace "Testing password file decryption capability"
+    
+    # Check if encrypted_file_handler.sh is available
+    local handler_paths=(
+        "$SCRIPT_DIR/../security/encrypted_file_handler.sh"
+        "./scripts/security/encrypted_file_handler.sh"
+        "/tmp/lm_archlinux_desktop/scripts/security/encrypted_file_handler.sh"
+    )
+    
+    local handler_found=""
+    for handler in "${handler_paths[@]}"; do
+        if [[ -f "$handler" ]]; then
+            handler_found="$handler"
+            log_trace "Found encrypted file handler: $handler"
+            break
+        fi
+    done
+    
+    if [[ -z "$handler_found" ]]; then
+        log_verbose "WARNING: encrypted_file_handler.sh not found - will be downloaded during deployment"
+        return 0  # Not an error - will be downloaded
+    fi
+    
+    log_trace "Encrypted file handler available at: $handler_found"
+    return 0
+}
+
 # Verify download integrity
 verify_download_integrity() {
     local project_dir="$1"
@@ -267,7 +394,7 @@ minimal_prompts() {
 create_auto_config() {
     local config_file="/tmp/zero_touch_config.yml"
     
-    echo -e "${BLUE}⚙️  Generating configuration...${NC}"
+    echo -e "${BLUE} Generating configuration...${NC}"
     
     cat > "$config_file" << EOF
 # Zero-Touch Deployment Configuration
@@ -427,52 +554,82 @@ connect_wifi_auto() {
 setup_network_auto() {
     echo -e "${BLUE}[NETWORK] Setting up internet connection...${NC}"
     
+    # Setup logging if not already done
+    [[ -z "$VERBOSE_LOG" ]] && setup_usb_logging
+    
+    log_trace "Starting network setup process"
+    
     # Check if already connected
     if ping -c 1 8.8.8.8 &>/dev/null; then
         echo -e "${GREEN}[SUCCESS] Internet already connected!${NC}"
+        log_verbose "Internet connection already available"
         return 0
     fi
     
+    log_trace "No existing internet connection, attempting to establish connection"
+    
     # Try ethernet first
     echo "Trying ethernet connection..."
+    log_trace "Attempting ethernet connection on available interfaces"
+    
     for iface in $(ip link show | grep -E "en[ospx]" | cut -d: -f2 | tr -d ' '); do
+        log_trace "Trying ethernet interface: $iface"
         ip link set "$iface" up
         dhcpcd "$iface" &
         sleep 3
         
         if ping -c 1 8.8.8.8 &>/dev/null; then
             echo -e "${GREEN}[SUCCESS] Ethernet connected!${NC}"
+            log_verbose "Ethernet connection successful on interface: $iface"
             return 0
+        else
+            log_trace "Ethernet connection failed on interface: $iface"
         fi
     done
+    
+    log_trace "All ethernet interfaces failed, checking for WiFi options"
     
     # Try WiFi if ethernet failed
     if iwctl device list 2>/dev/null | grep -q "wlan"; then
         echo "Ethernet not available, trying WiFi..."
+        log_trace "WiFi device detected, checking for provided credentials"
         
         # Check for automatic WiFi credentials
         if [[ -n "${DEPLOY_WIFI_SSID:-}" ]] && [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
             echo "Found WiFi credentials, connecting automatically..."
+            log_verbose "WiFi credentials found - SSID: $DEPLOY_WIFI_SSID"
+            log_trace "Attempting automatic WiFi connection"
+            
             if connect_wifi_auto "$DEPLOY_WIFI_SSID" "$DEPLOY_WIFI_PASSWORD"; then
                 echo -e "${GREEN}[SUCCESS] WiFi connected automatically!${NC}"
+                log_verbose "WiFi connection successful to SSID: $DEPLOY_WIFI_SSID"
                 return 0
             else
-                echo -e "${YELLOW}[WARNING]  Automatic WiFi connection failed, falling back to manual${NC}"
+                echo -e "${YELLOW}[WARNING]  Automatic WiFi connection failed${NC}"
+                log_verbose "WiFi connection failed for SSID: $DEPLOY_WIFI_SSID"
             fi
+        else
+            log_trace "No WiFi credentials provided via environment variables"
         fi
         
-        # Fallback to manual WiFi setup
-        echo "Opening WiFi setup..."
-        echo "Please connect to your WiFi network and then press Enter to continue"
-        wifi-menu || true
+        # WiFi passwords should NEVER be generated - stop script and require ethernet
+        echo -e "${RED}[ERROR] WiFi connection requires user-provided credentials${NC}"
+        echo -e "${RED}WiFi passwords cannot be auto-generated for security reasons.${NC}"
+        log_verbose "WiFi connection blocked - no user-provided credentials available"
+        echo
+        echo -e "${YELLOW}Please use one of these options:${NC}"
+        echo "1. Connect an ethernet cable for automatic internet access"
+        echo "2. Provide WiFi credentials through environment variables:"
+        echo "   export DEPLOY_WIFI_SSID=\"YourNetworkName\""
+        echo "   export DEPLOY_WIFI_PASSWORD=\"YourPassword\""
+        echo "3. Use the USB deployment method with WiFi preconfigured"
+        echo
+        echo -e "${RED}Deployment cannot continue without internet connection.${NC}"
         
-        # Give time for connection
-        sleep 5
-        
-        if ping -c 1 8.8.8.8 &>/dev/null; then
-            echo -e "${GREEN}[SUCCESS] WiFi connected!${NC}"
-            return 0
-        fi
+        log_verbose "Network setup failed - WiFi requires user credentials, ethernet not available"
+        return 1
+    else
+        log_trace "No WiFi device available"
     fi
     
     echo -e "${YELLOW}[WARNING]  No internet connection available${NC}"
@@ -498,6 +655,51 @@ collect_deployment_passwords() {
     echo -e "${BLUE}[PASSWORD] Advanced Password Management${NC}"
     echo "Multiple password input methods available for maximum flexibility."
     echo
+    
+    # Setup verbose logging first
+    setup_usb_logging
+    
+    log_trace "Starting password collection process"
+    log_trace "Initial PASSWORD_MODE: $PASSWORD_MODE"
+    log_trace "Initial PASSWORD_FILE: ${PASSWORD_FILE:-not set}"
+    
+    # Fix password file path - ensure it's absolute and in USB root
+    if [[ -n "$PASSWORD_FILE" ]] && [[ "$PASSWORD_MODE" == "file" ]]; then
+        log_trace "Processing password file path resolution"
+        
+        # If PASSWORD_FILE is just a filename, resolve to USB root
+        if [[ "$PASSWORD_FILE" == "$(basename "$PASSWORD_FILE")" ]]; then
+            # It's just a filename, need to find USB root
+            if [[ -n "$USB_MOUNT_POINT" ]]; then
+                PASSWORD_FILE="$USB_MOUNT_POINT/$PASSWORD_FILE"
+                log_trace "Resolved password file to USB root: $PASSWORD_FILE"
+            else
+                # Try to find USB mount point based on current script location
+                local script_dir="$(dirname "$(realpath "$0")")"
+                if [[ -f "$script_dir/$PASSWORD_FILE" ]]; then
+                    PASSWORD_FILE="$script_dir/$PASSWORD_FILE"
+                    log_trace "Resolved password file to script directory: $PASSWORD_FILE"
+                fi
+            fi
+        fi
+        
+        log_trace "Final password file path: $PASSWORD_FILE"
+        
+        # Validate password file before proceeding
+        if ! validate_password_file "$PASSWORD_FILE"; then
+            echo -e "${RED}[ERROR] Password file validation failed!${NC}"
+            log_verbose "Password file validation failed for: $PASSWORD_FILE"
+            echo -e "${RED}Please check:${NC}"
+            echo "  - File exists in USB root directory"
+            echo "  - File is readable and not empty"
+            echo "  - File is properly encrypted"
+            echo -e "${YELLOW}Falling back to interactive mode...${NC}"
+            PASSWORD_MODE="interactive"
+        else
+            log_trace "Password file validation passed"
+            test_password_file_decryption "$PASSWORD_FILE"
+        fi
+    fi
     
     # Load password management system
     if ! load_password_manager; then
@@ -544,8 +746,11 @@ collect_deployment_passwords() {
     echo
     
     # Collect passwords using the specified method
+    log_trace "Starting password collection with mode: $PASSWORD_MODE"
+    
     if collect_passwords "$PASSWORD_MODE"; then
         echo -e "${GREEN}[SUCCESS] Password collection successful${NC}"
+        log_verbose "Password collection completed successfully"
         
         # Show password status
         show_password_status
@@ -553,10 +758,47 @@ collect_deployment_passwords() {
         # Export passwords for deployment scripts
         export_passwords
         
+        log_trace "Password collection process completed successfully"
         return 0
     else
         echo -e "${RED}[ERROR] Password collection failed${NC}"
-        return 1
+        log_verbose "Password collection failed for mode: $PASSWORD_MODE"
+        
+        # Show detailed error message and fallback to interactive mode
+        echo -e "${RED}[ERROR] Password collection failed!${NC}"
+        echo -e "${RED}This could be due to:${NC}"
+        echo "  - Encrypted password file cannot be decrypted"
+        echo "  - Environment variables are not set correctly"
+        echo "  - Password generation failed"
+        echo "  - Network issues preventing repository access"
+        echo
+        
+        if [[ "$PASSWORD_MODE" != "interactive" ]]; then
+            echo -e "${YELLOW}[FALLBACK] Switching to interactive mode for password collection...${NC}"
+            log_verbose "Falling back to interactive password mode"
+            
+            # Attempt fallback to interactive mode
+            if collect_passwords "interactive"; then
+                echo -e "${GREEN}[SUCCESS] Interactive password collection successful${NC}"
+                log_verbose "Interactive password collection fallback successful"
+                
+                # Show password status
+                show_password_status
+                
+                # Export passwords for deployment scripts
+                export_passwords
+                
+                log_trace "Password collection process completed with interactive fallback"
+                return 0
+            else
+                echo -e "${RED}[ERROR] Interactive password collection also failed${NC}"
+                log_verbose "Interactive password collection fallback also failed"
+                return 1
+            fi
+        else
+            log_verbose "Already in interactive mode, no fallback available"
+            return 1
+        fi
     fi
 }
 
