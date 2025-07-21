@@ -127,8 +127,8 @@ setup_network() {
     local wifi_password=$(parse_nested_config "network" "password")
     
     # Override with environment variables if available
-    [[ -n "${DEPLOY_WIFI_SSID:-}" ]] && wifi_ssid="$DEPLOY_WIFI_SSID" && wifi_enabled="true"
-    [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]] && wifi_password="$DEPLOY_WIFI_PASSWORD"
+    [[ -n "${DEPLOY_WIFI_SSID:-}" ]] && wifi_ssid="${DEPLOY_WIFI_SSID:-}" && wifi_enabled="true"
+    [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]] && wifi_password="${DEPLOY_WIFI_PASSWORD:-}"
     
     # Enable NetworkManager if available
     if systemctl is-active --quiet NetworkManager 2>/dev/null; then
