@@ -325,12 +325,12 @@ restore_profile() {
     
     info "Available backups:"
     for i in "${!backups[@]}"; do
-        local backup_info="${backups[$i]}/profile_info.txt"
+        local backup_info="${backups["$i"]}/profile_info.txt"
         local created="Unknown"
         if [[ -f "$backup_info" ]]; then
             created=$(grep "Created:" "$backup_info" | cut -d' ' -f2- || echo "Unknown")
         fi
-        echo "  $((i+1)). $(basename "${backups[$i]}") - $created"
+        echo "  $((i+1)). $(basename "${backups["$i"]}") - $created"
     done
     
     echo -n "Select backup to restore [1-${#backups[@]}]: "
@@ -340,7 +340,7 @@ restore_profile() {
         error "Invalid selection"
     fi
     
-    local selected_backup="${backups[$((selection-1))]}"
+    local selected_backup="${backups["$((selection-1))"]}"
     
     warn "This will overwrite current configuration!"
     echo -n "Are you sure? [y/N]: "

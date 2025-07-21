@@ -177,7 +177,7 @@ generate_memorable_password() {
     for ((i=0; i<word_count; i++)); do
         local word_index
         word_index=$(get_random_number "$word_list_length")
-        local word="${words[$word_index]}"
+        local word="${words["$word_index"]}"
         
         # Capitalize first letter of each word
         word="$(echo "${word:0:1}" | tr '[:lower:]' '[:upper:]')${word:1}"
@@ -211,7 +211,7 @@ generate_secure_passwords() {
     
     # Generate user password
     log_info "Generating user account password..."
-    GENERATED_PASSWORDS[user]=$(generate_secure_password "$DEFAULT_USER_LENGTH" true true)
+    GENERATED_PASSWORDS["user"]=$(generate_secure_password "$DEFAULT_USER_LENGTH" true true)
     if [[ -n "${GENERATED_PASSWORDS[user]:-}" ]]; then
         log_success "User password generated (${#GENERATED_PASSWORDS[user]} characters)"
     else
@@ -220,7 +220,7 @@ generate_secure_passwords() {
     
     # Generate root password
     log_info "Generating root account password..."
-    GENERATED_PASSWORDS[root]=$(generate_secure_password "$DEFAULT_ROOT_LENGTH" true true)
+    GENERATED_PASSWORDS["root"]=$(generate_secure_password "$DEFAULT_ROOT_LENGTH" true true)
     if [[ -n "${GENERATED_PASSWORDS[root]:-}" ]]; then
         log_success "Root password generated (${#GENERATED_PASSWORDS[root]} characters)"
     else
@@ -233,7 +233,7 @@ generate_secure_passwords() {
         local encryption_enabled=$(grep -A5 "encryption:" "$config_file" 2>/dev/null | grep -E "^\s*enabled:" | cut -d':' -f2 | xargs | tr -d '"' || echo "false")
         if [[ "$encryption_enabled" == "true" ]]; then
             log_info "Generating LUKS encryption passphrase..."
-            GENERATED_PASSWORDS[luks]=$(generate_memorable_password 6 true)
+            GENERATED_PASSWORDS["luks"]=$(generate_memorable_password 6 true)
             if [[ -n "${GENERATED_PASSWORDS[luks]:-}" ]]; then
                 log_success "LUKS passphrase generated (${#GENERATED_PASSWORDS[luks]} characters)"
             else
@@ -244,7 +244,7 @@ generate_secure_passwords() {
     
     # Generate WiFi password (optional)
     log_info "Generating WiFi password..."
-    GENERATED_PASSWORDS[wifi]=$(generate_secure_password "$DEFAULT_WIFI_LENGTH" false true)
+    GENERATED_PASSWORDS["wifi"]=$(generate_secure_password "$DEFAULT_WIFI_LENGTH" false true)
     if [[ -n "${GENERATED_PASSWORDS[wifi]:-}" ]]; then
         log_success "WiFi password generated (${#GENERATED_PASSWORDS[wifi]} characters)"
     else
@@ -252,10 +252,10 @@ generate_secure_passwords() {
     fi
     
     # Export passwords
-    export USER_PASSWORD="${GENERATED_PASSWORDS[user]}"
-    export ROOT_PASSWORD="${GENERATED_PASSWORDS[root]}"
+    export USER_PASSWORD="${GENERATED_PASSWORDS["user"]}"
+    export ROOT_PASSWORD="${GENERATED_PASSWORDS["root"]}"
     export LUKS_PASSPHRASE="${GENERATED_PASSWORDS[luks]:-}"
-    export WIFI_PASSWORD="${GENERATED_PASSWORDS[wifi]}"
+    export WIFI_PASSWORD="${GENERATED_PASSWORDS["wifi"]}"
     
     log_success "All passwords generated and exported"
     return 0
@@ -343,17 +343,17 @@ save_passwords_to_file() {
 # ⚠️  SECURITY WARNING: Store this file securely!
 # ⚠️  DELETE this file after deployment!
 
-user_password: "${GENERATED_PASSWORDS[user]}"
-root_password: "${GENERATED_PASSWORDS[root]}"
+user_password: "${GENERATED_PASSWORDS["user"]}"
+root_password: "${GENERATED_PASSWORDS["root"]}"
 EOF
     
     # Add optional passwords
     if [[ -n "${GENERATED_PASSWORDS[luks]:-}" ]]; then
-        echo "luks_passphrase: \"${GENERATED_PASSWORDS[luks]}\"" >> "$temp_file"
+        echo "luks_passphrase: \"${GENERATED_PASSWORDS["luks"]}\"" >> "$temp_file"
     fi
     
     if [[ -n "${GENERATED_PASSWORDS[wifi]:-}" ]]; then
-        echo "wifi_password: \"${GENERATED_PASSWORDS[wifi]}\"" >> "$temp_file"
+        echo "wifi_password: \"${GENERATED_PASSWORDS["wifi"]}\"" >> "$temp_file"
     fi
     
     # Encrypt if requested
@@ -409,10 +409,10 @@ generate_qr_code() {
     log_info "Generating QR code for passwords..."
     
     # Create compact password data
-    local qr_data="USER:${GENERATED_PASSWORDS[user]};ROOT:${GENERATED_PASSWORDS[root]}"
+    local qr_data="USER:${GENERATED_PASSWORDS["user"]};ROOT:${GENERATED_PASSWORDS["root"]}"
     
     if [[ -n "${GENERATED_PASSWORDS[luks]:-}" ]]; then
-        qr_data="$qr_data;LUKS:${GENERATED_PASSWORDS[luks]}"
+        qr_data="$qr_data;LUKS:${GENERATED_PASSWORDS["luks"]}"
     fi
     
     # Generate QR code to terminal

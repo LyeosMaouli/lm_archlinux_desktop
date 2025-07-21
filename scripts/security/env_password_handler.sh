@@ -237,8 +237,8 @@ show_env_status() {
     local labels=("User Password" "Root Password" "LUKS Passphrase" "WiFi Password")
     
     for i in "${!env_vars[@]}"; do
-        local var_name="${env_vars[$i]}"
-        local label="${labels[$i]}"
+        local var_name="${env_vars["$i"]}"
+        local label="${labels["$i"]}"
         
         if check_env_var "$var_name"; then
             local var_value="${!var_name}"

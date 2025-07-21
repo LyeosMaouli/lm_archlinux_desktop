@@ -19,10 +19,10 @@ VERBOSE=false
 
 # Password storage variables (secure in memory)
 declare -A SECURE_PASSWORDS
-SECURE_PASSWORDS[user]=""
-SECURE_PASSWORDS[root]=""
-SECURE_PASSWORDS[luks]=""
-SECURE_PASSWORDS[wifi]=""
+SECURE_PASSWORDS["user"]=""
+SECURE_PASSWORDS["root"]=""
+SECURE_PASSWORDS["luks"]=""
+SECURE_PASSWORDS["wifi"]=""
 
 # Password mode detection order
 PASSWORD_METHODS=("env" "file" "generate" "interactive")
@@ -110,25 +110,25 @@ detect_env_passwords() {
     
     # Check for each password type
     if [[ -n "${DEPLOY_USER_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[user]="${DEPLOY_USER_PASSWORD:-}"
+        SECURE_PASSWORDS["user"]="${DEPLOY_USER_PASSWORD:-}"
         log_success "User password found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_ROOT_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[root]="${DEPLOY_ROOT_PASSWORD:-}"
+        SECURE_PASSWORDS["root"]="${DEPLOY_ROOT_PASSWORD:-}"
         log_success "Root password found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_LUKS_PASSPHRASE:-}" ]]; then
-        SECURE_PASSWORDS[luks]="${DEPLOY_LUKS_PASSPHRASE:-}"
+        SECURE_PASSWORDS["luks"]="${DEPLOY_LUKS_PASSPHRASE:-}"
         log_success "LUKS passphrase found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[wifi]="${DEPLOY_WIFI_PASSWORD:-}"
+        SECURE_PASSWORDS["wifi"]="${DEPLOY_WIFI_PASSWORD:-}"
         log_success "WiFi password found in environment"
         found_any=true
     fi
