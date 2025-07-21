@@ -110,32 +110,32 @@ detect_env_passwords() {
     
     # Check for each password type
     if [[ -n "${DEPLOY_USER_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[user]="$DEPLOY_USER_PASSWORD"
+        SECURE_PASSWORDS[user]="${DEPLOY_USER_PASSWORD:-}"
         log_success "User password found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_ROOT_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[root]="$DEPLOY_ROOT_PASSWORD"
+        SECURE_PASSWORDS[root]="${DEPLOY_ROOT_PASSWORD:-}"
         log_success "Root password found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_LUKS_PASSPHRASE:-}" ]]; then
-        SECURE_PASSWORDS[luks]="$DEPLOY_LUKS_PASSPHRASE"
+        SECURE_PASSWORDS[luks]="${DEPLOY_LUKS_PASSPHRASE:-}"
         log_success "LUKS passphrase found in environment"
         found_any=true
     fi
     
     if [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS[wifi]="$DEPLOY_WIFI_PASSWORD"
+        SECURE_PASSWORDS[wifi]="${DEPLOY_WIFI_PASSWORD:-}"
         log_success "WiFi password found in environment"
         found_any=true
     fi
     
     # Export WiFi SSID if available (doesn't need to be in SECURE_PASSWORDS array)
     if [[ -n "${DEPLOY_WIFI_SSID:-}" ]]; then
-        export DEPLOY_WIFI_SSID="$DEPLOY_WIFI_SSID"
+        export DEPLOY_WIFI_SSID="${DEPLOY_WIFI_SSID:-}"
         log_success "WiFi SSID found in environment"
         found_any=true
     fi
@@ -154,14 +154,14 @@ check_password_completeness() {
     local missing_passwords=()
     
     # Check required passwords
-    [[ -z "${SECURE_PASSWORDS[user]}" ]] && missing_passwords+=("user")
-    [[ -z "${SECURE_PASSWORDS[root]}" ]] && missing_passwords+=("root")
+    [[ -z "${SECURE_PASSWORDS[user]:-}" ]] && missing_passwords+=("user")
+    [[ -z "${SECURE_PASSWORDS[root]:-}" ]] && missing_passwords+=("root")
     
     # Check LUKS if encryption is enabled
     local config_file="${CONFIG_FILE:-}"
     if [[ -f "$config_file" ]]; then
         local encryption_enabled=$(grep -A5 "encryption:" "$config_file" 2>/dev/null | grep -E "^\s*enabled:" | cut -d':' -f2 | xargs | tr -d '"' || echo "false")
-        if [[ "$encryption_enabled" == "true" ]] && [[ -z "${SECURE_PASSWORDS[luks]}" ]]; then
+        if [[ "$encryption_enabled" == "true" ]] && [[ -z "${SECURE_PASSWORDS[luks]:-}" ]]; then
             missing_passwords+=("luks")
         fi
     fi
@@ -257,7 +257,7 @@ get_password() {
     local password_type="$1"
     
     if [[ -n "${SECURE_PASSWORDS[$password_type]:-}" ]]; then
-        echo "${SECURE_PASSWORDS[$password_type]}"
+        echo "${SECURE_PASSWORDS[$password_type]:-}"
         return 0
     else
         log_error "Password not available: $password_type"
@@ -284,10 +284,10 @@ set_password() {
 export_passwords() {
     log_info "Exporting passwords to environment..."
     
-    export USER_PASSWORD="${SECURE_PASSWORDS[user]}"
-    export ROOT_PASSWORD="${SECURE_PASSWORDS[root]}"
-    export LUKS_PASSPHRASE="${SECURE_PASSWORDS[luks]}"
-    export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]}"
+    export USER_PASSWORD="${SECURE_PASSWORDS[user]:-}"
+    export ROOT_PASSWORD="${SECURE_PASSWORDS[root]:-}"
+    export LUKS_PASSPHRASE="${SECURE_PASSWORDS[luks]:-}"
+    export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]:-}"
     
     log_success "Passwords exported to environment"
 }
@@ -299,18 +299,18 @@ generate_password_hashes() {
     local temp_file="/tmp/password_hashes_$$"
     cat > "$temp_file" << EOF
 # Password hashes generated $(date)
-user_password_hash: "$(echo "${SECURE_PASSWORDS[user]}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
-root_password_hash: "$(echo "${SECURE_PASSWORDS[root]}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
+user_password_hash: "$(echo "${SECURE_PASSWORDS[user]:-}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
+root_password_hash: "$(echo "${SECURE_PASSWORDS[root]:-}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
 EOF
     
     # Add LUKS passphrase if available
-    if [[ -n "${SECURE_PASSWORDS[luks]}" ]]; then
-        echo "luks_passphrase: \"${SECURE_PASSWORDS[luks]}\"" >> "$temp_file"
+    if [[ -n "${SECURE_PASSWORDS[luks]:-}" ]]; then
+        echo "luks_passphrase: \"${SECURE_PASSWORDS[luks]:-}\"" >> "$temp_file"
     fi
     
     # Add WiFi password if available
-    if [[ -n "${SECURE_PASSWORDS[wifi]}" ]]; then
-        echo "wifi_password: \"${SECURE_PASSWORDS[wifi]}\"" >> "$temp_file"
+    if [[ -n "${SECURE_PASSWORDS[wifi]:-}" ]]; then
+        echo "wifi_password: \"${SECURE_PASSWORDS[wifi]:-}\"" >> "$temp_file"
     fi
     
     echo "$temp_file"
