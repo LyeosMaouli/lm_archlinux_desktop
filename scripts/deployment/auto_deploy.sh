@@ -374,16 +374,16 @@ run_health_check() {
     local services=("NetworkManager" "sshd")
     for service in "${services[@]}"; do
         if systemctl is-active --quiet "$service"; then
-            info "Service $service: ✓ Running"
+            info "Service $service: [OK] Running"
         else
-            warn "Service $service: ✗ Not running"
+            warn "Service $service: [FAIL] Not running"
         fi
     done
     
     # Check disk space
     local root_usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
     if [[ "$root_usage" -lt 80 ]]; then
-        info "Disk usage: ✓ ${root_usage}% (healthy)"
+        info "Disk usage: [OK] ${root_usage}% (healthy)"
     else
         warn "Disk usage: ⚠ ${root_usage}% (high)"
     fi

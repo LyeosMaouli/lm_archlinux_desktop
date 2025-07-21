@@ -164,7 +164,7 @@ display_qr_with_instructions() {
     clear
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
-    echo -e "${PURPLE}║                    🔐 Password QR Code                     ║${NC}"
+    echo -e "${PURPLE}║                    [PASSWORD] Password QR Code                     ║${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
@@ -181,17 +181,17 @@ display_qr_with_instructions() {
     elif python3 -c "import qrcode" 2>/dev/null; then
         generate_qr_python "$qr_data" "" "terminal"
     else
-        echo -e "${RED}❌ No QR code generator available${NC}"
+        echo -e "${RED}[ERROR] No QR code generator available${NC}"
         return 1
     fi
     
     echo
-    echo -e "${YELLOW}📋 QR Code Format:${NC}"
+    echo -e "${YELLOW}[LIST] QR Code Format:${NC}"
     echo "Format: U:user|R:root|L:luks|W:wifi"
     echo "Where U=User, R=Root, L=LUKS, W=WiFi passwords"
     echo
     
-    echo -e "${BLUE}🔒 Security Notes:${NC}"
+    echo -e "${BLUE}[SECURE] Security Notes:${NC}"
     echo "• QR code contains password data - keep secure"
     echo "• Use in trusted environments only"
     echo "• Delete any saved QR code files after use"
@@ -231,7 +231,7 @@ generate_encrypted_qr() {
         
         log_success "Encrypted QR code generated"
         echo -e "${BLUE}Encryption key: ${YELLOW}$encryption_key${NC}"
-        echo -e "${YELLOW}⚠️  Save this key - needed to decrypt QR data${NC}"
+        echo -e "${YELLOW}[WARNING]  Save this key - needed to decrypt QR data${NC}"
         
         return 0
     else

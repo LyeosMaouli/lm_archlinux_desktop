@@ -43,7 +43,7 @@ print_banner() {
     cat << 'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║            🔐 Password File Creation Utility               ║
+║            [PASSWORD] Password File Creation Utility               ║
 ║                                                              ║
 ║        Create encrypted password files for deployment       ║
 ║                                                              ║
@@ -82,7 +82,7 @@ load_file_handler() {
 
 # Interactive password collection
 collect_passwords_interactive() {
-    echo -e "${BLUE}📝 Interactive Password Collection${NC}"
+    echo -e "${BLUE}[CONFIG] Interactive Password Collection${NC}"
     echo "Please enter the passwords you want to store in the encrypted file."
     echo "Press Enter to skip optional passwords."
     echo
@@ -103,10 +103,10 @@ collect_passwords_interactive() {
             if [[ "$user_password" == "$user_password_confirm" ]]; then
                 break
             else
-                echo -e "${RED}❌ Passwords don't match, try again${NC}"
+                echo -e "${RED}[ERROR] Passwords don't match, try again${NC}"
             fi
         else
-            echo -e "${RED}❌ Password must be at least 8 characters${NC}"
+            echo -e "${RED}[ERROR] Password must be at least 8 characters${NC}"
         fi
     done
     
@@ -126,10 +126,10 @@ collect_passwords_interactive() {
             if [[ "$root_password" == "$root_password_confirm" ]]; then
                 break
             else
-                echo -e "${RED}❌ Passwords don't match, try again${NC}"
+                echo -e "${RED}[ERROR] Passwords don't match, try again${NC}"
             fi
         else
-            echo -e "${RED}❌ Password must be at least 8 characters${NC}"
+            echo -e "${RED}[ERROR] Password must be at least 8 characters${NC}"
         fi
     done
     
@@ -201,10 +201,10 @@ get_encryption_passphrase() {
                 echo "$passphrase"
                 return 0
             else
-                echo -e "${RED}❌ Passphrases don't match, try again${NC}"
+                echo -e "${RED}[ERROR] Passphrases don't match, try again${NC}"
             fi
         else
-            echo -e "${RED}❌ Passphrase must be at least 12 characters${NC}"
+            echo -e "${RED}[ERROR] Passphrase must be at least 12 characters${NC}"
         fi
     done
 }
@@ -311,7 +311,7 @@ EOF
 show_usage_examples() {
     cat << 'EOF'
 
-📋 Usage Examples:
+[LIST] Usage Examples:
 
 1. Create encrypted password file interactively:
    ./create_password_file.sh
@@ -538,7 +538,7 @@ EOF
     
     # Show completion information
     echo
-    echo -e "${GREEN}🎉 Password file creation completed!${NC}"
+    echo -e "${GREEN}[COMPLETE] Password file creation completed!${NC}"
     echo
     echo -e "${BLUE}Next Steps:${NC}"
     echo "1. Keep the password file secure: ${YELLOW}$OUTPUT_FILE${NC}"
@@ -546,7 +546,7 @@ EOF
     echo "3. Use with deployment:"
     echo "   ${YELLOW}./zero_touch_deploy.sh --password-mode file --password-file $OUTPUT_FILE${NC}"
     echo
-    echo -e "${YELLOW}⚠️  Security Reminder:${NC}"
+    echo -e "${YELLOW}[WARNING]  Security Reminder:${NC}"
     echo "- Store the password file securely"
     echo "- Don't commit it to version control"
     echo "- Delete it after deployment if no longer needed"

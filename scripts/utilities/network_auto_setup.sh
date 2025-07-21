@@ -37,7 +37,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
     log "SUCCESS: $1"
 }
 
@@ -342,9 +342,9 @@ echo
 echo "Connectivity Test:"
 for host in google.com archlinux.org; do
     if ping -c 1 -W 2 "$host" >/dev/null 2>&1; then
-        echo "✓ $host: reachable"
+        echo "[OK] $host: reachable"
     else
-        echo "✗ $host: unreachable"
+        echo "[FAIL] $host: unreachable"
     fi
 done
 echo

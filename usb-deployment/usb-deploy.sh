@@ -76,7 +76,7 @@ print_banner() {
     cat << 'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║           🚀 USB Arch Linux Deployment Script              ║
+║           [DEPLOY] USB Arch Linux Deployment Script              ║
 ║                                                              ║
 ║     Automated deployment from USB stick configuration       ║
 ║                                                              ║

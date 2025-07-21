@@ -23,11 +23,11 @@ check_status() {
     local message="$2"
     
     if [[ "$status" == "PASS" ]]; then
-        echo "✅ PASS: $message" | tee -a "$REPORT_FILE"
+        echo "[SUCCESS] PASS: $message" | tee -a "$REPORT_FILE"
     elif [[ "$status" == "FAIL" ]]; then
-        echo "❌ FAIL: $message" | tee -a "$REPORT_FILE"
+        echo "[ERROR] FAIL: $message" | tee -a "$REPORT_FILE"
     elif [[ "$status" == "WARN" ]]; then
-        echo "⚠️  WARN: $message" | tee -a "$REPORT_FILE"
+        echo "[WARNING]  WARN: $message" | tee -a "$REPORT_FILE"
     else
         echo "ℹ️  INFO: $message" | tee -a "$REPORT_FILE"
     fi
@@ -307,9 +307,9 @@ fi
 
 header "SUMMARY"
 
-total_pass=$(grep -c "✅ PASS" "$REPORT_FILE")
-total_fail=$(grep -c "❌ FAIL" "$REPORT_FILE")
-total_warn=$(grep -c "⚠️  WARN" "$REPORT_FILE")
+total_pass=$(grep -c "[SUCCESS] PASS" "$REPORT_FILE")
+total_fail=$(grep -c "[ERROR] FAIL" "$REPORT_FILE")
+total_warn=$(grep -c "[WARNING]  WARN" "$REPORT_FILE")
 
 log "Security audit completed"
 log "Results: $total_pass PASS, $total_fail FAIL, $total_warn WARN"

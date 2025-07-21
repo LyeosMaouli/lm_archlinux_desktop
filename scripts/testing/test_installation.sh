@@ -25,10 +25,10 @@ log_test() {
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
     
     if [[ "$result" == "PASS" ]]; then
-        echo -e "${GREEN}✓ PASS${NC}: $test_name - $message"
+        echo -e "${GREEN}[OK] PASS${NC}: $test_name - $message"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${RED}✗ FAIL${NC}: $test_name - $message"
+        echo -e "${RED}[FAIL] FAIL${NC}: $test_name - $message"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
 }
@@ -210,11 +210,11 @@ run_tests() {
     
     if [[ $TESTS_FAILED -eq 0 ]]; then
         echo ""
-        echo -e "${GREEN}✓ All tests passed! Installation appears successful.${NC}"
+        echo -e "${GREEN}[OK] All tests passed! Installation appears successful.${NC}"
         return 0
     else
         echo ""
-        echo -e "${RED}✗ Some tests failed. Installation may have issues.${NC}"
+        echo -e "${RED}[FAIL] Some tests failed. Installation may have issues.${NC}"
         return 1
     fi
 }

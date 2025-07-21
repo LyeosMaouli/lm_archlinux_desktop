@@ -266,12 +266,12 @@ display_passwords() {
     clear
     echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
-    echo -e "${PURPLE}║                🔐 Generated Passwords 🔐                  ║${NC}"
+    echo -e "${PURPLE}║                [PASSWORD] Generated Passwords [PASSWORD]                  ║${NC}"
     echo -e "${PURPLE}║                                                              ║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
     
-    echo -e "${YELLOW}⚠️  IMPORTANT: Save these passwords securely!${NC}"
+    echo -e "${YELLOW}[WARNING]  IMPORTANT: Save these passwords securely!${NC}"
     echo -e "${YELLOW}   These passwords will not be stored anywhere else.${NC}"
     echo
     
@@ -288,10 +288,10 @@ display_passwords() {
     
     echo
     echo -e "${BLUE}Security Features:${NC}"
-    echo "✓ Cryptographically secure random generation"
-    echo "✓ High complexity requirements enforced"
-    echo "✓ Ambiguous characters excluded"
-    echo "✓ Memorable LUKS passphrase format"
+    echo "[OK] Cryptographically secure random generation"
+    echo "[OK] High complexity requirements enforced"
+    echo "[OK] Ambiguous characters excluded"
+    echo "[OK] Memorable LUKS passphrase format"
     echo
     
     echo -e "${YELLOW}Press Enter when you have saved these passwords...${NC}"
@@ -340,8 +340,8 @@ save_passwords_to_file() {
 # Created: $(date -Iseconds)
 # Generation Method: Cryptographically Secure Random
 # 
-# ⚠️  SECURITY WARNING: Store this file securely!
-# ⚠️  DELETE this file after deployment!
+# [WARNING]  SECURITY WARNING: Store this file securely!
+# [WARNING]  DELETE this file after deployment!
 
 user_password: "${GENERATED_PASSWORDS["user"]}"
 root_password: "${GENERATED_PASSWORDS["root"]}"
@@ -381,7 +381,7 @@ EOF
         cat > "$output_file" << EOF
 $(cat "$temp_file")
 
-# ⚠️  SECURITY WARNING:
+# [WARNING]  SECURITY WARNING:
 # This file contains passwords in PLAIN TEXT!
 # Delete this file immediately after use!
 # Consider using encrypted storage instead.

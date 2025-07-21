@@ -37,7 +37,7 @@ log() {
 }
 
 error() {
-    echo -e "${RED}✗ FAIL: $1${NC}"
+    echo -e "${RED}[FAIL] FAIL: $1${NC}"
     log "FAIL: $1"
 }
 
@@ -47,7 +47,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ PASS: $1${NC}"
+    echo -e "${GREEN}[OK] PASS: $1${NC}"
     log "PASS: $1"
 }
 
@@ -483,9 +483,9 @@ Backlight: $(if ls /sys/class/backlight/*/ >/dev/null 2>&1; then echo "Available
 
 COMPATIBILITY ASSESSMENT
 ========================
-Hyprland Compatibility: $(if [[ "$HAS_INTEL_GPU" == true ]] || [[ "$HAS_AMD_GPU" == true ]]; then echo "✓ Compatible"; else echo "⚠ May require additional configuration"; fi)
-Wayland Support: $(if [[ "$HAS_INTEL_GPU" == true ]] || [[ "$HAS_AMD_GPU" == true ]]; then echo "✓ Native support"; elif [[ "$HAS_NVIDIA_GPU" == true ]]; then echo "⚠ Requires specific drivers"; else echo "✗ Limited support"; fi)
-Power Management: $(if [[ "$IS_LAPTOP" == true ]]; then echo "✓ Laptop optimizations available"; else echo "ℹ Desktop configuration"; fi)
+Hyprland Compatibility: $(if [[ "$HAS_INTEL_GPU" == true ]] || [[ "$HAS_AMD_GPU" == true ]]; then echo "[OK] Compatible"; else echo "⚠ May require additional configuration"; fi)
+Wayland Support: $(if [[ "$HAS_INTEL_GPU" == true ]] || [[ "$HAS_AMD_GPU" == true ]]; then echo "[OK] Native support"; elif [[ "$HAS_NVIDIA_GPU" == true ]]; then echo "⚠ Requires specific drivers"; else echo "[FAIL] Limited support"; fi)
+Power Management: $(if [[ "$IS_LAPTOP" == true ]]; then echo "[OK] Laptop optimizations available"; else echo "ℹ Desktop configuration"; fi)
 
 RECOMMENDATIONS
 ===============
@@ -555,10 +555,10 @@ run_validation() {
     
     if [[ $failed_checks -eq 0 ]]; then
         success "All critical checks passed"
-        echo -e "${GREEN}✓ System is compatible with Arch Linux Hyprland automation${NC}"
+        echo -e "${GREEN}[OK] System is compatible with Arch Linux Hyprland automation${NC}"
     else
         error "$failed_checks critical check(s) failed"
-        echo -e "${RED}✗ System may not be fully compatible${NC}"
+        echo -e "${RED}[FAIL] System may not be fully compatible${NC}"
         echo "Please review the failed checks above"
     fi
     

@@ -14,7 +14,7 @@ echo -e "${BLUE}"
 cat << 'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🚀 Arch Linux Hyprland - Quick Deploy                  ║
+║     [DEPLOY] Arch Linux Hyprland - Quick Deploy                  ║
 ║                                                              ║
 ║     Minimal configuration required!                          ║
 ║     Just answer a few questions and we'll handle the rest   ║
@@ -25,13 +25,13 @@ echo -e "${NC}"
 
 # Check if running on Arch Linux
 if [[ ! -f /etc/arch-release ]] && [[ ! -d /run/archiso ]]; then
-    echo -e "${YELLOW}⚠️  This script is designed for Arch Linux.${NC}"
+    echo -e "${YELLOW}[WARNING]  This script is designed for Arch Linux.${NC}"
     echo "Please boot from an Arch Linux ISO and run this script."
     exit 1
 fi
 
 # Quick configuration
-echo -e "${GREEN}📝 Quick Configuration Setup${NC}"
+echo -e "${GREEN}[CONFIG] Quick Configuration Setup${NC}"
 echo "We'll ask you a few questions to customize your installation:"
 echo
 
@@ -79,13 +79,13 @@ fi
 
 # Check network connectivity
 echo
-echo -e "${GREEN}🌐 Network Setup${NC}"
+echo -e "${GREEN}[NETWORK] Network Setup${NC}"
 if ping -c 1 8.8.8.8 &>/dev/null; then
-    echo "✅ Internet connection detected - ready to proceed!"
+    echo "[SUCCESS] Internet connection detected - ready to proceed!"
     wifi_ssid=""
     wifi_password=""
 else
-    echo "❌ No internet connection detected"
+    echo "[ERROR] No internet connection detected"
     echo "Don't worry - we'll set this up automatically during installation!"
     wifi_ssid="AUTO_DETECT"
     wifi_password="PROMPT_DURING_INSTALL"
@@ -187,12 +187,12 @@ development:
     - tree
 EOF
 
-echo -e "${GREEN}✅ Configuration created!${NC}"
+echo -e "${GREEN}[SUCCESS] Configuration created!${NC}"
 echo "File: $config_file"
 echo
 
 # Download and run deployment script
-echo -e "${GREEN}📥 Downloading deployment scripts...${NC}"
+echo -e "${GREEN}[DOWNLOAD] Downloading deployment scripts...${NC}"
 
 # Clone or download the repository
 if [[ -d /tmp/lm_archlinux_desktop ]]; then
@@ -210,7 +210,7 @@ fi
 # Copy configuration to the right place
 cp "$config_file" /tmp/lm_archlinux_desktop/deployment_config.yml
 
-echo -e "${GREEN}🚀 Starting automated deployment...${NC}"
+echo -e "${GREEN}[DEPLOY] Starting automated deployment...${NC}"
 echo "The system will now install and configure everything automatically."
 echo "This process takes 30-60 minutes depending on your internet speed."
 echo
@@ -220,6 +220,6 @@ cd /tmp/lm_archlinux_desktop
 chmod +x scripts/deployment/master_auto_deploy.sh
 CONFIG_FILE="/tmp/lm_archlinux_desktop/deployment_config.yml" ./scripts/deployment/master_auto_deploy.sh auto
 
-echo -e "${GREEN}🎉 Deployment completed!${NC}"
+echo -e "${GREEN}[COMPLETE] Deployment completed!${NC}"
 echo "Your Arch Linux Hyprland system is ready."
 echo "The system will reboot automatically if configured to do so."

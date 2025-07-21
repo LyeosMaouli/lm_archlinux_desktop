@@ -385,7 +385,7 @@ show_password_status() {
     for password_type in user root luks wifi; do
         if [[ -n "${SECURE_PASSWORDS["$password_type"]:-}" ]]; then
             local password_length=${#SECURE_PASSWORDS["$password_type"]:-}
-            echo -e "  ${GREEN}✓${NC} $password_type: Set ($password_length characters)"
+            echo -e "  ${GREEN}[OK]${NC} $password_type: Set ($password_length characters)"
         else
             echo -e "  ${YELLOW}○${NC} $password_type: Not set"
         fi

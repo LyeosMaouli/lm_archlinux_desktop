@@ -170,12 +170,12 @@ Content-Type: text/html; charset=UTF-8
 </head>
 <body>
     <div class="header">
-        <h2>🔐 Arch Linux Deployment Passwords</h2>
+        <h2>[PASSWORD] Arch Linux Deployment Passwords</h2>
         <p><strong>Generated:</strong> $(date -Iseconds)</p>
     </div>
 
     <div class="warning">
-        <strong>⚠️ IMPORTANT SECURITY NOTICE</strong><br>
+        <strong>[WARNING] IMPORTANT SECURITY NOTICE</strong><br>
         This email contains sensitive password information. Delete this email after saving the passwords securely.
     </div>
 
@@ -190,7 +190,7 @@ EOF
     </div>
 
     <div class="usage">
-        <h3>🚀 Deployment Usage</h3>
+        <h3>[DEPLOY] Deployment Usage</h3>
         <p>Export the passwords as environment variables:</p>
         <code>export DEPLOY_USER_PASSWORD="$user_password"</code><br>
         <code>export DEPLOY_ROOT_PASSWORD="$root_password"</code><br>
@@ -202,7 +202,7 @@ EOF
     </div>
 
     <div class="warning">
-        <h3>🔒 Security Guidelines</h3>
+        <h3>[SECURE] Security Guidelines</h3>
         <ul>
             <li>Store passwords in a secure password manager</li>
             <li>Do not forward this email to others</li>

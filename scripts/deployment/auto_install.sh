@@ -85,7 +85,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
     log "SUCCESS: $1"
 }
 
@@ -160,24 +160,24 @@ setup_network() {
     local connectivity_ok=false
     
     if ping -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
-        info "✓ DNS server (8.8.8.8) reachable"
+        info "[OK] DNS server (8.8.8.8) reachable"
         connectivity_ok=true
     else
-        warn "✗ Cannot reach DNS server (8.8.8.8)"
+        warn "[FAIL] Cannot reach DNS server (8.8.8.8)"
     fi
     
     if ping -c 1 -W 5 archlinux.org >/dev/null 2>&1; then
-        info "✓ Arch Linux website reachable"
+        info "[OK] Arch Linux website reachable"
         connectivity_ok=true
     else
-        warn "✗ Cannot reach archlinux.org"
+        warn "[FAIL] Cannot reach archlinux.org"
     fi
     
     if ping -c 1 -W 5 google.com >/dev/null 2>&1; then
-        info "✓ Google.com reachable"
+        info "[OK] Google.com reachable"
         connectivity_ok=true
     else
-        warn "✗ Cannot reach google.com"
+        warn "[FAIL] Cannot reach google.com"
     fi
     
     if [[ "$connectivity_ok" == true ]]; then
@@ -342,7 +342,7 @@ setup_partitions() {
     elif [[ ! -r "$disk_device" ]]; then
         error "Disk device $disk_device exists but is not readable (permissions: $(stat -c %A "$disk_device" 2>/dev/null))"
     else
-        info "✓ Disk device $disk_device is accessible"
+        info "[OK] Disk device $disk_device is accessible"
     fi
     
     info "Disk device verified: $disk_device"
@@ -400,7 +400,7 @@ setup_partitions() {
     
     while [[ $retry_count -lt $max_retries ]]; do
         if [[ -b "$EFI_PARTITION" ]] && [[ -b "$ROOT_PARTITION" ]]; then
-            info "✓ All partitions created successfully"
+            info "[OK] All partitions created successfully"
             break
         fi
         
@@ -422,7 +422,7 @@ setup_partitions() {
         error "Root partition $ROOT_PARTITION was not created after $max_retries attempts"
     fi
     
-    info "✓ Partition verification successful:"
+    info "[OK] Partition verification successful:"
     info "  EFI: $EFI_PARTITION"
     info "  Root: $ROOT_PARTITION"
 }
@@ -551,7 +551,7 @@ mount_filesystems() {
     if ! mountpoint -q /mnt; then
         error "Root filesystem not properly mounted at /mnt"
     fi
-    info "✓ Root filesystem mounted successfully"
+    info "[OK] Root filesystem mounted successfully"
     
     # Create and mount EFI
     info "Creating EFI mount point: /mnt/boot"
@@ -564,7 +564,7 @@ mount_filesystems() {
     if ! mountpoint -q /mnt/boot; then
         error "EFI partition not properly mounted at /mnt/boot"
     fi
-    info "✓ EFI partition mounted successfully"
+    info "[OK] EFI partition mounted successfully"
     
     # Show mount status for debugging
     info "Current mount status:"
@@ -635,8 +635,8 @@ create_optimized_mirrorlist() {
     # Try to get best mirrors from status page (no logging during capture)
     local mirrors
     if mirrors=$(get_best_mirrors 2>/dev/null); then
-        info "✓ Mirror status downloaded successfully"
-        info "✓ Creating custom mirror list from status data"
+        info "[OK] Mirror status downloaded successfully"
+        info "[OK] Creating custom mirror list from status data"
         
         # Create new mirrorlist
         cat > /etc/pacman.d/mirrorlist << EOF
@@ -657,14 +657,14 @@ EOF
         done <<< "$mirrors"
         
         if [[ $mirror_count -gt 0 ]]; then
-            info "✓ Added $mirror_count mirrors to mirrorlist"
+            info "[OK] Added $mirror_count mirrors to mirrorlist"
             return 0
         else
-            warn "✗ No valid mirrors found in mirror status"
+            warn "[FAIL] No valid mirrors found in mirror status"
             return 1
         fi
     else
-        warn "✗ Failed to get mirrors from status page"
+        warn "[FAIL] Failed to get mirrors from status page"
         return 1
     fi
 }
@@ -737,10 +737,10 @@ install_base_system() {
     # Strategy 1: Use optimized mirror list from status page
     if ! $mirror_updated; then
         if create_optimized_mirrorlist; then
-            info "✓ Optimized mirrors configured from status page"
+            info "[OK] Optimized mirrors configured from status page"
             mirror_updated=true
         else
-            warn "✗ Optimized mirror selection failed"
+            warn "[FAIL] Optimized mirror selection failed"
         fi
     fi
     
@@ -748,10 +748,10 @@ install_base_system() {
     if ! $mirror_updated; then
         info "Attempting fast mirror detection..."
         if timeout 30 reflector --age 6 --protocol https --sort rate --number 5 --save /etc/pacman.d/mirrorlist 2>/dev/null; then
-            info "✓ Fast mirror detection successful"
+            info "[OK] Fast mirror detection successful"
             mirror_updated=true
         else
-            warn "✗ Fast mirror detection failed or timed out"
+            warn "[FAIL] Fast mirror detection failed or timed out"
         fi
     fi
     
@@ -759,10 +759,10 @@ install_base_system() {
     if ! $mirror_updated && [[ -n "$country" ]]; then
         info "Attempting mirrors for country: $country"
         if timeout 20 reflector --country "$country" --protocol https --number 3 --save /etc/pacman.d/mirrorlist 2>/dev/null; then
-            info "✓ Country-specific mirrors configured"
+            info "[OK] Country-specific mirrors configured"
             mirror_updated=true
         else
-            warn "✗ Country-specific mirrors failed"
+            warn "[FAIL] Country-specific mirrors failed"
         fi
     fi
     
@@ -801,7 +801,7 @@ install_base_system() {
             timeout 60 pacman -Syy --noconfirm 2>/dev/null || warn "Backup mirrors also failed"
         fi
     else
-        info "✓ Package database sync successful"
+        info "[OK] Package database sync successful"
     fi
     
     # Configure pacman for better download handling (in the correct section)
@@ -828,7 +828,7 @@ install_base_system() {
         df -h /mnt 2>/dev/null || warn "Could not check disk space"
         
         info "Testing network connectivity to package servers:"
-        ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 && info "✓ archlinux.org reachable" || warn "✗ archlinux.org unreachable"
+        ping -c 1 -W 3 archlinux.org >/dev/null 2>&1 && info "[OK] archlinux.org reachable" || warn "[FAIL] archlinux.org unreachable"
         
         # Try minimal installation first with extended timeout
         warn "Attempting minimal installation with essential packages only..."
@@ -842,10 +842,10 @@ install_base_system() {
             if ! timeout 1800 pacstrap -c /mnt base; then
                 error "Even minimal package installation failed. This suggests mirror or network issues."
             else
-                info "✓ Minimal base installation succeeded"
+                info "[OK] Minimal base installation succeeded"
             fi
         else
-            info "✓ Essential packages installation succeeded"
+            info "[OK] Essential packages installation succeeded"
         fi
         
         # Install additional packages in chroot if minimal succeeded
@@ -854,7 +854,7 @@ install_base_system() {
             warn "Some additional packages failed to install, continuing..."
         }
     else
-        info "✓ Full package installation completed successfully"
+        info "[OK] Full package installation completed successfully"
     fi
     
     info "Verifying critical packages..."

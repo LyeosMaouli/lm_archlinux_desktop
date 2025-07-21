@@ -36,7 +36,7 @@ error() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
 }
 
 # Display usage

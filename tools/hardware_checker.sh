@@ -29,11 +29,11 @@ print_section() {
 }
 
 check_pass() {
-    echo -e "${GREEN}✓ PASS:${NC} $1"
+    echo -e "${GREEN}[OK] PASS:${NC} $1"
 }
 
 check_fail() {
-    echo -e "${RED}✗ FAIL:${NC} $1"
+    echo -e "${RED}[FAIL] FAIL:${NC} $1"
 }
 
 check_warn() {
@@ -390,24 +390,24 @@ generate_summary() {
     print_header "HARDWARE COMPATIBILITY SUMMARY"
     
     # Count results
-    pass_count=$(grep -c "✓ PASS" "$REPORT_FILE" || echo 0)
+    pass_count=$(grep -c "[OK] PASS" "$REPORT_FILE" || echo 0)
     warn_count=$(grep -c "⚠ WARN" "$REPORT_FILE" || echo 0)
-    fail_count=$(grep -c "✗ FAIL" "$REPORT_FILE" || echo 0)
+    fail_count=$(grep -c "[FAIL] FAIL" "$REPORT_FILE" || echo 0)
     
     echo "Results:"
-    echo -e "  ${GREEN}✓ PASS: $pass_count${NC}"
+    echo -e "  ${GREEN}[OK] PASS: $pass_count${NC}"
     echo -e "  ${YELLOW}⚠ WARN: $warn_count${NC}"
-    echo -e "  ${RED}✗ FAIL: $fail_count${NC}"
+    echo -e "  ${RED}[FAIL] FAIL: $fail_count${NC}"
     
     echo ""
     if [[ $fail_count -eq 0 ]]; then
         if [[ $warn_count -eq 0 ]]; then
-            echo -e "${GREEN}🎉 Excellent! Your hardware is fully compatible with Arch Linux Hyprland.${NC}"
+            echo -e "${GREEN}[COMPLETE] Excellent! Your hardware is fully compatible with Arch Linux Hyprland.${NC}"
         else
-            echo -e "${YELLOW}✅ Good! Your hardware is compatible with minor considerations.${NC}"
+            echo -e "${YELLOW}[SUCCESS] Good! Your hardware is compatible with minor considerations.${NC}"
         fi
     else
-        echo -e "${RED}⚠️  Warning! Some hardware compatibility issues detected.${NC}"
+        echo -e "${RED}[WARNING]  Warning! Some hardware compatibility issues detected.${NC}"
         echo "Please review the FAIL items above before proceeding."
     fi
     
@@ -451,9 +451,9 @@ This tool checks your hardware against the requirements for:
 Usage: ./hardware_checker.sh
 
 The tool will generate a report with:
-✓ PASS - Requirement met
+[OK] PASS - Requirement met
 ⚠ WARN - Minor issue or recommendation
-✗ FAIL - Critical issue requiring attention
+[FAIL] FAIL - Critical issue requiring attention
 
 Report is saved to /tmp/hardware-check-TIMESTAMP.log
 

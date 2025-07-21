@@ -30,22 +30,22 @@ load_password_manager() {
     for password_manager in "${password_manager_paths[@]}"; do
         if [[ -f "$password_manager" ]]; then
             source "$password_manager"
-            echo -e "${GREEN}✅ Password management system loaded from: $password_manager${NC}"
+            echo -e "${GREEN}[SUCCESS] Password management system loaded from: $password_manager${NC}"
             return 0
         fi
     done
     
     # If not found locally, try to download from GitHub
-    echo -e "${YELLOW}⚠️ Password management system not found locally, downloading...${NC}"
+    echo -e "${YELLOW}[WARNING] Password management system not found locally, downloading...${NC}"
     local github_url="https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/security/password_manager.sh"
     
     if curl -fsSL "$github_url" -o "/tmp/password_manager.sh"; then
         chmod +x "/tmp/password_manager.sh"
         source "/tmp/password_manager.sh"
-        echo -e "${GREEN}✅ Password management system downloaded and loaded${NC}"
+        echo -e "${GREEN}[SUCCESS] Password management system downloaded and loaded${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to load password management system${NC}"
+        echo -e "${RED}[ERROR] Failed to load password management system${NC}"
         echo -e "${RED}   Tried paths: ${password_manager_paths[*]}${NC}"
         echo -e "${RED}   GitHub download failed: $github_url${NC}"
         return 1
@@ -58,7 +58,7 @@ print_banner() {
     cat << 'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     🚀 Arch Linux Hyprland - Zero Touch Deploy            ║
+║     [DEPLOY] Arch Linux Hyprland - Zero Touch Deploy            ║
 ║                                                              ║
 ║     The easiest way to get a complete desktop system        ║
 ║     Advanced password management with multiple modes!       ║
@@ -70,7 +70,7 @@ EOF
 
 # Smart defaults detection
 detect_defaults() {
-    echo -e "${BLUE}🔍 Auto-detecting system configuration...${NC}"
+    echo -e "${BLUE}[DETECT] Auto-detecting system configuration...${NC}"
     
     # Detect timezone
     if command -v timedatectl >/dev/null 2>&1; then
@@ -98,36 +98,36 @@ detect_defaults() {
     # Find the largest disk
     DEFAULT_DISK=$(lsblk -d -o NAME,SIZE -b | grep -E "sd|nvme|vd" | sort -k2 -nr | head -1 | awk '{print "/dev/" $1}')
     
-    echo -e "${GREEN}✅ Auto-detection completed${NC}"
+    echo -e "${GREEN}[SUCCESS] Auto-detection completed${NC}"
 }
 
 # Minimal prompts - only the essentials
 minimal_prompts() {
-    echo -e "${BLUE}📝 Quick Setup (3 questions only!)${NC}"
+    echo -e "${BLUE}[CONFIG] Quick Setup (3 questions only!)${NC}"
     echo
     
     # 1. Username
-    read -p "👤 Your username [default: user]: " username
+    read -p "[USER] Your username [default: user]: " username
     username=${username:-user}
     
     # 2. Computer name
-    read -p "💻 Computer name [default: archlinux]: " hostname
+    read -p "[SYSTEM] Computer name [default: archlinux]: " hostname
     hostname=${hostname:-archlinux}
     
     # 3. Enable encryption
     echo
-    echo "🔒 Disk encryption protects your data if laptop is stolen"
+    echo "[SECURE] Disk encryption protects your data if laptop is stolen"
     read -p "Enable full disk encryption? [Y/n]: " encrypt
     if [[ "$encrypt" =~ ^[Nn]$ ]]; then
         enable_encryption="false"
-        echo "⚠️  Encryption disabled - data will not be protected"
+        echo "[WARNING]  Encryption disabled - data will not be protected"
     else
         enable_encryption="true"
-        echo "✅ Encryption enabled - maximum security"
+        echo "[SUCCESS] Encryption enabled - maximum security"
     fi
     
     echo
-    echo -e "${GREEN}✅ Configuration complete!${NC}"
+    echo -e "${GREEN}[SUCCESS] Configuration complete!${NC}"
     echo "Using smart defaults for everything else..."
 }
 
@@ -293,11 +293,11 @@ connect_wifi_auto() {
 
 # Network auto-setup
 setup_network_auto() {
-    echo -e "${BLUE}🌐 Setting up internet connection...${NC}"
+    echo -e "${BLUE}[NETWORK] Setting up internet connection...${NC}"
     
     # Check if already connected
     if ping -c 1 8.8.8.8 &>/dev/null; then
-        echo -e "${GREEN}✅ Internet already connected!${NC}"
+        echo -e "${GREEN}[SUCCESS] Internet already connected!${NC}"
         return 0
     fi
     
@@ -309,7 +309,7 @@ setup_network_auto() {
         sleep 3
         
         if ping -c 1 8.8.8.8 &>/dev/null; then
-            echo -e "${GREEN}✅ Ethernet connected!${NC}"
+            echo -e "${GREEN}[SUCCESS] Ethernet connected!${NC}"
             return 0
         fi
     done
@@ -322,10 +322,10 @@ setup_network_auto() {
         if [[ -n "${DEPLOY_WIFI_SSID:-}" ]] && [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
             echo "Found WiFi credentials, connecting automatically..."
             if connect_wifi_auto "$DEPLOY_WIFI_SSID" "$DEPLOY_WIFI_PASSWORD"; then
-                echo -e "${GREEN}✅ WiFi connected automatically!${NC}"
+                echo -e "${GREEN}[SUCCESS] WiFi connected automatically!${NC}"
                 return 0
             else
-                echo -e "${YELLOW}⚠️  Automatic WiFi connection failed, falling back to manual${NC}"
+                echo -e "${YELLOW}[WARNING]  Automatic WiFi connection failed, falling back to manual${NC}"
             fi
         fi
         
@@ -338,12 +338,12 @@ setup_network_auto() {
         sleep 5
         
         if ping -c 1 8.8.8.8 &>/dev/null; then
-            echo -e "${GREEN}✅ WiFi connected!${NC}"
+            echo -e "${GREEN}[SUCCESS] WiFi connected!${NC}"
             return 0
         fi
     fi
     
-    echo -e "${YELLOW}⚠️  No internet connection available${NC}"
+    echo -e "${YELLOW}[WARNING]  No internet connection available${NC}"
     echo "Please ensure you have an internet connection before continuing."
     echo "You can:"
     echo "1. Connect ethernet cable"
@@ -353,23 +353,23 @@ setup_network_auto() {
     read -p "Press Enter when internet is ready..."
     
     if ping -c 1 8.8.8.8 &>/dev/null; then
-        echo -e "${GREEN}✅ Internet connected!${NC}"
+        echo -e "${GREEN}[SUCCESS] Internet connected!${NC}"
         return 0
     else
-        echo -e "${RED}❌ Still no internet connection${NC}"
+        echo -e "${RED}[ERROR] Still no internet connection${NC}"
         return 1
     fi
 }
 
 # Advanced password collection using password management system
 collect_deployment_passwords() {
-    echo -e "${BLUE}🔐 Advanced Password Management${NC}"
+    echo -e "${BLUE}[PASSWORD] Advanced Password Management${NC}"
     echo "Multiple password input methods available for maximum flexibility."
     echo
     
     # Load password management system
     if ! load_password_manager; then
-        echo -e "${RED}❌ Failed to load password management system${NC}"
+        echo -e "${RED}[ERROR] Failed to load password management system${NC}"
         return 1
     fi
     
@@ -406,7 +406,7 @@ collect_deployment_passwords() {
     
     # Collect passwords using the specified method
     if collect_passwords "$PASSWORD_MODE"; then
-        echo -e "${GREEN}✅ Password collection successful${NC}"
+        echo -e "${GREEN}[SUCCESS] Password collection successful${NC}"
         
         # Show password status
         show_password_status
@@ -416,14 +416,14 @@ collect_deployment_passwords() {
         
         return 0
     else
-        echo -e "${RED}❌ Password collection failed${NC}"
+        echo -e "${RED}[ERROR] Password collection failed${NC}"
         return 1
     fi
 }
 
 # Download and run deployment
 run_deployment() {
-    echo -e "${BLUE}📥 Downloading deployment system...${NC}"
+    echo -e "${BLUE}[DOWNLOAD] Downloading deployment system...${NC}"
     
     # Install git if needed
     if ! command -v git >/dev/null 2>&1; then
@@ -444,11 +444,11 @@ run_deployment() {
     # Environment variables are already set by password manager
     # Verify they are available
     if [[ -z "${USER_PASSWORD:-}" ]] || [[ -z "${ROOT_PASSWORD:-}" ]]; then
-        echo -e "${RED}❌ Required passwords not available${NC}"
+        echo -e "${RED}[ERROR] Required passwords not available${NC}"
         return 1
     fi
     
-    echo -e "${GREEN}🚀 Starting automated deployment...${NC}"
+    echo -e "${GREEN}[DEPLOY] Starting automated deployment...${NC}"
     echo "This will take 30-60 minutes. Sit back and relax!"
     echo
     
@@ -544,16 +544,16 @@ main() {
     
     # Check we're on Arch Linux
     if [[ ! -f /etc/arch-release ]] && [[ ! -d /run/archiso ]]; then
-        echo -e "${RED}❌ This script requires Arch Linux${NC}"
+        echo -e "${RED}[ERROR] This script requires Arch Linux${NC}"
         echo "Please boot from an Arch Linux ISO"
         exit 1
     fi
     
     echo -e "${GREEN}Welcome to the easiest Arch Linux Hyprland installation!${NC}"
     echo "This script will set up a complete modern desktop with advanced password management:"
-    echo "1. 📝 Answer 3 quick questions"
-    echo "2. 🔐 Handle passwords securely (mode: $PASSWORD_MODE)"  
-    echo "3. 🚀 Automated installation (30-60 minutes)"
+    echo "1. [CONFIG] Answer 3 quick questions"
+    echo "2. [PASSWORD] Handle passwords securely (mode: $PASSWORD_MODE)"  
+    echo "3. [DEPLOY] Automated installation (30-60 minutes)"
     echo
     read -p "Ready to get started? [Y/n]: " ready
     
@@ -570,12 +570,12 @@ main() {
     
     # Step 2: Create configuration
     config_file=$(create_auto_config)
-    echo -e "${GREEN}✅ Configuration created: $config_file${NC}"
+    echo -e "${GREEN}[SUCCESS] Configuration created: $config_file${NC}"
     echo
     
     # Step 3: Network setup
     if ! setup_network_auto; then
-        echo -e "${RED}❌ Network setup failed${NC}"
+        echo -e "${RED}[ERROR] Network setup failed${NC}"
         exit 1
     fi
     echo
@@ -585,7 +585,7 @@ main() {
     echo
     
     # Step 5: Final confirmation
-    echo -e "${YELLOW}📋 Ready to install with these settings:${NC}"
+    echo -e "${YELLOW}[LIST] Ready to install with these settings:${NC}"
     echo "  Computer name: $hostname"
     echo "  Username: $username"
     echo "  Timezone: $DEFAULT_TIMEZONE"
@@ -594,11 +594,11 @@ main() {
     echo "  Encryption: $enable_encryption"
     echo
     echo "The installation will:"
-    echo "✅ Install Arch Linux with Hyprland desktop"
-    echo "✅ Set up security (firewall, fail2ban, encryption)"
-    echo "✅ Install development tools and applications"
-    echo "✅ Optimize for laptop power management"
-    echo "✅ Configure everything automatically"
+    echo "[SUCCESS] Install Arch Linux with Hyprland desktop"
+    echo "[SUCCESS] Set up security (firewall, fail2ban, encryption)"
+    echo "[SUCCESS] Install development tools and applications"
+    echo "[SUCCESS] Optimize for laptop power management"
+    echo "[SUCCESS] Configure everything automatically"
     echo
     read -p "Continue with installation? [Y/n]: " final_confirm
     
@@ -610,7 +610,7 @@ main() {
     # Step 6: Run deployment
     run_deployment
     
-    echo -e "${GREEN}🎉 Installation completed successfully!${NC}"
+    echo -e "${GREEN}[COMPLETE] Installation completed successfully!${NC}"
     echo "Your Arch Linux Hyprland system is ready to use."
     echo "The system will reboot automatically."
 }

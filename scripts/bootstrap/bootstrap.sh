@@ -47,7 +47,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
     log "SUCCESS: $1"
 }
 

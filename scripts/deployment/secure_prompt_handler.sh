@@ -32,13 +32,13 @@ secure_password_prompt() {
         
         # Check minimum length
         if [[ ${#password} -lt $min_length ]]; then
-            echo -e "${RED}❌ Password must be at least $min_length characters${NC}"
+            echo -e "${RED}[ERROR] Password must be at least $min_length characters${NC}"
             continue
         fi
         
         # Check password strength
         if [[ ${#password} -lt 12 ]]; then
-            echo -e "${YELLOW}⚠️  Warning: Password is short (less than 12 characters)${NC}"
+            echo -e "${YELLOW}[WARNING]  Warning: Password is short (less than 12 characters)${NC}"
         fi
         
         if [[ "$confirm_required" == "true" ]]; then
@@ -47,7 +47,7 @@ secure_password_prompt() {
             echo
             
             if [[ "$password" != "$password_confirm" ]]; then
-                echo -e "${RED}❌ Passwords don't match, please try again${NC}"
+                echo -e "${RED}[ERROR] Passwords don't match, please try again${NC}"
                 continue
             fi
         fi
@@ -65,7 +65,7 @@ wifi_credentials_prompt() {
     
     # Check if WiFi hardware exists
     if ! iwctl device list 2>/dev/null | grep -q "wlan"; then
-        echo -e "${YELLOW}⚠️  No WiFi hardware detected, skipping WiFi setup${NC}"
+        echo -e "${YELLOW}[WARNING]  No WiFi hardware detected, skipping WiFi setup${NC}"
         return 0
     fi
     
@@ -92,7 +92,7 @@ wifi_credentials_prompt() {
         echo "wifi_ssid=\"$ssid\"" >> /tmp/wifi_config
         echo "wifi_password=\"$password\"" >> /tmp/wifi_config
         
-        echo -e "${GREEN}✅ WiFi credentials saved${NC}"
+        echo -e "${GREEN}[SUCCESS] WiFi credentials saved${NC}"
     else
         echo "Skipping WiFi setup - will use ethernet connection"
     fi
@@ -102,23 +102,23 @@ wifi_credentials_prompt() {
 user_account_prompt() {
     local username="$1"
     
-    echo -e "${BLUE}👤 Setting up user account for '$username'${NC}"
+    echo -e "${BLUE}[USER] Setting up user account for '$username'${NC}"
     echo
     
     USER_PASSWORD=$(secure_password_prompt "Enter password for user '$username':" true 8)
     
-    echo -e "${GREEN}✅ User password set${NC}"
+    echo -e "${GREEN}[SUCCESS] User password set${NC}"
 }
 
 # Root account setup
 root_account_prompt() {
-    echo -e "${BLUE}🔐 Setting up root account${NC}"
+    echo -e "${BLUE}[PASSWORD] Setting up root account${NC}"
     echo "Root account is needed for system administration."
     echo
     
     ROOT_PASSWORD=$(secure_password_prompt "Enter root password:" true 8)
     
-    echo -e "${GREEN}✅ Root password set${NC}"
+    echo -e "${GREEN}[SUCCESS] Root password set${NC}"
 }
 
 # LUKS encryption setup
@@ -126,14 +126,14 @@ luks_encryption_prompt() {
     local encryption_enabled="$1"
     
     if [[ "$encryption_enabled" == "true" ]]; then
-        echo -e "${BLUE}🔒 Setting up disk encryption${NC}"
+        echo -e "${BLUE}[SECURE] Setting up disk encryption${NC}"
         echo "Full disk encryption protects your data if the laptop is stolen."
-        echo "⚠️  Important: You'll need this passphrase every time you boot!"
+        echo "[WARNING]  Important: You'll need this passphrase every time you boot!"
         echo
         
         LUKS_PASSPHRASE=$(secure_password_prompt "Enter LUKS encryption passphrase:" true 12)
         
-        echo -e "${GREEN}✅ Encryption passphrase set${NC}"
+        echo -e "${GREEN}[SUCCESS] Encryption passphrase set${NC}"
         echo -e "${YELLOW}💡 Remember this passphrase - you can't boot without it!${NC}"
     else
         echo "Disk encryption disabled - skipping passphrase setup"
@@ -168,7 +168,7 @@ EOF
     export SECURE_CONFIG_DATA="$(cat "$temp_passwords")"
     rm -f "$temp_passwords"
     
-    echo -e "${GREEN}✅ Secure configuration generated${NC}"
+    echo -e "${GREEN}[SUCCESS] Secure configuration generated${NC}"
 }
 
 # Interactive credential collection
@@ -179,7 +179,7 @@ collect_all_credentials() {
     local username=$(grep -A5 "^user:" "$config_file" | grep -E "^\s*username:" | cut -d':' -f2 | xargs | tr -d '"')
     local encryption_enabled=$(grep -A5 "encryption:" "$config_file" | grep -E "^\s*enabled:" | cut -d':' -f2 | xargs | tr -d '"')
     
-    echo -e "${BLUE}🔐 Secure Credential Setup${NC}"
+    echo -e "${BLUE}[PASSWORD] Secure Credential Setup${NC}"
     echo "We need to set up some passwords and credentials securely."
     echo "All passwords are encrypted and never stored in plain text."
     echo
@@ -200,7 +200,7 @@ collect_all_credentials() {
     # Generate final secure config
     generate_secure_config "$config_file" "/tmp/deployment_config_secure.yml"
     
-    echo -e "${GREEN}🎉 All credentials collected securely!${NC}"
+    echo -e "${GREEN}[COMPLETE] All credentials collected securely!${NC}"
     echo "Deployment will now proceed automatically."
 }
 
@@ -233,7 +233,7 @@ main() {
     local config_file="${1:-}"
     
     if [[ -z "$config_file" ]] || [[ ! -f "$config_file" ]]; then
-        echo -e "${RED}❌ Configuration file required${NC}"
+        echo -e "${RED}[ERROR] Configuration file required${NC}"
         echo "Usage: $0 <config_file>"
         exit 1
     fi

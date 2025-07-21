@@ -49,7 +49,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
     log "SUCCESS: $1"
 }
 
@@ -67,9 +67,9 @@ print_banner() {
 ║                                                               ║
 ║     Arch Linux Hyprland Desktop Automation System            ║
 ║                                                               ║
-║     🚀 Automated Installation & Configuration               ║
+║     [DEPLOY] Automated Installation & Configuration               ║
 ║     🖥️  Modern Wayland Desktop Environment                   ║
-║     🔒 Enterprise-Grade Security                              ║
+║     [SECURE] Enterprise-Grade Security                              ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 EOF
@@ -387,7 +387,7 @@ show_completion() {
     cat << 'EOF'
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║              🎉 DEPLOYMENT COMPLETED! 🎉                     ║
+║              [COMPLETE] DEPLOYMENT COMPLETED! [COMPLETE]                     ║
 ║                                                               ║
 ║     Your Arch Linux Hyprland system is ready!                ║
 ║                                                               ║

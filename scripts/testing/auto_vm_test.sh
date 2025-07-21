@@ -65,7 +65,7 @@ warn() {
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK] $1${NC}"
     log "SUCCESS: $1"
 }
 
@@ -652,17 +652,17 @@ VM Detection: $RUNNING_IN_VM
 
 INSTALLATION STATUS
 ===================
-Base System: ✓ Completed
-Desktop Environment: $(if command -v Hyprland >/dev/null; then echo "✓ Installed"; else echo "✗ Failed"; fi)
-Security Hardening: $(if systemctl is-active --quiet ufw; then echo "✓ Active"; else echo "✗ Inactive"; fi)
+Base System: [OK] Completed
+Desktop Environment: $(if command -v Hyprland >/dev/null; then echo "[OK] Installed"; else echo "[FAIL] Failed"; fi)
+Security Hardening: $(if systemctl is-active --quiet ufw; then echo "[OK] Active"; else echo "[FAIL] Inactive"; fi)
 
 DESKTOP COMPONENTS
 ==================
-Hyprland: $(if command -v Hyprland >/dev/null; then echo "✓"; else echo "✗"; fi)
-Waybar: $(if command -v waybar >/dev/null; then echo "✓"; else echo "✗"; fi)
-Wofi: $(if command -v wofi >/dev/null; then echo "✓"; else echo "✗"; fi)
-Kitty: $(if command -v kitty >/dev/null; then echo "✓"; else echo "✗"; fi)
-SDDM: $(if command -v sddm >/dev/null; then echo "✓"; else echo "✗"; fi)
+Hyprland: $(if command -v Hyprland >/dev/null; then echo "[OK]"; else echo "[FAIL]"; fi)
+Waybar: $(if command -v waybar >/dev/null; then echo "[OK]"; else echo "[FAIL]"; fi)
+Wofi: $(if command -v wofi >/dev/null; then echo "[OK]"; else echo "[FAIL]"; fi)
+Kitty: $(if command -v kitty >/dev/null; then echo "[OK]"; else echo "[FAIL]"; fi)
+SDDM: $(if command -v sddm >/dev/null; then echo "[OK]"; else echo "[FAIL]"; fi)
 
 SERVICES STATUS
 ===============
@@ -673,12 +673,12 @@ UFW: $(systemctl is-active ufw 2>/dev/null || echo "inactive")
 
 NETWORK STATUS
 ==============
-Connectivity: $(if ping -c 1 google.com >/dev/null 2>&1; then echo "✓ Working"; else echo "✗ Failed"; fi)
+Connectivity: $(if ping -c 1 google.com >/dev/null 2>&1; then echo "[OK] Working"; else echo "[FAIL] Failed"; fi)
 Interface: $(ip route | grep default | awk '{print $5}' | head -1 || echo "none")
 
 TEST RESULTS
 ============
-Overall Status: $(if [[ -f ~/.local/bin/system-status ]]; then echo "✓ PASSED"; else echo "⚠ PARTIAL"; fi)
+Overall Status: $(if [[ -f ~/.local/bin/system-status ]]; then echo "[OK] PASSED"; else echo "⚠ PARTIAL"; fi)
 
 NEXT STEPS
 ==========

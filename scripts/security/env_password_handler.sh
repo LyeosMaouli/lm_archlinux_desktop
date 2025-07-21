@@ -242,7 +242,7 @@ show_env_status() {
         
         if check_env_var "$var_name"; then
             local var_value="${!var_name}"
-            echo -e "  ${GREEN}✓${NC} $label ($var_name): Set (${#var_value} characters)"
+            echo -e "  ${GREEN}[OK]${NC} $label ($var_name): Set (${#var_value} characters)"
         else
             echo -e "  ${YELLOW}○${NC} $label ($var_name): Not set"
         fi

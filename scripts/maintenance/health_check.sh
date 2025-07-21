@@ -42,13 +42,13 @@ warn() {
 }
 
 error() {
-    echo -e "${RED}✗ ERROR: $1${NC}"
+    echo -e "${RED}[FAIL] ERROR: $1${NC}"
     log "ERROR: $1"
     ERRORS=$((ERRORS + 1))
 }
 
 success() {
-    echo -e "${GREEN}✓ OK: $1${NC}"
+    echo -e "${GREEN}[OK] OK: $1${NC}"
     log "OK: $1"
 }
 
@@ -513,7 +513,7 @@ run_health_check() {
     
     if [[ $ERRORS -eq 0 && $WARNINGS -eq 0 ]]; then
         echo ""
-        echo -e "${GREEN}✓ System appears healthy!${NC}"
+        echo -e "${GREEN}[OK] System appears healthy!${NC}"
         return 0
     elif [[ $ERRORS -eq 0 ]]; then
         echo ""
@@ -521,7 +521,7 @@ run_health_check() {
         return 1
     else
         echo ""
-        echo -e "${RED}✗ Issues detected that require attention${NC}"
+        echo -e "${RED}[FAIL] Issues detected that require attention${NC}"
         return 2
     fi
 }
