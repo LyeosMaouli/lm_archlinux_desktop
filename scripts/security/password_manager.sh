@@ -47,13 +47,12 @@ log_success() {
 secure_cleanup() {
     log_info "Performing secure cleanup..."
     
-    # Clear password variables
+    # Clear password variables safely
     for key in "${!SECURE_PASSWORDS[@]}"; do
         SECURE_PASSWORDS[$key]=""
-        unset SECURE_PASSWORDS[$key]
     done
     
-    # Re-initialize array elements to prevent unbound variable errors
+    # Ensure all required keys exist and are empty
     SECURE_PASSWORDS["user"]=""
     SECURE_PASSWORDS["root"]=""
     SECURE_PASSWORDS["luks"]=""
