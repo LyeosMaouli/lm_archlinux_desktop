@@ -290,10 +290,16 @@ set_password() {
 export_passwords() {
     log_info "Exporting passwords to environment..."
     
-    export USER_PASSWORD="${SECURE_PASSWORDS[user]:-}"
-    export ROOT_PASSWORD="${SECURE_PASSWORDS[root]:-}"
-    export LUKS_PASSPHRASE="${SECURE_PASSWORDS[luks]:-}"
-    export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]:-}"
+    # Use safer array access to prevent unbound variable errors
+    export USER_PASSWORD=""
+    export ROOT_PASSWORD=""
+    export LUKS_PASSPHRASE=""
+    export WIFI_PASSWORD=""
+    
+    [[ -v SECURE_PASSWORDS[user] ]] && export USER_PASSWORD="${SECURE_PASSWORDS[user]}"
+    [[ -v SECURE_PASSWORDS[root] ]] && export ROOT_PASSWORD="${SECURE_PASSWORDS[root]}"
+    [[ -v SECURE_PASSWORDS[luks] ]] && export LUKS_PASSPHRASE="${SECURE_PASSWORDS[luks]}"
+    [[ -v SECURE_PASSWORDS[wifi] ]] && export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]}"
     
     log_success "Passwords exported to environment"
 }
@@ -303,20 +309,32 @@ generate_password_hashes() {
     log_info "Generating password hashes..."
     
     local temp_file="/tmp/password_hashes_$$"
+    
+    # Get password values safely
+    local user_pass=""
+    local root_pass=""
+    local luks_pass=""
+    local wifi_pass=""
+    
+    [[ -v SECURE_PASSWORDS[user] ]] && user_pass="${SECURE_PASSWORDS[user]}"
+    [[ -v SECURE_PASSWORDS[root] ]] && root_pass="${SECURE_PASSWORDS[root]}"
+    [[ -v SECURE_PASSWORDS[luks] ]] && luks_pass="${SECURE_PASSWORDS[luks]}"
+    [[ -v SECURE_PASSWORDS[wifi] ]] && wifi_pass="${SECURE_PASSWORDS[wifi]}"
+    
     cat > "$temp_file" << EOF
 # Password hashes generated $(date)
-user_password_hash: "$(echo "${SECURE_PASSWORDS[user]:-}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
-root_password_hash: "$(echo "${SECURE_PASSWORDS[root]:-}" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
+user_password_hash: "$(echo "$user_pass" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
+root_password_hash: "$(echo "$root_pass" | python3 -c "import crypt; import sys; print(crypt.crypt(sys.stdin.read().strip(), crypt.mksalt(crypt.METHOD_SHA512)))" 2>/dev/null || echo "HASH_FAILED")"
 EOF
     
     # Add LUKS passphrase if available
-    if [[ -n "${SECURE_PASSWORDS[luks]:-}" ]]; then
-        echo "luks_passphrase: \"${SECURE_PASSWORDS[luks]:-}\"" >> "$temp_file"
+    if [[ -n "$luks_pass" ]]; then
+        echo "luks_passphrase: \"$luks_pass\"" >> "$temp_file"
     fi
     
     # Add WiFi password if available
-    if [[ -n "${SECURE_PASSWORDS[wifi]:-}" ]]; then
-        echo "wifi_password: \"${SECURE_PASSWORDS[wifi]:-}\"" >> "$temp_file"
+    if [[ -n "$wifi_pass" ]]; then
+        echo "wifi_password: \"$wifi_pass\"" >> "$temp_file"
     fi
     
     echo "$temp_file"
