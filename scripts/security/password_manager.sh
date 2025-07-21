@@ -54,6 +54,12 @@ secure_cleanup() {
         unset SECURE_PASSWORDS[$key]
     done
     
+    # Re-initialize array elements to prevent unbound variable errors
+    SECURE_PASSWORDS["user"]=""
+    SECURE_PASSWORDS["root"]=""
+    SECURE_PASSWORDS["luks"]=""
+    SECURE_PASSWORDS["wifi"]=""
+    
     # Clear environment variables if they exist
     unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_SSID DEPLOY_WIFI_PASSWORD 2>/dev/null || true
     
