@@ -22,6 +22,12 @@ LOG_FILE="/var/log/master_auto_deploy.log"
 # Default configuration URL for download
 CONFIG_URL="https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/deployment_config.yml"
 
+# Password management configuration
+PASSWORD_MODE="auto"
+PASSWORD_FILE=""
+FILE_PASSPHRASE=""
+PASSWORDS_COLLECTED=false
+
 # System state detection
 LIVE_ISO=false
 INSTALLED_SYSTEM=false
@@ -46,6 +52,187 @@ info() {
 warn() {
     echo -e "${YELLOW}WARNING: $1${NC}"
     log "WARNING: $1"
+}
+
+debug() {
+    [[ "${DEBUG:-false}" == "true" ]] && echo -e "${CYAN}DEBUG: $1${NC}" >&2
+}
+
+# Parse command line arguments
+parse_arguments() {
+    local mode="auto"
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            auto|iso|desktop|vm|config|help|--help|-h)
+                mode="$1"
+                shift
+                ;;
+            --password-mode)
+                PASSWORD_MODE="$2"
+                info "Password mode set to: $PASSWORD_MODE"
+                shift 2
+                ;;
+            --password-file)
+                PASSWORD_FILE="$2"
+                info "Password file set to: $PASSWORD_FILE"
+                shift 2
+                ;;
+            --file-passphrase)
+                FILE_PASSPHRASE="$2"
+                info "File passphrase provided"
+                shift 2
+                ;;
+            --config-file)
+                CONFIG_FILE="$2"
+                info "Config file set to: $CONFIG_FILE"
+                shift 2
+                ;;
+            --debug)
+                export DEBUG=true
+                info "Debug mode enabled"
+                shift
+                ;;
+            *)
+                warn "Unknown argument: $1"
+                shift
+                ;;
+        esac
+    done
+    
+    echo "$mode"
+}
+
+# Validate password mode
+validate_password_mode() {
+    case "$PASSWORD_MODE" in
+        "auto"|"env"|"file"|"generate"|"interactive")
+            debug "Password mode validation passed: $PASSWORD_MODE"
+            return 0
+            ;;
+        *)
+            error "Invalid password mode: $PASSWORD_MODE. Valid modes: auto, env, file, generate, interactive"
+            return 1
+            ;;
+    esac
+}
+
+# Validate password file requirements
+validate_password_file_requirements() {
+    if [[ "$PASSWORD_MODE" == "file" ]]; then
+        if [[ -z "$PASSWORD_FILE" ]]; then
+            error "Password file mode requires --password-file parameter"
+            return 1
+        fi
+        
+        if [[ ! -f "$PASSWORD_FILE" ]]; then
+            error "Password file not found: $PASSWORD_FILE"
+            return 1
+        fi
+        
+        debug "Password file validation passed: $PASSWORD_FILE"
+    fi
+    
+    return 0
+}
+
+# Load and integrate password management system
+load_password_manager() {
+    local password_manager="$SCRIPT_DIR/../security/password_manager.sh"
+    
+    debug "Looking for password manager at: $password_manager"
+    
+    if [[ -f "$password_manager" ]]; then
+        info "Loading password management system..."
+        source "$password_manager"
+        debug "Password management system loaded successfully"
+        return 0
+    else
+        warn "Password manager not found at: $password_manager"
+        return 1
+    fi
+}
+
+# Collect and export passwords
+collect_and_export_passwords() {
+    if [[ "$PASSWORDS_COLLECTED" == "true" ]]; then
+        debug "Passwords already collected, skipping"
+        return 0
+    fi
+    
+    info "Collecting passwords using mode: $PASSWORD_MODE"
+    
+    # Validate password mode
+    if ! validate_password_mode; then
+        return 1
+    fi
+    
+    # Validate password file requirements
+    if ! validate_password_file_requirements; then
+        return 1
+    fi
+    
+    # Load password management system
+    if ! load_password_manager; then
+        case "$PASSWORD_MODE" in
+            "file"|"env"|"generate")
+                error "Password manager required for mode '$PASSWORD_MODE' but not available"
+                return 1
+                ;;
+            *)
+                warn "Password manager not available, falling back to interactive mode"
+                return 1
+                ;;
+        esac
+    fi
+    
+    # Set configuration for password manager
+    export CONFIG_FILE="$CONFIG_FILE"
+    export PASSWORD_FILE="$PASSWORD_FILE"
+    export FILE_PASSPHRASE="$FILE_PASSPHRASE"
+    
+    debug "Password collection configuration:"
+    debug "  CONFIG_FILE: $CONFIG_FILE"
+    debug "  PASSWORD_FILE: ${PASSWORD_FILE:-not set}"
+    debug "  FILE_PASSPHRASE: ${FILE_PASSPHRASE:+[SET]}${FILE_PASSPHRASE:-not set}"
+    debug "  PASSWORD_MODE: $PASSWORD_MODE"
+    
+    # Collect passwords using the specified method
+    if collect_passwords "$PASSWORD_MODE"; then
+        info "Password collection successful"
+        
+        # Export passwords for child processes
+        export_passwords
+        
+        # Mark as collected
+        PASSWORDS_COLLECTED=true
+        
+        debug "Passwords exported to environment for child processes"
+        return 0
+    else
+        case "$PASSWORD_MODE" in
+            "file")
+                error "Failed to decrypt password file: $PASSWORD_FILE"
+                error "Please check file path and passphrase"
+                ;;
+            "env")
+                error "Required environment variables not found"
+                error "Please set DEPLOY_USER_PASSWORD, DEPLOY_ROOT_PASSWORD, etc."
+                ;;
+            "generate")
+                error "Password generation failed"
+                error "Check system entropy and random number generation"
+                ;;
+            "interactive")
+                error "Interactive password collection failed"
+                error "Check terminal input and password requirements"
+                ;;
+            *)
+                error "Password collection failed for mode: $PASSWORD_MODE"
+                ;;
+        esac
+        return 1
+    fi
 }
 
 success() {
@@ -289,6 +476,18 @@ run_iso_installation() {
     # Export configuration file path
     export CONFIG_FILE
     
+    # Export password environment variables for child process
+    if [[ "$PASSWORDS_COLLECTED" == "true" ]]; then
+        debug "Exporting password variables to child process..."
+        [[ -n "${USER_PASSWORD:-}" ]] && export USER_PASSWORD
+        [[ -n "${ROOT_PASSWORD:-}" ]] && export ROOT_PASSWORD
+        [[ -n "${LUKS_PASSPHRASE:-}" ]] && export LUKS_PASSPHRASE
+        [[ -n "${WIFI_PASSWORD:-}" ]] && export WIFI_PASSWORD
+        debug "Password variables exported to installation script"
+    else
+        debug "No passwords collected, skipping password variable export"
+    fi
+    
     # Run the installation script
     "$install_script" || error "Base system installation failed"
     
@@ -310,6 +509,18 @@ run_desktop_deployment() {
     
     # Export configuration file path
     export CONFIG_FILE
+    
+    # Export password environment variables for child process
+    if [[ "$PASSWORDS_COLLECTED" == "true" ]]; then
+        debug "Exporting password variables to child process..."
+        [[ -n "${USER_PASSWORD:-}" ]] && export USER_PASSWORD
+        [[ -n "${ROOT_PASSWORD:-}" ]] && export ROOT_PASSWORD
+        [[ -n "${LUKS_PASSPHRASE:-}" ]] && export LUKS_PASSPHRASE
+        [[ -n "${WIFI_PASSWORD:-}" ]] && export WIFI_PASSWORD
+        debug "Password variables exported to deployment script"
+    else
+        debug "No passwords collected, skipping password variable export"
+    fi
     
     # Run the deployment script
     "$deploy_script" || error "Desktop deployment failed"
@@ -435,8 +646,9 @@ countdown() {
 
 # Main orchestration function
 main() {
-    # Handle command line arguments
-    local mode="${1:-auto}"
+    # Parse command line arguments
+    local mode
+    mode=$(parse_arguments "$@")
     
     case "$mode" in
         "auto")
@@ -444,6 +656,16 @@ main() {
             print_banner
             detect_system_state
             setup_configuration
+            
+            # Collect passwords early in the process
+            if ! collect_and_export_passwords; then
+                if [[ "$PASSWORD_MODE" != "auto" ]] && [[ "$PASSWORD_MODE" != "interactive" ]]; then
+                    error "Password collection failed and no fallback available for mode: $PASSWORD_MODE"
+                else
+                    warn "Password collection failed, continuing with fallback methods"
+                fi
+            fi
+            
             ensure_repository
             prepare_scripts
             
@@ -472,6 +694,16 @@ main() {
             print_banner
             detect_system_state
             setup_configuration
+            
+            # Collect passwords for installation
+            if ! collect_and_export_passwords; then
+                if [[ "$PASSWORD_MODE" != "auto" ]] && [[ "$PASSWORD_MODE" != "interactive" ]]; then
+                    error "Password collection failed and no fallback available for mode: $PASSWORD_MODE"
+                else
+                    warn "Password collection failed, continuing with fallback methods"
+                fi
+            fi
+            
             ensure_repository
             prepare_scripts
             setup_network
@@ -482,6 +714,16 @@ main() {
             # Desktop deployment only
             print_banner
             setup_configuration
+            
+            # Collect passwords for desktop deployment
+            if ! collect_and_export_passwords; then
+                if [[ "$PASSWORD_MODE" != "auto" ]] && [[ "$PASSWORD_MODE" != "interactive" ]]; then
+                    error "Password collection failed and no fallback available for mode: $PASSWORD_MODE"
+                else
+                    warn "Password collection failed, continuing with fallback methods"
+                fi
+            fi
+            
             ensure_repository
             prepare_scripts
             setup_network
@@ -510,7 +752,7 @@ main() {
             ;;
             
         "help"|"--help"|"-h")
-            echo "Usage: $0 [mode]"
+            echo "Usage: $0 [mode] [OPTIONS]"
             echo
             echo "Modes:"
             echo "  auto     - Automatic mode (detect and run appropriate workflow)"
@@ -520,8 +762,25 @@ main() {
             echo "  config   - Configuration setup only"
             echo "  help     - Show this help message"
             echo
+            echo "Password Management Options:"
+            echo "  --password-mode MODE    Password collection method (auto|env|file|generate|interactive)"
+            echo "  --password-file FILE    Path to encrypted password file (for file mode)"
+            echo "  --file-passphrase PASS  Passphrase for encrypted file (for file mode)"
+            echo
+            echo "Other Options:"
+            echo "  --config-file FILE      Path to deployment configuration file"
+            echo "  --debug                 Enable debug output"
+            echo
             echo "Environment Variables:"
-            echo "  CONFIG_FILE - Path to deployment configuration file"
+            echo "  CONFIG_FILE             Path to deployment configuration file"
+            echo "  DEBUG                   Enable debug output (true/false)"
+            echo
+            echo "Password Modes:"
+            echo "  auto        - Try methods in order: env → file → generate → interactive"
+            echo "  env         - Use environment variables (DEPLOY_USER_PASSWORD, etc.)"
+            echo "  file        - Use encrypted password file"
+            echo "  generate    - Auto-generate secure passwords"
+            echo "  interactive - Interactive password prompts"
             echo
             exit 0
             ;;

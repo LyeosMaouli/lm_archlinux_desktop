@@ -476,10 +476,19 @@ run_deployment() {
     echo "This will take 30-60 minutes. Sit back and relax!"
     echo
     
-    # Run deployment
+    # Run deployment with password management parameters
     cd /tmp/lm_archlinux_desktop
     chmod +x scripts/deployment/master_auto_deploy.sh
-    ./scripts/deployment/master_auto_deploy.sh auto
+    
+    # Pass password management parameters to master deployment script
+    local master_args=("auto")
+    [[ -n "$PASSWORD_MODE" ]] && master_args+=("--password-mode" "$PASSWORD_MODE")
+    [[ -n "$PASSWORD_FILE" ]] && master_args+=("--password-file" "$PASSWORD_FILE") 
+    [[ -n "$FILE_PASSPHRASE" ]] && master_args+=("--file-passphrase" "$FILE_PASSPHRASE")
+    [[ -n "$config_file" ]] && master_args+=("--config-file" "$config_file")
+    
+    echo "[DEBUG] Calling master_auto_deploy.sh with parameters: ${master_args[*]}"
+    ./scripts/deployment/master_auto_deploy.sh "${master_args[@]}"
 }
 
 

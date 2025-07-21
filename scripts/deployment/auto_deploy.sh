@@ -68,6 +68,14 @@ check_connectivity() {
     local wifi_ssid=$(parse_nested_config "network" "ssid")
     local wifi_password=$(parse_nested_config "network" "password")
     
+    # Try to get WiFi password from password management system if not in config
+    if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ -z "$wifi_password" ]]; then
+        if [[ -n "${WIFI_PASSWORD:-}" ]]; then
+            wifi_password="$WIFI_PASSWORD"
+            info "WiFi password obtained from password management system"
+        fi
+    fi
+    
     # Connect to WiFi if configured and not connected
     if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ -n "$wifi_password" ]]; then
         if ! ping -c 1 google.com >/dev/null 2>&1; then

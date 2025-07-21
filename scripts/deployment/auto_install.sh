@@ -455,17 +455,26 @@ setup_encryption() {
         info "Root partition verified: $ROOT_PARTITION"
         lsblk "$ROOT_PARTITION" || warn "Could not display partition info"
         
-        # Use passphrase from config or prompt
+        # Use passphrase from config, password manager, or prompt
         if [[ -z "$passphrase" ]]; then
-            echo -n "Enter LUKS encryption passphrase: "
-            read -s passphrase
-            echo
-            echo -n "Confirm LUKS encryption passphrase: "
-            read -s passphrase_confirm
-            echo
+            info "Checking password management system for LUKS passphrase..."
             
-            if [[ "$passphrase" != "$passphrase_confirm" ]]; then
-                error "Passphrases do not match"
+            # Try to get passphrase from environment (set by password manager)
+            if [[ -n "${LUKS_PASSPHRASE:-}" ]]; then
+                passphrase="$LUKS_PASSPHRASE"
+                info "LUKS passphrase obtained from password management system"
+            else
+                # Fallback to interactive prompt
+                echo -n "Enter LUKS encryption passphrase: "
+                read -s passphrase
+                echo
+                echo -n "Confirm LUKS encryption passphrase: "
+                read -s passphrase_confirm
+                echo
+                
+                if [[ "$passphrase" != "$passphrase_confirm" ]]; then
+                    error "Passphrases do not match"
+                fi
             fi
         else
             info "Using passphrase from configuration"
@@ -992,17 +1001,35 @@ setup_users() {
     
     info "Setting up users..."
     
-    # Prompt for passwords if not provided
-    if [[ -z "$root_password" ]]; then
-        echo -n "Enter root password: "
-        read -s root_password
-        echo
-    fi
-    
-    if [[ -z "$user_password" ]]; then
-        echo -n "Enter password for user $username: "
-        read -s user_password
-        echo
+    # Use password management system if passwords are not provided in config
+    if [[ -z "$root_password" ]] || [[ -z "$user_password" ]]; then
+        info "Checking password management system for missing passwords..."
+        
+        # Try to get passwords from environment (set by password manager)
+        if [[ -z "$root_password" ]] && [[ -n "${ROOT_PASSWORD:-}" ]]; then
+            root_password="$ROOT_PASSWORD"
+            info "Root password obtained from password management system"
+        fi
+        
+        if [[ -z "$user_password" ]] && [[ -n "${USER_PASSWORD:-}" ]]; then
+            user_password="$USER_PASSWORD"
+            info "User password obtained from password management system"
+        fi
+        
+        # Fallback to interactive prompts if still missing
+        if [[ -z "$root_password" ]]; then
+            echo -n "Enter root password: "
+            read -s root_password
+            echo
+        fi
+        
+        if [[ -z "$user_password" ]]; then
+            echo -n "Enter password for user $username: "
+            read -s user_password
+            echo
+        fi
+    else
+        info "Using passwords from configuration file"
     fi
     
     # Create user setup script
