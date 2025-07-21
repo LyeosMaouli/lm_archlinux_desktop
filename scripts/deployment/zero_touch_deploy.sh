@@ -58,10 +58,10 @@ print_banner() {
     cat << 'EOF'
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║     [DEPLOY] Arch Linux Hyprland - Zero Touch Deploy            ║
+║     [DEPLOY] Arch Linux Hyprland - Zero Touch Deploy         ║
 ║                                                              ║
-║     The easiest way to get a complete desktop system        ║
-║     Advanced password management with multiple modes!       ║
+║     The easiest way to get a complete desktop system         ║
+║     Advanced password management with multiple modes!        ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
@@ -382,10 +382,10 @@ collect_deployment_passwords() {
     case "$PASSWORD_MODE" in
         "auto")
             echo -e "${BLUE}Using automatic password detection:${NC}"
-            echo "  1️⃣ Environment variables (CI/CD)"
-            echo "  2️⃣ Encrypted password file" 
-            echo "  3️⃣ Auto-generated passwords"
-            echo "  4️⃣ Interactive prompts (fallback)"
+            echo "  1. Environment variables (CI/CD)"
+            echo "  2. Encrypted password file" 
+            echo "  3. Auto-generated passwords"
+            echo "  4. Interactive prompts (fallback)"
             ;;
         "env")
             echo -e "${BLUE}Using environment variable passwords${NC}"
