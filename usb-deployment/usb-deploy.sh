@@ -305,7 +305,7 @@ run_deployment() {
     # Run deployment with appropriate parameters
     case "$PASSWORD_MODE" in
         "file")
-            ./deploy.sh --password-mode file --password-file "$PASSWORD_FILE_NAME"
+            ./deploy.sh --password-mode file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
             ;;
         "env")
             ./deploy.sh --password-mode env

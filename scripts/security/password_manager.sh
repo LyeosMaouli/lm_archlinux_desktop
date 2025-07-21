@@ -206,19 +206,30 @@ try_password_method() {
             
         "file")
             log_info "Trying encrypted file method..."
+            log_info "[DEBUG] Checking for encrypted_file_handler.sh at: $SCRIPT_DIR/encrypted_file_handler.sh"
             if [[ -f "$SCRIPT_DIR/encrypted_file_handler.sh" ]]; then
+                log_info "[DEBUG] Encrypted file handler found, loading..."
                 source "$SCRIPT_DIR/encrypted_file_handler.sh"
+                log_info "[DEBUG] Calling load_encrypted_passwords with PASSWORD_FILE=${PASSWORD_FILE:-not set}"
                 if load_encrypted_passwords; then
+                    log_info "[DEBUG] File decryption successful, transferring to SECURE_PASSWORDS array"
                     # Transfer exported variables to SECURE_PASSWORDS array
-                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD"
-                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD" 
-                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE"
+                    [[ -n "${USER_PASSWORD:-}" ]] && SECURE_PASSWORDS["user"]="$USER_PASSWORD" && log_info "[DEBUG] User password transferred"
+                    [[ -n "${ROOT_PASSWORD:-}" ]] && SECURE_PASSWORDS["root"]="$ROOT_PASSWORD" && log_info "[DEBUG] Root password transferred"
+                    [[ -n "${LUKS_PASSPHRASE:-}" ]] && SECURE_PASSWORDS["luks"]="$LUKS_PASSPHRASE" && log_info "[DEBUG] LUKS passphrase transferred"
                     
+                    log_info "[DEBUG] Checking password completeness..."
                     if check_password_completeness; then
                         log_success "Encrypted file method successful"
                         return 0
+                    else
+                        log_info "[DEBUG] Password completeness check failed"
                     fi
+                else
+                    log_info "[DEBUG] load_encrypted_passwords failed"
                 fi
+            else
+                log_error "[DEBUG] Encrypted file handler not found at: $SCRIPT_DIR/encrypted_file_handler.sh"
             fi
             log_info "Encrypted file method failed"
             return 1
@@ -274,11 +285,17 @@ try_password_method() {
 # Auto-detect and use best password method
 auto_detect_password_method() {
     log_info "Auto-detecting best password method..."
+    log_info "[DEBUG] Available methods: ${PASSWORD_METHODS[*]}"
+    log_info "[DEBUG] PASSWORD_FILE variable: ${PASSWORD_FILE:-not set}"
+    log_info "[DEBUG] FILE_PASSPHRASE variable: ${FILE_PASSPHRASE:+[SET]}${FILE_PASSPHRASE:-not set}"
     
     for method in "${PASSWORD_METHODS[@]}"; do
+        log_info "[DEBUG] Trying password method: $method"
         if try_password_method "$method"; then
             log_success "Using password method: $method"
             return 0
+        else
+            log_info "[DEBUG] Method '$method' failed, trying next method"
         fi
     done
     

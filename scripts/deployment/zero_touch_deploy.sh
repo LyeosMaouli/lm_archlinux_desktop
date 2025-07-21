@@ -536,6 +536,73 @@ EOF
 }
 
 # Main execution
+# Parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --password-mode)
+                PASSWORD_MODE="$2"
+                echo "[DEBUG] Password mode set to: $PASSWORD_MODE"
+                shift 2
+                ;;
+            --password-file)
+                PASSWORD_FILE="$2"
+                echo "[DEBUG] Password file set to: $PASSWORD_FILE"
+                shift 2
+                ;;
+            --file-passphrase)
+                FILE_PASSPHRASE="$2"
+                echo "[DEBUG] File passphrase provided"
+                shift 2
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                echo "Unknown argument: $1"
+                echo "Use --help for usage information"
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Debug logging for password variables
+    echo "[DEBUG] Final password configuration:"
+    echo "[DEBUG]   PASSWORD_MODE: ${PASSWORD_MODE:-auto}"
+    echo "[DEBUG]   PASSWORD_FILE: ${PASSWORD_FILE:-not set}"
+    echo "[DEBUG]   FILE_PASSPHRASE: ${FILE_PASSPHRASE:+[SET]}${FILE_PASSPHRASE:-not set}"
+}
+
+# Show help information
+show_help() {
+    cat << EOF
+Zero Touch Arch Linux Deployment
+
+Usage: $0 [OPTIONS]
+
+Options:
+    --password-mode MODE     Password collection mode (env|file|generate|interactive|auto)
+    --password-file FILE     Path to encrypted password file
+    --file-passphrase PASS   Passphrase for encrypted password file
+    --help, -h              Show this help message
+
+Password Modes:
+    env         Use environment variables (CI/CD)
+    file        Use encrypted password file
+    generate    Auto-generate secure passwords
+    interactive Prompt for passwords
+    auto        Try methods in order (default)
+
+Examples:
+    $0                                          # Auto-detect best method
+    $0 --password-mode file --password-file passwords.enc
+    $0 --password-mode env                      # Use environment variables
+    $0 --password-mode interactive              # Always prompt
+
+EOF
+}
+
 main() {
     # Parse command line arguments
     parse_arguments "$@"
