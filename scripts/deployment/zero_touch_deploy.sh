@@ -35,21 +35,21 @@ load_password_manager() {
         fi
     done
     
-    # If not found locally, download entire project from GitHub
+    # If not found locally, download entire project from GitHub using git clone
     echo -e "${YELLOW}[WARNING] Password management system not found locally, downloading entire project...${NC}"
     
     local project_dir="/tmp/lm_archlinux_desktop"
-    local archive_url="https://github.com/LyeosMaouli/lm_archlinux_desktop/archive/refs/heads/main.tar.gz"
+    local repo_url="https://github.com/LyeosMaouli/lm_archlinux_desktop.git"
     
-    echo "[DEBUG] Downloading project archive from: $archive_url"
-    echo "[DEBUG] Extracting to: $project_dir"
+    echo "[DEBUG] Cloning project repository from: $repo_url"
+    echo "[DEBUG] Cloning to: $project_dir"
     
     # Remove existing directory if it exists
     rm -rf "$project_dir"
     
-    # Download and extract the entire project
-    if curl -fsSL "$archive_url" | tar -xz -C /tmp && mv /tmp/lm_archlinux_desktop-main "$project_dir"; then
-        echo "[DEBUG] Project downloaded and extracted successfully"
+    # Clone the entire project (this gets the absolute latest version)
+    if git clone "$repo_url" "$project_dir"; then
+        echo "[DEBUG] Project cloned successfully"
         
         # Load password manager from the extracted project
         local password_manager="$project_dir/scripts/security/password_manager.sh"
@@ -63,8 +63,8 @@ load_password_manager() {
             return 1
         fi
     else
-        echo -e "${RED}[ERROR] Failed to download and extract project${NC}"
-        echo -e "${RED}   Archive URL: $archive_url${NC}"
+        echo -e "${RED}[ERROR] Failed to clone project repository${NC}"
+        echo -e "${RED}   Repository URL: $repo_url${NC}"
         return 1
     fi
 }
