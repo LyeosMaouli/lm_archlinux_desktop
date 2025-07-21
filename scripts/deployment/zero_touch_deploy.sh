@@ -35,19 +35,36 @@ load_password_manager() {
         fi
     done
     
-    # If not found locally, try to download from GitHub
-    echo -e "${YELLOW}[WARNING] Password management system not found locally, downloading...${NC}"
-    local github_url="https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/security/password_manager.sh"
+    # If not found locally, download entire project from GitHub
+    echo -e "${YELLOW}[WARNING] Password management system not found locally, downloading entire project...${NC}"
     
-    if curl -fsSL "$github_url" -o "/tmp/password_manager.sh"; then
-        chmod +x "/tmp/password_manager.sh"
-        source "/tmp/password_manager.sh"
-        echo -e "${GREEN}[SUCCESS] Password management system downloaded and loaded${NC}"
-        return 0
+    local project_dir="/tmp/lm_archlinux_desktop"
+    local archive_url="https://github.com/LyeosMaouli/lm_archlinux_desktop/archive/refs/heads/main.tar.gz"
+    
+    echo "[DEBUG] Downloading project archive from: $archive_url"
+    echo "[DEBUG] Extracting to: $project_dir"
+    
+    # Remove existing directory if it exists
+    rm -rf "$project_dir"
+    
+    # Download and extract the entire project
+    if curl -fsSL "$archive_url" | tar -xz -C /tmp && mv /tmp/lm_archlinux_desktop-main "$project_dir"; then
+        echo "[DEBUG] Project downloaded and extracted successfully"
+        
+        # Load password manager from the extracted project
+        local password_manager="$project_dir/scripts/security/password_manager.sh"
+        if [[ -f "$password_manager" ]]; then
+            echo "[DEBUG] Loading password manager from: $password_manager"
+            source "$password_manager"
+            echo -e "${GREEN}[SUCCESS] Password management system loaded from downloaded project${NC}"
+            return 0
+        else
+            echo -e "${RED}[ERROR] Password manager not found in downloaded project: $password_manager${NC}"
+            return 1
+        fi
     else
-        echo -e "${RED}[ERROR] Failed to load password management system${NC}"
-        echo -e "${RED}   Tried paths: ${password_manager_paths[*]}${NC}"
-        echo -e "${RED}   GitHub download failed: $github_url${NC}"
+        echo -e "${RED}[ERROR] Failed to download and extract project${NC}"
+        echo -e "${RED}   Archive URL: $archive_url${NC}"
         return 1
     fi
 }
