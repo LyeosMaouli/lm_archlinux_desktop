@@ -22,7 +22,6 @@ declare -A SECURE_PASSWORDS
 SECURE_PASSWORDS["user"]=""
 SECURE_PASSWORDS["root"]=""
 SECURE_PASSWORDS["luks"]=""
-SECURE_PASSWORDS["wifi"]=""
 
 # Password mode detection order
 PASSWORD_METHODS=("env" "file" "generate" "interactive")
@@ -58,7 +57,6 @@ secure_cleanup() {
     SECURE_PASSWORDS["user"]=""
     SECURE_PASSWORDS["root"]=""
     SECURE_PASSWORDS["luks"]=""
-    SECURE_PASSWORDS["wifi"]=""
     
     # Clear environment variables if they exist
     unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE DEPLOY_WIFI_SSID DEPLOY_WIFI_PASSWORD 2>/dev/null || true
@@ -133,11 +131,12 @@ detect_env_passwords() {
         found_any=true
     fi
     
-    if [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
-        SECURE_PASSWORDS["wifi"]="${DEPLOY_WIFI_PASSWORD:-}"
-        log_success "WiFi password found in environment"
-        found_any=true
-    fi
+    # WiFi password management disabled for wired deployments
+    # if [[ -n "${DEPLOY_WIFI_PASSWORD:-}" ]]; then
+    #     SECURE_PASSWORDS["wifi"]="${DEPLOY_WIFI_PASSWORD:-}"
+    #     log_success "WiFi password found in environment"
+    #     found_any=true
+    # fi
     
     # Export WiFi SSID if available (doesn't need to be in SECURE_PASSWORDS array)
     if [[ -n "${DEPLOY_WIFI_SSID:-}" ]]; then
@@ -165,7 +164,6 @@ check_password_completeness() {
         SECURE_PASSWORDS["user"]=""
         SECURE_PASSWORDS["root"]=""
         SECURE_PASSWORDS["luks"]=""
-        SECURE_PASSWORDS["wifi"]=""
     fi
     
     # Check required passwords
@@ -303,12 +301,12 @@ export_passwords() {
     export USER_PASSWORD=""
     export ROOT_PASSWORD=""
     export LUKS_PASSPHRASE=""
-    export WIFI_PASSWORD=""
+    # export WIFI_PASSWORD=""  # Disabled for wired deployments
     
     [[ -v SECURE_PASSWORDS[user] ]] && export USER_PASSWORD="${SECURE_PASSWORDS[user]}"
     [[ -v SECURE_PASSWORDS[root] ]] && export ROOT_PASSWORD="${SECURE_PASSWORDS[root]}"
     [[ -v SECURE_PASSWORDS[luks] ]] && export LUKS_PASSPHRASE="${SECURE_PASSWORDS[luks]}"
-    [[ -v SECURE_PASSWORDS[wifi] ]] && export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]}"
+    # [[ -v SECURE_PASSWORDS[wifi] ]] && export WIFI_PASSWORD="${SECURE_PASSWORDS[wifi]}"  # Disabled
     
     log_success "Passwords exported to environment"
 }
@@ -323,12 +321,12 @@ generate_password_hashes() {
     local user_pass=""
     local root_pass=""
     local luks_pass=""
-    local wifi_pass=""
+    # local wifi_pass=""  # Disabled for wired deployments
     
     [[ -v SECURE_PASSWORDS[user] ]] && user_pass="${SECURE_PASSWORDS[user]}"
     [[ -v SECURE_PASSWORDS[root] ]] && root_pass="${SECURE_PASSWORDS[root]}"
     [[ -v SECURE_PASSWORDS[luks] ]] && luks_pass="${SECURE_PASSWORDS[luks]}"
-    [[ -v SECURE_PASSWORDS[wifi] ]] && wifi_pass="${SECURE_PASSWORDS[wifi]}"
+    # [[ -v SECURE_PASSWORDS[wifi] ]] && wifi_pass="${SECURE_PASSWORDS[wifi]}"  # Disabled
     
     cat > "$temp_file" << EOF
 # Password hashes generated $(date)
@@ -341,10 +339,10 @@ EOF
         echo "luks_passphrase: \"$luks_pass\"" >> "$temp_file"
     fi
     
-    # Add WiFi password if available
-    if [[ -n "$wifi_pass" ]]; then
-        echo "wifi_password: \"$wifi_pass\"" >> "$temp_file"
-    fi
+    # Add WiFi password if available - DISABLED for wired deployments
+    # if [[ -n "$wifi_pass" ]]; then
+    #     echo "wifi_password: \"$wifi_pass\"" >> "$temp_file"
+    # fi
     
     echo "$temp_file"
 }
@@ -382,7 +380,7 @@ collect_passwords() {
 show_password_status() {
     echo -e "${PURPLE}Password Status:${NC}"
     
-    for password_type in user root luks wifi; do
+    for password_type in user root luks; do  # wifi disabled for wired deployments
         if [[ -n "${SECURE_PASSWORDS["$password_type"]:-}" ]]; then
             local password_length=${#SECURE_PASSWORDS["$password_type"]:-}
             echo -e "  ${GREEN}[OK]${NC} $password_type: Set ($password_length characters)"
