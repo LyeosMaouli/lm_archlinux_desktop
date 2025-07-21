@@ -141,6 +141,16 @@ load_password_manager() {
     # Remove existing directory if it exists
     rm -rf "$project_dir"
     
+    # Install git if not available
+    if ! command -v git >/dev/null 2>&1; then
+        echo "[DEBUG] Installing git..."
+        pacman -Sy --noconfirm git || {
+            echo -e "${RED}[ERROR] Failed to install git${NC}"
+            return 1
+        }
+        echo "[DEBUG] Git installed successfully"
+    fi
+    
     # Clone the entire project (this gets the absolute latest version)
     if git clone "$repo_url" "$project_dir"; then
         echo "[DEBUG] Project cloned successfully"

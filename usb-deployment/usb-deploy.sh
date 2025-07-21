@@ -214,6 +214,15 @@ download_deployment_script() {
     # Remove any existing temp directory
     rm -rf "$temp_repo_dir"
     
+    # Install git if not available
+    if ! command -v git >/dev/null 2>&1; then
+        log_info "Installing git..."
+        pacman -Sy --noconfirm git || {
+            log_error "Failed to install git"
+            return 1
+        }
+    fi
+    
     # Clone the repository to get the absolute latest version
     if git clone "$repo_url" "$temp_repo_dir"; then
         log_success "Repository cloned successfully"
