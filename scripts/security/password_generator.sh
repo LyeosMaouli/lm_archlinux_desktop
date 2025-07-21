@@ -66,7 +66,7 @@ check_random_sources() {
         random_sources+=("openssl")
     fi
     
-    if [[ ${#random_sources[@]:-0} -eq 0 ]]; then
+    if [[ ${#random_sources[@]} -eq 0 ]]; then
         log_error "No suitable random source found"
         return 1
     fi
