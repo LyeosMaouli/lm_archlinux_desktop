@@ -317,9 +317,9 @@ lm_archlinux_desktop/
 - **config/deploy.conf** - Comprehensive configuration (38+ options)
 
 #### Password Management System
-- **password_manager.sh** - Core hybrid password management
-- **encrypted_file_handler.sh** - AES-256 encryption for password files
-- **create_password_file.sh** - Password file creation utility
+- **passwords.sh** (in utils/) - Unified password management system
+- **validation.sh** (in utils/) - System validation and health checks
+- **create_password_file.sh** - Legacy password file utility (use `passwords.sh create-file`)
 - **GitHub CI/CD Integration** - Enterprise deployment workflows
 
 #### Playbooks

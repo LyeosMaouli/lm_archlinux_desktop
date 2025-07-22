@@ -99,7 +99,7 @@ If you discover a security vulnerability:
 
 ### After Installation
 
-- ✅ Add SSH public key to GitHub: `cat ~/.ssh/id_rsa.pub`
+- ✅ Add SSH public key to GitHub: `cat ~/.ssh/id_ed25519.pub`
 - ✅ Enable automatic security updates
 - ✅ Regularly run security audits: `system-status`
 - ✅ Monitor logs: `journalctl -f`
