@@ -87,7 +87,7 @@ curl -L -o passwords.enc "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/do
 
 ```bash
 # Download and run deployment script
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git && cd YOUR_REPO
 chmod +x deploy.sh
 
 # Deploy using encrypted password file
@@ -109,9 +109,9 @@ export DEPLOY_LUKS_PASSPHRASE="your_luks_passphrase"
 export DEPLOY_WIFI_PASSWORD="your_wifi_password"
 
 # 3. Download and run deployment
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git && cd YOUR_REPO
 chmod +x deploy.sh
-./deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### For Scripted Setup:
@@ -138,9 +138,9 @@ export DEPLOY_ROOT_PASSWORD="$ROOT_PASS"
 export DEPLOY_LUKS_PASSPHRASE="$LUKS_PASS"
 
 # Download and run deployment
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git && cd YOUR_REPO
 chmod +x deploy.sh
-./deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 
 # Clean up
 unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE
@@ -154,7 +154,7 @@ unset DEPLOY_USER_PASSWORD DEPLOY_ROOT_PASSWORD DEPLOY_LUKS_PASSPHRASE
 # 1. Boot from Arch Linux ISO
 
 # 2. Download and run with auto-generated passwords
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git && cd YOUR_REPO
 chmod +x deploy.sh
 
 # 3. Use auto-generated passwords
@@ -223,7 +223,7 @@ curl -L -o passwords.enc "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/do
 curl -o passwords.enc "https://transfer.sh/get/abc123/passwords.enc"
 
 # 4. Download deployment script
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git && cd YOUR_REPO
 chmod +x deploy.sh
 
 # 5. Run deployment

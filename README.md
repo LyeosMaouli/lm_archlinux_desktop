@@ -5,7 +5,7 @@
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?logo=ansible&logoColor=fff&style=flat)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-**🚀 DRAMATICALLY SIMPLIFIED ARCH LINUX AUTOMATION** - Transform a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with **enterprise-grade security**, **advanced password management**, and **zero-touch deployment**. Now with a **unified deployment interface** that reduced 30 scripts to 12!
+**🚀 DRAMATICALLY SIMPLIFIED ARCH LINUX AUTOMATION** - Transform a minimal Arch Linux installation into a fully-configured Hyprland desktop environment with **enterprise-grade security**, **advanced password management**, and **zero-touch deployment**. Now with a **unified deployment interface** and streamlined codebase!
 
 ## 🎯 New Simplified Interface
 
@@ -20,10 +20,11 @@
 ./scripts/deploy.sh security  # Security hardening
 ```
 
-### 60% Complexity Reduction
-- **Before**: 30 scripts, 5 entry points, complex documentation
-- **After**: 12 scripts, 1 unified interface, simple commands
+### Dramatically Simplified Architecture
+- **Before**: Multiple confusing entry points, scattered functionality
+- **After**: Single unified `deploy.sh` interface with clear commands
 - **Same Power**: All functionality preserved and enhanced
+- **Cleaner Codebase**: Removed 12 deprecated scripts, consolidated password management
 
 ## ✨ Revolutionary Features
 

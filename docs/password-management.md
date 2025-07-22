@@ -22,7 +22,7 @@ export DEPLOY_WIFI_SSID="MyWiFiNetwork"
 export DEPLOY_WIFI_PASSWORD="wifi_password"
 
 # Deploy with environment method
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 **Security Features**:
@@ -38,10 +38,10 @@ Create and use encrypted password files:
 
 ```bash
 # Create encrypted password file
-./scripts/utilities/create_password_file.sh --output passwords.enc
+./scripts/utils/passwords.sh create-file --output passwords.enc
 
 # Deploy using encrypted file
-./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+./scripts/deploy.sh full --password file --password-file passwords.enc
 ```
 
 **Security Features**:
@@ -57,7 +57,7 @@ Generate cryptographically secure passwords automatically:
 
 ```bash
 # Deploy with auto-generated passwords
-./zero_touch_deploy.sh --password-mode generate
+./scripts/deploy.sh full --password generate
 ```
 
 **Security Features**:
@@ -73,7 +73,7 @@ Traditional secure password prompting:
 
 ```bash
 # Interactive mode (default fallback)
-./zero_touch_deploy.sh --password-mode interactive
+./scripts/deploy.sh full --password interactive
 ```
 
 ## 🚀 Quick Start Examples
@@ -93,7 +93,7 @@ Traditional secure password prompting:
 ### Secure Offline Deployment
 ```bash
 # Create encrypted password file
-./scripts/utilities/create_password_file.sh \
+./scripts/utils/passwords.sh create-file \
   --user-password "secure_user_pass" \
   --root-password "secure_root_pass" \
   --luks-passphrase "secure_luks_pass" \
@@ -119,7 +119,7 @@ Traditional secure password prompting:
 #### Interactive Creation
 ```bash
 # Run password file creator
-./scripts/utilities/create_password_file.sh
+./scripts/utils/passwords.sh create-file
 
 # Follow prompts to enter passwords securely
 # File will be encrypted with your chosen passphrase
@@ -128,7 +128,7 @@ Traditional secure password prompting:
 #### Command Line Creation
 ```bash
 # Non-interactive creation
-./scripts/utilities/create_password_file.sh \
+./scripts/utils/passwords.sh create-file \
   --user-password "your_user_password" \
   --root-password "your_root_password" \
   --luks-passphrase "your_luks_passphrase" \
@@ -139,7 +139,7 @@ Traditional secure password prompting:
 #### Verify Password File
 ```bash
 # Verify file integrity and structure
-./scripts/utilities/create_password_file.sh --verify passwords.enc
+./scripts/utils/passwords.sh create-file --verify passwords.enc
 ```
 
 ### Environment Variable Setup
@@ -158,14 +158,14 @@ export DEPLOY_WIFI_PASSWORD="wifi_password"
 #### Template Generation
 ```bash
 # Generate environment template
-./scripts/security/env_password_handler.sh template my_env.sh
+./scripts/utils/passwords.sh template my_env.sh
 
 # Edit template with actual passwords
 nano my_env.sh
 
 # Source and deploy
 source my_env.sh
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### Auto-Generated Passwords
@@ -173,26 +173,26 @@ source my_env.sh
 #### Generation and Display
 ```bash
 # Generate passwords and display on screen
-./zero_touch_deploy.sh --password-mode generate
+./scripts/deploy.sh full --password generate
 ```
 
 #### Save Generated Passwords
 ```bash
 # Generate and save to various formats
-./scripts/security/password_generator.sh generate file
-./scripts/security/password_generator.sh generate encrypted-file
+./scripts/utils/passwords.sh generate generate file
+./scripts/utils/passwords.sh generate generate encrypted-file
 ```
 
 #### Password Delivery Methods
 ```bash
 # Display as QR code
-./scripts/security/qr_delivery.sh display
+./scripts/utils/passwords.sh display
 
 # Send via email
-./scripts/security/email_delivery.sh send html
+./scripts/utils/passwords.sh send html
 
 # Save to multiple file formats
-./scripts/security/file_delivery.sh multi deployment_passwords
+./scripts/utils/passwords.sh multi deployment_passwords
 ```
 
 ## 🔧 Advanced Configuration
@@ -221,19 +221,19 @@ export DEPLOY_SMTP_USERNAME="sender@gmail.com"
 export DEPLOY_SMTP_PASSWORD="app_password"
 
 # Send password email
-./scripts/security/email_delivery.sh send html
+./scripts/utils/passwords.sh send html
 ```
 
 #### QR Code Generation
 ```bash
 # Display QR code in terminal
-./scripts/security/qr_delivery.sh display
+./scripts/utils/passwords.sh display
 
 # Save QR code as image
-./scripts/security/qr_delivery.sh save passwords.png png
+./scripts/utils/passwords.sh save passwords.png png
 
 # Generate encrypted QR code
-./scripts/security/qr_delivery.sh encrypted passwords_secure.png
+./scripts/utils/passwords.sh encrypted passwords_secure.png
 ```
 
 ## 🛡️ Security Best Practices
@@ -278,34 +278,27 @@ export_passwords
 show_password_status
 ```
 
-#### `env_password_handler.sh`
+### Unified Password System (`scripts/utils/passwords.sh`)
+
+All password management is now consolidated into a single, powerful utility:
+
 ```bash
-# Load passwords from environment
-load_env_passwords
-
-# Clear environment passwords
-clear_env_passwords
-
-# Validate CI/CD environment
-validate_ci_environment
-
-# Generate environment template
-generate_env_template [file]
-```
-
-#### `encrypted_file_handler.sh`
-```bash
-# Load passwords from encrypted file
-load_encrypted_passwords
-
 # Create encrypted password file
-create_password_file_interactive <output> <passphrase>
+./scripts/utils/passwords.sh create-file passwords.enc [passphrase] [user_pass] [root_pass] [luks_pass]
 
-# Verify encrypted file integrity
-verify_encrypted_file <file> <passphrase>
+# Generate secure passwords
+./scripts/utils/passwords.sh generate [--save] [--display]
+
+# Create environment template
+./scripts/utils/passwords.sh template-env [output_file]
+
+# Collect passwords for deployment (used internally by deploy.sh)
+source scripts/utils/passwords.sh
+collect_passwords [mode]
+get_password [type]
 ```
 
-#### `password_generator.sh`
+#### Legacy Individual Scripts (Deprecated)
 ```bash
 # Generate all required passwords
 generate_secure_passwords
@@ -359,16 +352,16 @@ create_backup_archive <archive_name> <encrypt>
 #### Environment Variables Not Found
 ```bash
 # Check environment variables
-./scripts/security/env_password_handler.sh status
+./scripts/utils/passwords.sh status
 
 # Validate CI/CD environment
-./scripts/security/env_password_handler.sh validate-ci
+./scripts/utils/passwords.sh validate-ci
 ```
 
 #### Encrypted File Issues
 ```bash
 # Verify file integrity
-./scripts/utilities/create_password_file.sh --verify passwords.enc
+./scripts/utils/passwords.sh create-file --verify passwords.enc
 
 # Check file information
 ./scripts/security/encrypted_file_handler.sh info passwords.enc
@@ -377,10 +370,10 @@ create_backup_archive <archive_name> <encrypt>
 #### Password Generation Problems
 ```bash
 # Test password generation
-./scripts/security/password_generator.sh single 16
+./scripts/utils/passwords.sh generate single 16
 
 # Check random sources
-./scripts/security/password_generator.sh generate
+./scripts/utils/passwords.sh generate generate
 ```
 
 ### Error Messages
@@ -401,7 +394,7 @@ Enable verbose logging for troubleshooting:
 export VERBOSE=true
 
 # Run with debugging
-./zero_touch_deploy.sh --password-mode auto
+./scripts/deploy.sh full --password auto
 ```
 
 ## 🎯 Use Case Examples
@@ -417,7 +410,7 @@ DEPLOY_ROOT_PASSWORD: "Admin#Secure456"
 DEPLOY_LUKS_PASSPHRASE: "Corporate-Disk-Encryption-2024"
 
 # Deploy
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### Scenario 2: Offline Secure Deployment
@@ -426,7 +419,7 @@ DEPLOY_LUKS_PASSPHRASE: "Corporate-Disk-Encryption-2024"
 **Solution**: Encrypted password file
 ```bash
 # Create offline
-./scripts/utilities/create_password_file.sh --output secure.enc
+./scripts/utils/passwords.sh create-file --output secure.enc
 
 # Deploy offline
 ./zero_touch_deploy.sh --password-mode file --password-file secure.enc
@@ -438,10 +431,10 @@ DEPLOY_LUKS_PASSPHRASE: "Corporate-Disk-Encryption-2024"
 **Solution**: Auto-generated passwords
 ```bash
 # Generate and display
-./zero_touch_deploy.sh --password-mode generate
+./scripts/deploy.sh full --password generate
 
 # Save for later use
-./scripts/security/file_delivery.sh save dev_passwords.yaml yaml
+./scripts/utils/passwords.sh save dev_passwords.yaml yaml
 ```
 
 ### Scenario 4: Remote Team Deployment
@@ -450,13 +443,13 @@ DEPLOY_LUKS_PASSPHRASE: "Corporate-Disk-Encryption-2024"
 **Solution**: Multiple delivery methods
 ```bash
 # Generate passwords
-./scripts/security/password_generator.sh generate
+./scripts/utils/passwords.sh generate generate
 
 # Send via email (encrypted)
-./scripts/security/email_delivery.sh send html true
+./scripts/utils/passwords.sh send html true
 
 # Create QR code backup
-./scripts/security/qr_delivery.sh encrypted team_passwords.png
+./scripts/utils/passwords.sh encrypted team_passwords.png
 ```
 
 ## 🚀 Future Enhancements

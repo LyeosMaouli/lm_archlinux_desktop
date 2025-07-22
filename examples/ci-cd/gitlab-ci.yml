@@ -73,11 +73,11 @@ deploy_arch_linux:
     
   script:
     - echo "📥 Downloading zero-touch deployment script..."
-    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
-    - chmod +x zero_touch_deploy.sh
+    - git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+    - chmod +x scripts/deploy.sh
     
     - echo "🔍 Validating deployment script..."
-    - ./zero_touch_deploy.sh --help | head -10
+    - ./scripts/deploy.sh help | head -10
     
     - echo "🚀 Starting Arch Linux Hyprland deployment..."
     - echo "Project: $CI_PROJECT_NAME"
@@ -86,7 +86,7 @@ deploy_arch_linux:
     - echo "Pipeline: $CI_PIPELINE_ID"
     
     # Run deployment with environment variables
-    - ./zero_touch_deploy.sh --password-mode env
+    - ./scripts/deploy.sh full --password env
     
   after_script:
     - echo "🔐 Performing security cleanup..."
@@ -170,8 +170,8 @@ deploy_custom:
     - echo "Custom Configuration: $CUSTOM_CONFIG"
     
     # Download and run deployment
-    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
-    - chmod +x zero_touch_deploy.sh
+    - git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+    - chmod +x scripts/deploy.sh
     
     # Apply custom configuration if provided
     - |
@@ -181,7 +181,7 @@ deploy_custom:
         export CONFIG_FILE="./custom_config.yml"
       fi
       
-    - ./zero_touch_deploy.sh --password-mode env
+    - ./scripts/deploy.sh full --password env
     
   when: manual
   allow_failure: false
@@ -192,9 +192,9 @@ deploy_custom:
   image: archlinux:latest
   script:
     - echo "🌍 Deploying to environment: $DEPLOYMENT_ENVIRONMENT"
-    - curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
-    - chmod +x zero_touch_deploy.sh
-    - ./zero_touch_deploy.sh --password-mode env
+    - git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+    - chmod +x scripts/deploy.sh
+    - ./scripts/deploy.sh full --password env
   artifacts:
     when: always
     paths:

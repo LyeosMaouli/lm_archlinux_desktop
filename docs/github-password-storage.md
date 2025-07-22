@@ -114,7 +114,7 @@ jobs:
     - name: Deploy Arch Linux
       run: |
         # Download and run deployment script
-        curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/deployment/zero_touch_deploy.sh -o deploy.sh
+        git clone https://github.com/${{ github.repository }}.git && cd $(basename ${{ github.repository }})
         chmod +x deploy.sh
         ./deploy.sh --password-mode env
       env:

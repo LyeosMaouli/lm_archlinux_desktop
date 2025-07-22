@@ -18,10 +18,11 @@
 ./scripts/deploy.sh help
 ```
 
-### 60% Fewer Scripts, Same Power
-- **Before**: 30 complex scripts with 5 different entry points
-- **After**: 12 focused scripts with 1 unified interface
-- **Result**: Same functionality, dramatically easier to use!
+### Dramatically Simplified Architecture  
+- **Before**: Multiple confusing entry points and scattered functionality
+- **After**: Single unified `deploy.sh` interface with clear commands
+- **Result**: Same powerful functionality, dramatically easier to use!
+- **Cleaner**: Removed 12 deprecated scripts for streamlined codebase
 
 ## ✨ Revolutionary Features Overview
 
@@ -432,7 +433,7 @@ The automation ensures a smooth, secure, and complete installation. You'll have 
 
 ```bash
 # Monitor installation progress (if needed)
-tail -f /var/log/master_auto_deploy.log
+tail -f /var/log/deploy.log
 
 # The system will automatically reboot between phases
 # Final completion will show desktop ready message
@@ -457,11 +458,11 @@ Follow traditional Arch installation steps for base system only:
 ### Phase 2: Automated Desktop Deployment
 ```bash
 # After first boot, download and run automation
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o master_auto_deploy.sh
-chmod +x master_auto_deploy.sh
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+chmod +x scripts/deploy.sh
 
 # Run desktop deployment only
-./master_auto_deploy.sh desktop
+./scripts/deploy.sh desktop
 ```
 
 ---

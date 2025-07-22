@@ -228,8 +228,8 @@ download_deployment_script() {
         log_success "Repository cloned successfully"
         
         # Copy the deployment script
-        if [[ -f "$temp_repo_dir/scripts/deployment/zero_touch_deploy.sh" ]]; then
-            cp "$temp_repo_dir/scripts/deployment/zero_touch_deploy.sh" "$USB_DIR/deploy.sh"
+        if [[ -f "$temp_repo_dir/scripts/deploy.sh" ]]; then
+            cp "$temp_repo_dir/scripts/deploy.sh" "$USB_DIR/deploy.sh"
             chmod +x "$USB_DIR/deploy.sh"
             
             # Show commit info for verification
@@ -340,16 +340,16 @@ run_deployment() {
     # Run deployment with appropriate parameters
     case "$PASSWORD_MODE" in
         "file")
-            ./deploy.sh --password-mode file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
+            ./deploy.sh full --password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
             ;;
         "env")
-            ./deploy.sh --password-mode env
+            ./deploy.sh full --password env
             ;;
         "generate")
-            ./deploy.sh --password-mode generate
+            ./deploy.sh full --password generate
             ;;
         "interactive")
-            ./deploy.sh --password-mode interactive
+            ./deploy.sh full --password interactive
             ;;
         *)
             log_error "Unknown password mode: $PASSWORD_MODE"

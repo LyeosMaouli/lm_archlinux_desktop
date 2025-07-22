@@ -2,6 +2,8 @@
 
 This directory contains security automation scripts for system hardening, monitoring, and auditing.
 
+⚠️ **IMPORTANT**: Many password management scripts are now deprecated. See `DEPRECATED_SCRIPTS.md` for migration to the unified `scripts/utils/passwords.sh` system.
+
 ## Scripts Overview
 
 ### 🔥 firewall_setup.sh

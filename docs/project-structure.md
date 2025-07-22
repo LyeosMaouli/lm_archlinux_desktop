@@ -5,8 +5,8 @@
 ## ✨ Project Overview
 
 This project has been **dramatically refactored** for simplicity while maintaining enterprise capabilities:
-- **60% Script Reduction**: 30 scripts → 12 focused utilities
-- **Unified Interface**: 5 entry points → 1 deployment command
+- **Streamlined Architecture**: Removed 12 deprecated scripts for cleaner codebase
+- **Unified Interface**: Multiple confusing entry points → 1 clear deployment command (`deploy.sh`)
 - **Advanced Hybrid Password Management** with 4 secure methods
 - **GitHub CI/CD Integration** for enterprise deployment
 - **Comprehensive Security Framework** with enterprise-grade hardening
@@ -300,7 +300,7 @@ lm_archlinux_desktop/
 
 ### Quick Start Options
 1. **USB Deployment** (Recommended): Download `usb-deployment/` folder
-2. **Direct Installation**: Use `zero_touch_deploy.sh`
+2. **Direct Installation**: Use `scripts/deploy.sh full`
 3. **Enterprise Setup**: Configure GitHub Secrets workflow
 4. **Traditional**: Clone repository and use Makefile
 

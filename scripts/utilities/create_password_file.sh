@@ -301,7 +301,7 @@ automation:
 # Usage:
 # 1. Create encrypted password file: ./create_password_file.sh
 # 2. Edit this config file as needed
-# 3. Deploy: ./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+# 3. Deploy: ./scripts/deploy.sh full --password file --password-file passwords.enc
 EOF
     
     log_success "Example configuration created: $config_file"
@@ -331,7 +331,7 @@ show_usage_examples() {
      --output complete_passwords.enc
 
 5. Use created file with deployment:
-   ./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
+   ./scripts/deploy.sh full --password file --password-file passwords.enc
 
 6. Verify existing password file:
    ./create_password_file.sh --verify passwords.enc

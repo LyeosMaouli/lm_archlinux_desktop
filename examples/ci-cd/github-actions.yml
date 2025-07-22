@@ -88,8 +88,8 @@ jobs:
     - name: Download deployment script
       run: |
         echo "📥 Downloading zero-touch deployment script..."
-        curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh -o zero_touch_deploy.sh
-        chmod +x zero_touch_deploy.sh
+        git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+        chmod +x scripts/deploy.sh
         
     - name: Validate deployment script
       run: |
@@ -102,7 +102,7 @@ jobs:
         fi
         
         # Check script help
-        ./zero_touch_deploy.sh --help | head -10
+        ./scripts/deploy.sh help | head -10
         
         echo "✅ Deployment script validated"
         
@@ -115,7 +115,7 @@ jobs:
         echo "Commit: ${{ github.sha }}"
         
         # Run deployment with environment variable passwords
-        ./zero_touch_deploy.sh --password-mode env
+        ./scripts/deploy.sh full --password env
         
       env:
         DEPLOY_USER_PASSWORD: ${{ secrets.DEPLOY_USER_PASSWORD }}
@@ -134,7 +134,7 @@ jobs:
       with:
         name: deployment-logs-${{ github.run_number }}
         path: |
-          /var/log/master_auto_deploy.log
+          /var/log/deploy.log
           /tmp/zero_touch_*.log
         retention-days: 30
         

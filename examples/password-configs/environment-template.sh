@@ -96,7 +96,7 @@ export DEPLOY_ENABLE_ENCRYPTION="true"
 # env | grep DEPLOY_
 
 # 6. Run deployment
-# ./zero_touch_deploy.sh --password-mode env
+# ./scripts/deploy.sh full --password env
 
 # 7. Clean up after deployment
 # unset $(env | grep DEPLOY_ | cut -d= -f1)
@@ -150,5 +150,5 @@ export DEPLOY_ENABLE_ENCRYPTION="true"
 echo "Environment variables loaded for Arch Linux deployment"
 echo "Review all passwords before proceeding with deployment"
 echo ""
-echo "To deploy: ./zero_touch_deploy.sh --password-mode env"
+echo "To deploy: ./scripts/deploy.sh full --password env"
 echo "To clear: unset \$(env | grep DEPLOY_ | cut -d= -f1)"

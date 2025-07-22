@@ -65,13 +65,13 @@ lm_archlinux_desktop/
 │
 ├── 📂 scripts/                      # 🚀 Revolutionary Automation Scripts
 │   ├── 📂 deployment/              # Main deployment systems
-│   │   ├── 📄 zero_touch_deploy.sh  # Revolutionary single-command deployment
-│   │   ├── 📄 master_auto_deploy.sh # Advanced deployment with profiles
-│   │   └── 📄 auto_install.sh       # Automated base system installation
-│   ├── 📂 security/                 # Advanced password management
-│   │   ├── 📄 password_manager.sh   # Core hybrid password management
-│   │   ├── 📄 encrypted_file_handler.sh # AES-256 password encryption
-│   │   └── 📄 create_password_file.sh # Password file creation utility
+│   │   ├── 📄 auto_install.sh       # Base system installation
+│   │   ├── 📄 auto_network_setup.sh # Network configuration
+│   │   └── 📄 profile_manager.sh    # Profile management utility
+│   ├── 📂 security/                 # System security hardening
+│   │   ├── 📄 firewall_setup.sh     # UFW firewall configuration
+│   │   ├── 📄 fail2ban_setup.sh     # Intrusion prevention system
+│   │   └── 📄 system_hardening.sh   # Comprehensive security hardening
 │   ├── 📂 testing/                  # Testing & validation
 │   ├── 📂 maintenance/              # System maintenance
 │   └── 📂 utilities/                # System utilities
@@ -133,25 +133,25 @@ mount /dev/sdX1 /mnt/usb && cd /mnt/usb
 #### 2. Zero-Touch Installation
 ```bash
 # Single command deployment
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/zero_touch_deploy.sh | bash
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop && ./scripts/deploy.sh full
 ```
 
 #### 3. Enterprise CI/CD
 ```bash
 # Using GitHub Secrets
 export DEPLOY_USER_PASSWORD="secure_password"
-./zero_touch_deploy.sh --password-mode env
+./scripts/deploy.sh full --password env
 ```
 
 ### Password Management Commands
 ```bash
 # Create encrypted password file
-./scripts/security/create_password_file.sh --output passwords.enc
+./scripts/utils/passwords.sh create-file passwords.enc
 
 # Deploy with different password modes
-./zero_touch_deploy.sh --password-mode file --password-file passwords.enc
-./zero_touch_deploy.sh --password-mode generate
-./zero_touch_deploy.sh --password-mode interactive
+./scripts/deploy.sh full --password file --password-file passwords.enc
+./scripts/deploy.sh full --password generate
+./scripts/deploy.sh full --password interactive
 ```
 
 ### Testing and Validation

@@ -429,7 +429,7 @@ create_convenience_scripts() {
 #!/bin/bash
 # Convenience script for running the master deployment
 cd "$INSTALL_DIR"
-exec ./scripts/deployment/master_deploy.sh "\$@"
+exec ./scripts/deploy.sh full "\$@"
 EOF
     
     # Maintenance script
@@ -437,7 +437,7 @@ EOF
 #!/bin/bash
 # Convenience script for running maintenance
 cd "$INSTALL_DIR"
-exec ./scripts/deployment/master_deploy.sh --mode maintenance "\$@"
+exec ./scripts/deploy.sh security "\$@"
 EOF
     
     # Make scripts executable
@@ -465,7 +465,7 @@ show_next_steps() {
     echo ""
     echo "2. Run the full deployment:"
     echo "   cd $INSTALL_DIR"
-    echo "   ./scripts/deployment/master_deploy.sh --profile $PROFILE"
+    echo "   ./scripts/deploy.sh full --profile $PROFILE"
     echo ""
     echo "3. Or use the convenience script (after sourcing .bashrc):"
     echo "   source ~/.bashrc"

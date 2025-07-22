@@ -550,7 +550,7 @@ run_automated_deployment() {
     cp "$CONFIG_FILE" "$INSTALL_DIR/deployment_config.yml"
     
     # Check if deployment script exists
-    local deploy_script="$INSTALL_DIR/scripts/deployment/auto_deploy.sh"
+    local deploy_script="$INSTALL_DIR/scripts/deploy.sh"
     
     if [[ ! -f "$deploy_script" ]]; then
         error "Deployment script not found: $deploy_script"
@@ -559,7 +559,7 @@ run_automated_deployment() {
     # Run the automated deployment
     info "Running automated deployment..."
     chmod +x "$deploy_script"
-    CONFIG_FILE="$INSTALL_DIR/deployment_config.yml" "$deploy_script" || error "Deployment failed"
+    cd "$INSTALL_DIR" && "$deploy_script" full --password generate || error "Deployment failed"
     
     success "Automated deployment completed"
 }

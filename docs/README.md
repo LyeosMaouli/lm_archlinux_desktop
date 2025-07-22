@@ -34,9 +34,9 @@ Welcome to the Arch Linux Hyprland Desktop Automation documentation!
 
 ### Scripts
 - **Deployment Scripts**: Located in `scripts/deployment/`
-  - `master_auto_deploy.sh` - Single command full deployment
+  - `deploy.sh` - Unified deployment interface (full, install, desktop, security)
   - `auto_install.sh` - Automated base system installation
-  - `auto_deploy.sh` - Automated desktop deployment
+  - `profile_manager.sh` - Profile management utility
   - `auto_post_install.sh` - Post-installation validation
 
 - **Testing Scripts**: Located in `scripts/testing/`
@@ -55,9 +55,8 @@ Welcome to the Arch Linux Hyprland Desktop Automation documentation!
 ### Installation
 ```bash
 # Fully automated installation
-curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/deployment/master_auto_deploy.sh -o deploy.sh
-chmod +x deploy.sh
-./deploy.sh auto
+git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git && cd lm_archlinux_desktop
+./scripts/deploy.sh full
 ```
 
 ### Testing
@@ -104,7 +103,7 @@ ansible-playbook -vvv -i configs/ansible/inventory/localhost.yml local.yml
 ```
 
 ### Log Locations
-- **Master deployment**: `/var/log/master_auto_deploy.log`
+- **Main deployment**: `/var/log/deploy.log`
 - **VM testing**: `/var/log/auto_vm_test.log`
 - **Network setup**: `/var/log/network_auto_setup.log`
 - **Ansible**: `/var/log/ansible.log`
