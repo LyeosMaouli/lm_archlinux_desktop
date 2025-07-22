@@ -243,17 +243,18 @@ chmod +x usb-deploy.sh
 ## 📚 Additional Resources
 
 - **[GitHub Password Storage Guide](../docs/github-password-storage.md)** - How to set up GitHub Secrets
-- **[Target Computer Deployment Guide](../docs/target-computer-deployment.md)** - Complete deployment workflow
+- **[Target Computer Deployment Guide](../docs/target-computer-deployment.md)** - Complete deployment workflow  
 - **[Password Management Documentation](../docs/password-management.md)** - Advanced password features
+- **[Installation Guide](../docs/installation-guide.md)** - All deployment methods including USB
 
 ## 🎉 What Happens During Deployment
 
 1. **Configuration Validation** - Checks all settings
-2. **Network Setup** - Connects to internet automatically
-3. **Script Download** - Gets latest deployment script from your GitHub
+2. **Network Setup** - Connects to internet automatically  
+3. **Repository Clone** - Gets latest code from your GitHub
 4. **Password Setup** - Handles passwords based on your chosen mode
-5. **Full Deployment** - Installs complete Arch Linux Hyprland system
-6. **Automatic Reboot** - System restarts to new desktop environment
+5. **Full Deployment** - Runs `scripts/deploy.sh full` for complete system
+6. **System Ready** - Complete Arch Linux Hyprland desktop ready to use
 
 Total time: **30-60 minutes** depending on internet speed and hardware.
 
