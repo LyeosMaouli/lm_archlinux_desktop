@@ -22,11 +22,7 @@ GITHUB_USERNAME="LyeosMaouli"
 GITHUB_REPO="lm_archlinux_desktop"
 GITHUB_BRANCH="main"
 
-# USB-specific overrides (optional - defaults will be loaded from deploy.conf)
-# Only set these if you need to override the main configuration for USB deployment
-PASSWORD_MODE=""           # Override password mode (empty = use deploy.conf)
-PASSWORD_FILE_NAME=""      # Override password file name (empty = use deploy.conf)
-USE_GITHUB_RELEASE=false   # Download password file from GitHub release instead of USB
+# No USB-specific password configuration needed - deploy.sh auto-detects .enc files
 
 # Network configuration for initial setup
 WIFI_SSID=""              # WiFi network name (empty = skip/prompt if needed)
@@ -107,20 +103,6 @@ validate_config() {
     if [[ "$GITHUB_REPO" == "YOUR_REPO_NAME" ]] || [[ -z "$GITHUB_REPO" ]]; then
         log_error "Please edit GITHUB_REPO in the script configuration"
         return 1
-    fi
-    
-    if [[ "$PASSWORD_MODE" == "file" ]]; then
-        if [[ "$USE_GITHUB_RELEASE" == "true" ]]; then
-            log_info "Will download password file from GitHub release"
-        else
-            local password_file="$USB_DIR/$PASSWORD_FILE_NAME"
-            if [[ ! -f "$password_file" ]]; then
-                log_error "Password file not found: $password_file"
-                log_error "Either copy $PASSWORD_FILE_NAME to USB or set USE_GITHUB_RELEASE=true"
-                return 1
-            fi
-            log_success "Password file found on USB: $PASSWORD_FILE_NAME"
-        fi
     fi
     
     log_success "Configuration validated"
@@ -308,36 +290,7 @@ copy_enc_files_to_project() {
     log_success "Encrypted password files ready for auto-detection by deploy.sh"
 }
 
-# Setup password file
-setup_password_file() {
-    if [[ "$PASSWORD_MODE" != "file" ]]; then
-        return 0
-    fi
-    
-    log_info "Setting up password file..."
-    
-    if [[ "$USE_GITHUB_RELEASE" == "true" ]]; then
-        log_info "Downloading password file from GitHub release..."
-        
-        local release_url
-        if [[ "$GITHUB_RELEASE_TAG" == "latest" ]]; then
-            release_url="https://github.com/$GITHUB_USERNAME/$GITHUB_REPO/releases/latest/download/$PASSWORD_FILE_NAME"
-        else
-            release_url="https://github.com/$GITHUB_USERNAME/$GITHUB_REPO/releases/download/$GITHUB_RELEASE_TAG/$PASSWORD_FILE_NAME"
-        fi
-        
-        if curl -L -o "$USB_DIR/$PASSWORD_FILE_NAME" "$release_url"; then
-            log_success "Password file downloaded from GitHub release"
-        else
-            log_error "Failed to download password file from: $release_url"
-            return 1
-        fi
-    else
-        log_success "Using password file from USB stick"
-    fi
-    
-    return 0
-}
+# Password file setup is no longer needed - deploy.sh auto-detects .enc files
 
 # Setup environment variables for deployment
 setup_environment() {
@@ -358,46 +311,16 @@ setup_environment() {
     log_success "Environment configured"
 }
 
-# Load configuration from deploy.conf
-load_deploy_config() {
-    local project_dir="$USB_DIR/lm_archlinux_desktop"
-    local config_file="$project_dir/config/deploy.conf"
-    
-    if [[ -f "$config_file" ]]; then
-        log_info "Loading configuration from deploy.conf..."
-        
-        # Source the config file to load variables
-        source "$config_file" 2>/dev/null || {
-            log_warn "Failed to load deploy.conf, using defaults"
-            return 1
-        }
-        
-        # Configuration loaded from deploy.conf successfully
-        # USB script variables are empty (""), so deploy.conf values are used
-        log_info "Using PASSWORD_MODE from deploy.conf: $PASSWORD_MODE"
-        
-        log_success "Configuration loaded from deploy.conf"
-        return 0
-    else
-        log_warn "No deploy.conf found, using USB script defaults"
-        # Set fallback defaults
-        PASSWORD_MODE="${PASSWORD_MODE:-generate}"
-        PASSWORD_FILE_NAME="${PASSWORD_FILE_NAME:-passwords.enc}"
-        return 1
-    fi
-}
+# Configuration loading no longer needed - deploy.sh handles everything automatically
 
 # Run deployment
 run_deployment() {
     log_info "Starting Arch Linux deployment..."
     
-    # Load configuration from deploy.conf (this replaces individual parameters)
-    load_deploy_config
-    
     echo -e "${YELLOW}Deployment Configuration:${NC}"
     echo "  GitHub Repo: $GITHUB_USERNAME/$GITHUB_REPO"
     echo "  USB Directory: $USB_DIR"
-    echo "  Configuration: Using centralized deploy.conf with auto-detection"
+    echo "  Configuration: deploy.sh will auto-detect and configure everything"
     echo "  Password Files: Auto-detected .enc files (if present)"
     
     echo
@@ -429,38 +352,34 @@ show_help() {
 USB Deployment Script for Arch Linux Hyprland
 
 This script automates the deployment of Arch Linux with Hyprland desktop
-from a USB stick with centralized configuration management.
+from a USB stick with intelligent auto-detection and configuration.
 
 Configuration:
-1. Primary configuration is in config/deploy.conf (downloaded automatically)
-2. USB-specific overrides can be set in this script's CONFIGURATION section:
+1. Edit the CONFIGURATION section in this script:
    - GitHub repository details (required)
-   - Password mode override (optional)
    - WiFi credentials for initial setup (optional)
+2. Optionally copy .enc password files to USB - they will be auto-detected
 
-Main system settings (hostname, username, encryption, etc.) are now 
-centralized in config/deploy.conf for consistency across all deployment methods.
+The deploy.sh script will automatically detect and configure everything else.
 
 Usage:
-1. Edit config/deploy.conf in your repository for main settings
-2. Edit the CONFIGURATION section in this script for USB-specific overrides
-3. Copy this script to USB stick
-4. For file mode: copy passwords.enc to USB stick
+1. Edit the CONFIGURATION section in this script
+2. Copy this script to USB stick
+3. Optional: copy .enc password files to USB stick
 4. Boot from Arch Linux ISO
 5. Mount USB stick: mount /dev/sdX1 /mnt/usb
 6. Run: cd /mnt/usb && ./usb-deploy.sh
 
 The script will:
 - Download the complete project from GitHub
-- Create lm_archlinux_desktop/ directory on USB
-- Run deployment with full logging support
+- Auto-detect and copy .enc files to project root
+- Run deploy.sh which auto-configures based on detected files
 - Save all logs to USB for debugging
 
-Password Modes:
-- file: Use encrypted password file (passwords.enc)
-- env: Prompt for passwords and set environment variables
-- generate: Auto-generate secure passwords
-- interactive: Traditional interactive prompts
+Password Handling:
+- If .enc files found: Uses encrypted password files automatically
+- If no .enc files: Generates secure passwords automatically
+- All handled transparently by deploy.sh
 
 For more information, visit:
 https://github.com/LyeosMaouli/lm_archlinux_desktop
