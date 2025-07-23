@@ -21,7 +21,7 @@
 #
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 # shellcheck source=../internal/common.sh
@@ -77,7 +77,7 @@ detect_network_interfaces() {
     fi
     
     # Alternative detection using /sys/class/net
-    if [[ -z "$ETHERNET_INTERFACE" ]]; then
+    if [[ -z "${ETHERNET_INTERFACE:-}" ]]; then
         for interface in /sys/class/net/*/; do
             local iface_name
             iface_name=$(basename "$interface")
@@ -94,7 +94,7 @@ detect_network_interfaces() {
         done
     fi
     
-    if [[ -z "$WIFI_INTERFACE" ]]; then
+    if [[ -z "${WIFI_INTERFACE:-}" ]]; then
         for interface in /sys/class/net/*/; do
             local iface_name
             iface_name=$(basename "$interface")
@@ -246,7 +246,7 @@ test_network_complete() {
 setup_ethernet() {
     local interface="${1:-$ETHERNET_INTERFACE}"
     
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         log_error "No ethernet interface available"
         return 1
     fi
@@ -321,7 +321,7 @@ setup_ethernet() {
 scan_wifi() {
     local interface="${1:-$WIFI_INTERFACE}"
     
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         log_error "No WiFi interface available"
         return 1
     fi
@@ -380,12 +380,12 @@ connect_wifi() {
     local password="$2" 
     local interface="${3:-$WIFI_INTERFACE}"
     
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         log_error "No WiFi interface available"
         return 1
     fi
     
-    if [[ -z "$ssid" ]]; then
+    if [[ -z "${ssid:-}" ]]; then
         log_error "WiFi SSID is required"
         return 1
     fi
@@ -402,7 +402,7 @@ connect_wifi() {
     elif command_exists nmcli; then
         # Method 2: NetworkManager
         connect_wifi_networkmanager "$ssid" "$password" "$interface"
-    elif command_exists iwconfig && [[ -z "$password" ]]; then
+    elif command_exists iwconfig && [[ -z "${password:-}" ]]; then
         # Method 3: Open network with iwconfig
         connect_wifi_iwconfig_open "$ssid" "$interface"
     else
@@ -503,7 +503,7 @@ connect_wifi_iwconfig_open() {
 setup_wifi_interactive() {
     local interface="${1:-$WIFI_INTERFACE}"
     
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         log_error "No WiFi interface available"
         return 1
     fi
@@ -520,7 +520,7 @@ setup_wifi_interactive() {
     local ssid
     ssid=$(prompt_user "Enter WiFi network name (SSID)")
     
-    if [[ -z "$ssid" ]]; then
+    if [[ -z "${ssid:-}" ]]; then
         log_error "No SSID provided"
         return 1
     fi

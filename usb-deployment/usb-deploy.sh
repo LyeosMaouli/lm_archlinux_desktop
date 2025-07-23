@@ -46,16 +46,16 @@ if [[ -z "${RED:-}" ]]; then
 fi
 
 # Get script directory (USB mount point)
-if [[ -z "$USB_DIR" ]]; then
+if [[ -z "${USB_DIR:-}" ]]; then
     USB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
 # Setup logging
-if [[ -z "$LOG_DIR" ]]; then
+if [[ -z "${LOG_DIR:-}" ]]; then
     LOG_DIR="$USB_DIR/logs"
 fi
 mkdir -p "$LOG_DIR"
-if [[ -z "$LOG_FILE" ]]; then
+if [[ -z "${LOG_FILE:-}" ]]; then
     LOG_FILE="$LOG_DIR/usb-deploy-$(date +%Y%m%d_%H%M%S).log"
 fi
 
@@ -103,12 +103,12 @@ log_error() {
 validate_config() {
     log_info "Validating configuration..."
     
-    if [[ "$GITHUB_USERNAME" == "YOUR_USERNAME" ]] || [[ -z "$GITHUB_USERNAME" ]]; then
+    if [[ "$GITHUB_USERNAME" == "YOUR_USERNAME" ]] || [[ -z "${GITHUB_USERNAME:-}" ]]; then
         log_error "Please edit GITHUB_USERNAME in the script configuration"
         return 1
     fi
     
-    if [[ "$GITHUB_REPO" == "YOUR_REPO_NAME" ]] || [[ -z "$GITHUB_REPO" ]]; then
+    if [[ "$GITHUB_REPO" == "YOUR_REPO_NAME" ]] || [[ -z "${GITHUB_REPO:-}" ]]; then
         log_error "Please edit GITHUB_REPO in the script configuration"
         return 1
     fi

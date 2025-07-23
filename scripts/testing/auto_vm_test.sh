@@ -372,7 +372,7 @@ automated_disk_setup() {
         fi
     done
     
-    if [[ -z "$vm_disk" ]] || [[ ! -b "$vm_disk" ]]; then
+    if [[ -z "${vm_disk:-}" ]] || [[ ! -b "$vm_disk" ]]; then
         error "No suitable disk found for VM installation. Available devices: $(ls /dev/sd* /dev/vd* /dev/nvme* 2>/dev/null || echo 'none')"
     fi
     

@@ -19,11 +19,11 @@ else
         NC='\033[0m' # No Color
     fi
     
-    if [[ -z "$LOG_DIR" ]]; then
+    if [[ -z "${LOG_DIR:-}" ]]; then
         LOG_DIR="./logs"
     fi
     mkdir -p "$LOG_DIR"
-    if [[ -z "$LOG_FILE" ]]; then
+    if [[ -z "${LOG_FILE:-}" ]]; then
         LOG_FILE="$LOG_DIR/bootstrap-$(date +%Y%m%d_%H%M%S).log"
     fi
     

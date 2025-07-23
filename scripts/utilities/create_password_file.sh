@@ -144,7 +144,7 @@ collect_passwords_cmdline() {
     local wifi_password="${4:-}"
     
     # Validate required passwords
-    if [[ -z "$user_password" ]] || [[ -z "$root_password" ]]; then
+    if [[ -z "${user_password:-}" ]] || [[ -z "${root_password:-}" ]]; then
         log_error "User and root passwords are required"
         return 1
     fi
@@ -477,7 +477,7 @@ main() {
     parse_arguments "$@"
     
     # Set default output file if not specified
-    if [[ -z "$OUTPUT_FILE" ]]; then
+    if [[ -z "${OUTPUT_FILE:-}" ]]; then
         OUTPUT_FILE="passwords_$(date +%Y%m%d_%H%M%S).enc"
     fi
     

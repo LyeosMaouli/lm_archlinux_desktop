@@ -4,7 +4,7 @@
 
 set -euo pipefail
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
@@ -158,7 +158,7 @@ remove_packages() {
 search_packages() {
     local query="$1"
     
-    if [[ -z "$query" ]]; then
+    if [[ -z "${query:-}" ]]; then
         log_error "No search query provided"
         return 1
     fi
@@ -261,7 +261,7 @@ check_updates() {
 package_info() {
     local package="$1"
     
-    if [[ -z "$package" ]]; then
+    if [[ -z "${package:-}" ]]; then
         log_error "No package specified"
         return 1
     fi

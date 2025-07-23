@@ -232,7 +232,7 @@ validate_password_strength() {
 main() {
     local config_file="${1:-}"
     
-    if [[ -z "$config_file" ]] || [[ ! -f "$config_file" ]]; then
+    if [[ -z "${config_file:-}" ]] || [[ ! -f "$config_file" ]]; then
         log_error "Configuration file required"
         echo "Usage: $0 <config_file>"
         exit 1

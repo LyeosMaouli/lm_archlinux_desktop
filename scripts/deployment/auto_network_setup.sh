@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
@@ -58,7 +58,7 @@ setup_wifi() {
     local wifi_device
     wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
     
-    if [[ -z "$wifi_device" ]]; then
+    if [[ -z "${wifi_device:-}" ]]; then
         log_warn "No WiFi device found"
         return 1
     fi
@@ -80,7 +80,7 @@ setup_wifi() {
     while [[ $attempts -lt 3 ]]; do
         read -p "Enter WiFi network name (SSID): " wifi_ssid
         
-        if [[ -z "$wifi_ssid" ]]; then
+        if [[ -z "${wifi_ssid:-}" ]]; then
             echo "Please enter a network name"
             continue
         fi

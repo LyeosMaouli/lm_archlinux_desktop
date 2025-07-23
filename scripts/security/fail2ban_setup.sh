@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
@@ -168,7 +168,7 @@ cat > /usr/local/bin/fail2ban-monitor.sh << 'EOF'
 #!/bin/bash
 # Fail2ban monitoring script
 
-if [[ -z "$LOG_FILE" ]]; then
+if [[ -z "${LOG_FILE:-}" ]]; then
     LOG_FILE="/var/log/fail2ban-monitor.log"
 fi
 ALERT_EMAIL="${ADMIN_EMAIL:-root@localhost}"

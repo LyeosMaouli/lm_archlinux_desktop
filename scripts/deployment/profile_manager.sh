@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/../internal/common.sh" || {
 }
 
 # Configuration
-if [[ -z "$PROJECT_ROOT" ]]; then
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 fi
 PROFILES_DIR="$PROJECT_ROOT/configs/profiles"

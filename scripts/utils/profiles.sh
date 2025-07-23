@@ -23,7 +23,7 @@
 #
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 # shellcheck source=../internal/common.sh
@@ -82,7 +82,7 @@ get_available_profiles() {
 validate_profile_exists() {
     local profile="$1"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         log_error "Profile name is required"
         return 1
     fi
@@ -190,7 +190,7 @@ validate_profile_config() {
 load_profile() {
     local profile="$1"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         profile="$DEFAULT_PROFILE"
         log_info "Using default profile: $profile"
     fi
@@ -223,7 +223,7 @@ load_profile() {
         while IFS=': ' read -r key value; do
             # Skip comments and empty lines
             [[ "$key" =~ ^[[:space:]]*# ]] && continue
-            [[ -z "$key" ]] && continue
+            [[ -z "${key:-}" ]] && continue
             
             # Remove quotes and trim whitespace
             value=$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/^["'"'"']//;s/["'"'"']$//')
@@ -394,7 +394,7 @@ get_profile_packages() {
 show_profile_details() {
     local profile="${1:-$CURRENT_PROFILE}"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         log_error "No profile specified or loaded"
         return 1
     fi
@@ -443,7 +443,7 @@ list_profile_packages() {
     local profile="${1:-$CURRENT_PROFILE}"
     local category="${2:-all}"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         log_error "No profile specified or loaded"
         return 1
     fi
@@ -489,7 +489,7 @@ create_profile() {
     local profile="$1"
     local template="${2:-work}"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         log_error "Profile name is required"
         return 1
     fi
@@ -571,7 +571,7 @@ except Exception as e:
 export_profile_vars() {
     local profile="${1:-$CURRENT_PROFILE}"
     
-    if [[ -z "$profile" ]]; then
+    if [[ -z "${profile:-}" ]]; then
         log_error "No profile specified or loaded"
         return 1
     fi

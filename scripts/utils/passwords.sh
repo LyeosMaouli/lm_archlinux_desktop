@@ -18,7 +18,7 @@
 #
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 # shellcheck source=../internal/common.sh  
@@ -359,7 +359,7 @@ decrypt_password_file() {
     local encrypted_data
     encrypted_data=$(grep -v '^#' "$file" | tr -d '\n')
     
-    if [[ -z "$encrypted_data" ]]; then
+    if [[ -z "${encrypted_data:-}" ]]; then
         log_error "No encrypted data found in file"
         return 1
     fi
@@ -399,7 +399,7 @@ load_file_passwords() {
     
     # Determine file path
     local password_file="$PASSWORD_FILE"
-    if [[ -z "$password_file" ]]; then
+    if [[ -z "${password_file:-}" ]]; then
         # Try common locations
         for candidate in "$PROJECT_ROOT/config/passwords.enc" "$PROJECT_ROOT/passwords.enc" "./passwords.enc"; do
             if [[ -f "$candidate" ]]; then
@@ -409,20 +409,20 @@ load_file_passwords() {
         done
     fi
     
-    if [[ -z "$password_file" ]]; then
+    if [[ -z "${password_file:-}" ]]; then
         log_error "No password file specified and none found in default locations"
         return 1
     fi
     
     # Get file passphrase
     local passphrase="$FILE_PASSPHRASE"
-    if [[ -z "$passphrase" ]]; then
+    if [[ -z "${passphrase:-}" ]]; then
         passphrase="${DEPLOY_FILE_PASSPHRASE:-}"
     fi
     
-    if [[ -z "$passphrase" ]]; then
+    if [[ -z "${passphrase:-}" ]]; then
         passphrase=$(prompt_user "Enter passphrase for password file" true)
-        if [[ -z "$passphrase" ]]; then
+        if [[ -z "${passphrase:-}" ]]; then
             log_error "No passphrase provided for encrypted password file"
             return 1
         fi
@@ -653,7 +653,7 @@ collect_interactive_passwords() {
             local password
             password=$(prompt_user "Enter password for $description" true)
             
-            if [[ -z "$password" ]]; then
+            if [[ -z "${password:-}" ]]; then
                 log_warn "Password cannot be empty"
                 continue
             fi

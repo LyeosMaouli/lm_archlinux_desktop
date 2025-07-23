@@ -15,10 +15,10 @@ if [[ -z "${RED:-}" ]]; then
 fi
 
 # Configuration
-if [[ -z "$LOG_FILE" ]]; then
+if [[ -z "${LOG_FILE:-}" ]]; then
     LOG_FILE="/var/log/hardware_validation.log"
 fi
-if [[ -z "$REPORT_FILE" ]]; then
+if [[ -z "${REPORT_FILE:-}" ]]; then
     REPORT_FILE="/tmp/hardware_validation_report.txt"
 fi
 

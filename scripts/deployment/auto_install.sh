@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
@@ -187,7 +187,7 @@ setup_wifi_iwctl() {
     
     # Get wireless interface
     local interface=$(iwctl device list | grep -E 'wlan[0-9]' | awk '{print $1}' | head -n1)
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         error "No wireless interface found"
     fi
     
@@ -312,7 +312,7 @@ setup_partitions() {
     info "Using disk device: $disk_device"
     local efi_size=$(parse_nested_config "disk" "efi_size")
     
-    if [[ -z "$efi_size" ]]; then
+    if [[ -z "${efi_size:-}" ]]; then
         efi_size="512M"
     fi
     
@@ -420,11 +420,11 @@ setup_encryption() {
     local passphrase=$(parse_nested_config "encryption" "passphrase")
     
     # If not found, try alternative parsing
-    if [[ -z "$encryption_enabled" ]]; then
+    if [[ -z "${encryption_enabled:-}" ]]; then
         encryption_enabled=$(awk '/^disk:/,/^[a-zA-Z]/{if(/encryption:/){flag=1; next} if(flag && /enabled:/){print $2; exit}}' "$CONFIG_FILE" | tr -d '"')
     fi
     
-    if [[ -z "$passphrase" ]]; then
+    if [[ -z "${passphrase:-}" ]]; then
         passphrase=$(awk '/^disk:/,/^[a-zA-Z]/{if(/encryption:/){flag=1; next} if(flag && /passphrase:/){print $2; exit}}' "$CONFIG_FILE" | tr -d '"')
     fi
     
@@ -442,7 +442,7 @@ setup_encryption() {
         lsblk "$ROOT_PARTITION" || warn "Could not display partition info"
         
         # Use passphrase from config, password manager, or prompt
-        if [[ -z "$passphrase" ]]; then
+        if [[ -z "${passphrase:-}" ]]; then
             info "Checking password management system for LUKS passphrase..."
             
             # Try to get passphrase from environment (set by password manager)
@@ -988,28 +988,28 @@ setup_users() {
     info "Setting up users..."
     
     # Use password management system if passwords are not provided in config
-    if [[ -z "$root_password" ]] || [[ -z "$user_password" ]]; then
+    if [[ -z "${root_password:-}" ]] || [[ -z "${user_password:-}" ]]; then
         info "Checking password management system for missing passwords..."
         
         # Try to get passwords from environment (set by password manager)
-        if [[ -z "$root_password" ]] && [[ -n "${ROOT_PASSWORD:-}" ]]; then
+        if [[ -z "${root_password:-}" ]] && [[ -n "${ROOT_PASSWORD:-}" ]]; then
             root_password="$ROOT_PASSWORD"
             info "Root password obtained from password management system"
         fi
         
-        if [[ -z "$user_password" ]] && [[ -n "${USER_PASSWORD:-}" ]]; then
+        if [[ -z "${user_password:-}" ]] && [[ -n "${USER_PASSWORD:-}" ]]; then
             user_password="$USER_PASSWORD"
             info "User password obtained from password management system"
         fi
         
         # Fallback to interactive prompts if still missing
-        if [[ -z "$root_password" ]]; then
+        if [[ -z "${root_password:-}" ]]; then
             echo -n "Enter root password: "
             read -s root_password
             echo
         fi
         
-        if [[ -z "$user_password" ]]; then
+        if [[ -z "${user_password:-}" ]]; then
             echo -n "Enter password for user $username: "
             read -s user_password
             echo

@@ -97,7 +97,7 @@ setup_wifi_iwctl() {
     
     # Get wireless interface
     local interface=$(iwctl device list | grep -E 'wlan[0-9]' | awk '{print $1}' | head -n1)
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         error "No wireless interface found"
     fi
     
@@ -135,11 +135,11 @@ setup_wifi_manual() {
     
     # Get wireless interface
     local interface=$(ip link show | grep -E '^[0-9]+: wl' | cut -d':' -f2 | xargs | head -n1)
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         interface=$(iw dev | awk '$1=="Interface"{print $2}' | head -n1)
     fi
     
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         error "No wireless interface found"
     fi
     
@@ -179,7 +179,7 @@ setup_ethernet() {
     
     # Get ethernet interface
     local interface=$(ip link show | grep -E '^[0-9]+: e' | cut -d':' -f2 | xargs | head -n1)
-    if [[ -z "$interface" ]]; then
+    if [[ -z "${interface:-}" ]]; then
         log_warn "No ethernet interface found"
         return 1
     fi
@@ -361,7 +361,7 @@ setup_network() {
     fi
     
     # Setup ethernet first (usually more reliable)
-    if [[ "$ethernet_enabled" == "true" ]] || [[ -z "$ethernet_enabled" ]]; then
+    if [[ "$ethernet_enabled" == "true" ]] || [[ -z "${ethernet_enabled:-}" ]]; then
         if setup_ethernet; then
             log_info "Ethernet connection established"
         else

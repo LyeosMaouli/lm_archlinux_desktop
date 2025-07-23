@@ -4,7 +4,7 @@
 
 set -euo pipefail
 # Load common functions
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
@@ -284,7 +284,7 @@ list_backups() {
 show_backup_info() {
     local backup_id="$1"
     
-    if [[ -z "$backup_id" ]]; then
+    if [[ -z "${backup_id:-}" ]]; then
         log_error "No backup ID specified"
         return 1
     fi
@@ -335,7 +335,7 @@ restore_backup() {
     local backup_id="$1"
     local restore_items=("${@:2}")
     
-    if [[ -z "$backup_id" ]]; then
+    if [[ -z "${backup_id:-}" ]]; then
         log_error "No backup ID specified"
         return 1
     fi
@@ -483,7 +483,7 @@ cleanup_old_backups() {
 verify_backup() {
     local backup_id="$1"
     
-    if [[ -z "$backup_id" ]]; then
+    if [[ -z "${backup_id:-}" ]]; then
         log_error "No backup ID specified"
         return 1
     fi

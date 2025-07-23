@@ -76,7 +76,7 @@ close_workspace() {
 # Launch application in new workspace
 launch_in_new_workspace() {
     local app="$1"
-    if [[ -z "$app" ]]; then
+    if [[ -z "${app:-}" ]]; then
         echo "No application specified"
         exit 1
     fi

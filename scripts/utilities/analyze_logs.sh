@@ -14,13 +14,13 @@ if [[ -z "${RED:-}" ]]; then
 fi
 
 # Log file paths (only set if not already defined)
-if [[ -z "$VERBOSE_LOG" ]]; then
+if [[ -z "${VERBOSE_LOG:-}" ]]; then
     VERBOSE_LOG="/var/log/auto_install_verbose.log"
 fi
-if [[ -z "$VM_VERBOSE_LOG" ]]; then
+if [[ -z "${VM_VERBOSE_LOG:-}" ]]; then
     VM_VERBOSE_LOG="/var/log/auto_vm_test_verbose.log"
 fi
-if [[ -z "$STANDARD_LOG" ]]; then
+if [[ -z "${STANDARD_LOG:-}" ]]; then
     STANDARD_LOG="/var/log/auto_install.log"
 fi
 
@@ -100,7 +100,7 @@ main() {
     local log_file
     log_file=$(find_log_file)
     
-    if [[ -z "$log_file" ]]; then
+    if [[ -z "${log_file:-}" ]]; then
         error "No log files found. Expected locations:"
         echo "  - $VERBOSE_LOG"
         echo "  - $VM_VERBOSE_LOG" 

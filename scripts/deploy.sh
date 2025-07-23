@@ -31,7 +31,7 @@
 #
 
 # Try to load common functions - handle different deployment scenarios
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
@@ -50,15 +50,15 @@ for COMMON_PATH in "${COMMON_PATHS[@]}"; do
     fi
 done
 
-if [[ "$COMMON_LOADED" != "true" ]]; then
+if [[ "${COMMON_LOADED:-}" != "true" ]]; then
     echo "Warning: Cannot load common.sh, using basic logging"
     
     # Basic logging functions as fallback
-    if [[ -z "$LOG_DIR" ]]; then
+    if [[ -z "${LOG_DIR:-}" ]]; then
         LOG_DIR="$(pwd)/logs"
     fi
     mkdir -p "$LOG_DIR"
-    if [[ -z "$LOG_FILE" ]]; then
+    if [[ -z "${LOG_FILE:-}" ]]; then
         LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d_%H%M%S).log"
     fi
     
@@ -82,10 +82,10 @@ DEFAULT_USER="lyeosmaouli"
 DEFAULT_ENCRYPTION="true"
 
 # Project structure
-if [[ -z "$PROJECT_ROOT" ]]; then
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 fi
-if [[ -z "$CONFIG_DIR" ]]; then
+if [[ -z "${CONFIG_DIR:-}" ]]; then
     CONFIG_DIR="$PROJECT_ROOT/config"
 fi
 
@@ -237,7 +237,7 @@ EOF
 
 load_configuration() {
     # Load from config file if it exists
-    if [[ -n "$CONFIG_FILE" ]]; then
+    if [[ -n "${CONFIG_FILE:-}" ]]; then
         if ! load_config "$CONFIG_FILE"; then
             log_error "Failed to load configuration file: $CONFIG_FILE"
             exit $EXIT_CONFIG_ERROR
@@ -402,7 +402,7 @@ parse_arguments() {
 
 validate_arguments() {
     # Validate command
-    case $COMMAND in
+    case ${COMMAND:-} in
         install|desktop|security|full|help) ;;
         *)
             log_error "Invalid command: $COMMAND"
@@ -412,7 +412,7 @@ validate_arguments() {
     esac
     
     # Validate profile
-    case $PROFILE in
+    case ${PROFILE:-} in
         work|personal|development) ;;
         *)
             log_error "Invalid profile: $PROFILE"
@@ -422,7 +422,7 @@ validate_arguments() {
     esac
     
     # Validate password mode
-    case $PASSWORD_MODE in
+    case ${PASSWORD_MODE:-} in
         env|file|generate|interactive) ;;
         *)
             log_error "Invalid password mode: $PASSWORD_MODE"
@@ -432,7 +432,7 @@ validate_arguments() {
     esac
     
     # Validate network mode
-    case $NETWORK_MODE in
+    case ${NETWORK_MODE:-} in
         auto|manual|skip) ;;
         *)
             log_error "Invalid network mode: $NETWORK_MODE"
@@ -442,8 +442,8 @@ validate_arguments() {
     esac
     
     # Validate password file if specified
-    if [[ "$PASSWORD_MODE" == "file" ]]; then
-        if [[ -z "$PASSWORD_FILE" ]]; then
+    if [[ "${PASSWORD_MODE:-}" == "file" ]]; then
+        if [[ -z "${PASSWORD_FILE:-}" ]]; then
             log_error "Password file required for password mode 'file'"
             log_error "Use --password-file option to specify the file path"
             exit $EXIT_INVALID_ARGS
@@ -499,7 +499,7 @@ check_system_requirements() {
     fi
     
     # For install command, check if we're in live environment
-    if [[ "$COMMAND" == "install" ]] || [[ "$COMMAND" == "full" ]]; then
+    if [[ "${COMMAND:-}" == "install" ]] || [[ "${COMMAND:-}" == "full" ]]; then
         if ! check_live_environment; then
             log_warn "Not running in live environment - installation commands may fail"
             if ! confirm "Continue anyway?"; then
@@ -510,11 +510,11 @@ check_system_requirements() {
     fi
     
     # Check network connectivity if needed
-    if [[ "$NETWORK_MODE" != "skip" ]]; then
+    if [[ "${NETWORK_MODE:-}" != "skip" ]]; then
         log_info "Checking network connectivity..."
         if ! check_network; then
             log_error "Network connectivity test failed"
-            if [[ "$NETWORK_MODE" == "auto" ]]; then
+            if [[ "${NETWORK_MODE:-}" == "auto" ]]; then
                 log_error "Auto network mode requires working internet connection"
                 exit $EXIT_NETWORK_ERROR
             else
@@ -532,7 +532,7 @@ check_dependencies() {
     local base_deps=("curl" "git" "ansible-playbook")
     local install_deps=("parted" "mkfs.ext4" "cryptsetup")
     
-    case $COMMAND in
+    case ${COMMAND:-} in
         install|full)
             validate_deps "${base_deps[@]}" "${install_deps[@]}"
             ;;
@@ -551,7 +551,7 @@ check_dependencies() {
 execute_install_phase() {
     log_info "Starting base system installation..."
     
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-}" == "true" ]]; then
         log_info "[DRY RUN] Would execute base system installation with:"
         log_info "  Hostname: $HOSTNAME"
         log_info "  User: $USER_NAME"
@@ -567,15 +567,15 @@ execute_install_phase() {
         "--profile" "$PROFILE"
     )
     
-    if [[ "$ENCRYPTION_ENABLED" == "true" ]]; then
+    if [[ "${ENCRYPTION_ENABLED:-}" == "true" ]]; then
         install_args+=("--encryption")
     fi
     
-    if [[ "$PASSWORD_MODE" != "interactive" ]]; then
+    if [[ "${PASSWORD_MODE:-}" != "interactive" ]]; then
         install_args+=("--password-mode" "$PASSWORD_MODE")
     fi
     
-    if [[ -n "$PASSWORD_FILE" ]]; then
+    if [[ -n "${PASSWORD_FILE:-}" ]]; then
         install_args+=("--password-file" "$PASSWORD_FILE")
     fi
     
@@ -594,7 +594,7 @@ execute_install_phase() {
 execute_desktop_phase() {
     log_info "Starting desktop environment setup..."
     
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-}" == "true" ]]; then
         log_info "[DRY RUN] Would execute desktop setup with:"
         log_info "  Profile: $PROFILE"
         log_info "  Hyprland desktop environment"
@@ -628,7 +628,7 @@ execute_desktop_phase() {
 execute_security_phase() {
     log_info "Starting security hardening..."
     
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-}" == "true" ]]; then
         log_info "[DRY RUN] Would execute security hardening:"
         log_info "  UFW firewall configuration"
         log_info "  fail2ban intrusion prevention"
@@ -734,14 +734,14 @@ main() {
     echo "Password Mode: $PASSWORD_MODE"
     echo "Encryption: $ENCRYPTION_ENABLED"
     echo "Network: $NETWORK_MODE"
-    if [[ "$DRY_RUN" == "true" ]]; then
+    if [[ "${DRY_RUN:-}" == "true" ]]; then
         echo "Mode: DRY RUN (preview only)"
     fi
     echo "=========================================="
     echo
     
     # Handle help command
-    if [[ "$COMMAND" == "help" ]]; then
+    if [[ "${COMMAND:-}" == "help" ]]; then
         show_detailed_help
         exit $EXIT_SUCCESS
     fi
@@ -751,7 +751,7 @@ main() {
     check_dependencies
     
     # Execute requested command
-    case $COMMAND in
+    case ${COMMAND:-} in
         install)
             execute_install_phase
             ;;

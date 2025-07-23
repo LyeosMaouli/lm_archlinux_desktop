@@ -16,13 +16,13 @@ fi
 
 # Configuration
 ARCH_ISO_URL="https://archlinux.org/download/"
-if [[ -z "$SCRIPT_DIR" ]]; then
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
-if [[ -z "$PROJECT_ROOT" ]]; then
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 fi
-if [[ -z "$LOG_FILE" ]]; then
+if [[ -z "${LOG_FILE:-}" ]]; then
     LOG_FILE="/tmp/usb_preparation.log"
 fi
 
@@ -134,7 +134,7 @@ validate_inputs() {
     fi
     
     # Validate USB device
-    if [[ -z "$USB_DEVICE" ]]; then
+    if [[ -z "${USB_DEVICE:-}" ]]; then
         error "USB device must be specified with --device"
     fi
     
@@ -150,7 +150,7 @@ validate_inputs() {
     fi
     
     # Validate ISO requirements
-    if [[ "$DOWNLOAD_ISO" == false ]] && [[ -z "$ISO_PATH" ]]; then
+    if [[ "$DOWNLOAD_ISO" == false ]] && [[ -z "${ISO_PATH:-}" ]]; then
         error "Either --download or --iso must be specified"
     fi
     
@@ -192,7 +192,7 @@ download_iso() {
     local iso_url
     iso_url=$(curl -s "$ARCH_ISO_URL" | grep -o 'https://.*\.iso' | head -1)
     
-    if [[ -z "$iso_url" ]]; then
+    if [[ -z "${iso_url:-}" ]]; then
         error "Could not determine latest ISO URL"
     fi
     
