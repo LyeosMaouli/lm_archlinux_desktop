@@ -3,50 +3,35 @@
 # Validates hardware compatibility for Arch Linux Hyprland system
 
 set -euo pipefail
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Configuration
-REPORT_FILE="/tmp/hardware-check-$(date +%Y%m%d-%H%M%S).log"
-
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$REPORT_FILE"
-}
-
-print_header() {
-    echo -e "\n${BLUE}=================================================================================${NC}"
-    echo -e "${BLUE}  $1${NC}"
-    echo -e "${BLUE}=================================================================================${NC}"
-}
-
-print_section() {
-    echo -e "\n${BLUE}--- $1 ---${NC}"
-}
+REPORT_FILE="$LOG_DIR/hardware-check-$(date +%Y%m%d_%H%M%S).log"
 
 check_pass() {
-    echo -e "${GREEN}[OK] PASS:${NC} $1"
+    echo -e "${GREEN}[OK] PASS:${NC} $1" | tee -a "$REPORT_FILE"
 }
 
 check_fail() {
-    echo -e "${RED}[FAIL] FAIL:${NC} $1"
+    echo -e "${RED}[FAIL] FAIL:${NC} $1" | tee -a "$REPORT_FILE"
 }
 
 check_warn() {
-    echo -e "${YELLOW}⚠ WARN:${NC} $1"
+    echo -e "${YELLOW}⚠ WARN:${NC} $1" | tee -a "$REPORT_FILE"
 }
 
 check_info() {
-    echo -e "${BLUE}ℹ INFO:${NC} $1"
+    echo -e "${BLUE}ℹ INFO:${NC} $1" | tee -a "$REPORT_FILE"
 }
 
 # Requirement checks
 check_cpu() {
-    print_section "CPU Compatibility"
+    echo -e "\n${YELLOW}=== CPU Compatibility ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check architecture
     arch=$(uname -m)
@@ -100,7 +85,7 @@ check_cpu() {
 }
 
 check_memory() {
-    print_section "Memory Requirements"
+    echo -e "\n${YELLOW}=== Memory Requirements ===${NC}" | tee -a "$REPORT_FILE"
     
     # Total memory
     mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -126,7 +111,7 @@ check_memory() {
 }
 
 check_graphics() {
-    print_section "Graphics Hardware"
+    echo -e "\n${YELLOW}=== Graphics Hardware ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check for graphics cards
     if command -v lspci >/dev/null 2>&1; then
@@ -174,7 +159,7 @@ check_graphics() {
 }
 
 check_storage() {
-    print_section "Storage Requirements"
+    echo -e "\n${YELLOW}=== Storage Requirements ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check root filesystem space
     root_space=$(df / | tail -1 | awk '{print $4}')
@@ -220,7 +205,7 @@ check_storage() {
 }
 
 check_network() {
-    print_section "Network Hardware"
+    echo -e "\n${YELLOW}=== Network Hardware ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check for network interfaces
     interfaces=$(ip link show | grep -E "^[0-9]+:" | grep -v "lo:" | wc -l)
@@ -248,7 +233,7 @@ check_network() {
 }
 
 check_audio() {
-    print_section "Audio Hardware"
+    echo -e "\n${YELLOW}=== Audio Hardware ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check for audio devices
     if [[ -d /proc/asound ]]; then
@@ -277,7 +262,7 @@ check_audio() {
 }
 
 check_boot_system() {
-    print_section "Boot System"
+    echo -e "\n${YELLOW}=== Boot System ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check for UEFI
     if [[ -d /sys/firmware/efi ]]; then
@@ -312,7 +297,7 @@ check_boot_system() {
 }
 
 check_virtualization() {
-    print_section "Virtualization"
+    echo -e "\n${YELLOW}=== Virtualization ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check if running in VM
     if command -v systemd-detect-virt >/dev/null 2>&1; then
@@ -349,7 +334,7 @@ check_virtualization() {
 }
 
 check_wayland_requirements() {
-    print_section "Wayland Requirements"
+    echo -e "\n${YELLOW}=== Wayland Requirements ===${NC}" | tee -a "$REPORT_FILE"
     
     # Check for essential Wayland libraries
     wayland_libs=(
@@ -387,7 +372,7 @@ check_wayland_requirements() {
 }
 
 generate_summary() {
-    print_header "HARDWARE COMPATIBILITY SUMMARY"
+    echo -e "\n${BLUE}=== HARDWARE COMPATIBILITY SUMMARY ===${NC}" | tee -a "$REPORT_FILE"
     
     # Count results
     pass_count=$(grep -c "[OK] PASS" "$REPORT_FILE" || echo 0)
@@ -417,11 +402,11 @@ generate_summary() {
 
 # Main execution
 main() {
-    log "Starting hardware compatibility check"
+    log_to_file "Starting hardware compatibility check"
     
-    print_header "ARCH LINUX HYPRLAND HARDWARE CHECKER"
-    echo "This tool validates hardware compatibility for the Arch Linux Hyprland system."
-    echo "Checking system requirements and hardware support..."
+    echo -e "\n${BLUE}=== ARCH LINUX HYPRLAND HARDWARE CHECKER ===${NC}" | tee -a "$REPORT_FILE"
+    echo "This tool validates hardware compatibility for the Arch Linux Hyprland system." | tee -a "$REPORT_FILE"
+    echo "Checking system requirements and hardware support..." | tee -a "$REPORT_FILE"
     
     check_cpu
     check_memory
@@ -435,7 +420,7 @@ main() {
     
     generate_summary
     
-    log "Hardware compatibility check completed"
+    log_to_file "Hardware compatibility check completed"
 }
 
 # Show help

@@ -3,18 +3,16 @@
 # Comprehensive backup and restore solution for Arch Linux system
 
 set -euo pipefail
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Configuration
 BACKUP_BASE_DIR="${BACKUP_DIR:-$HOME/backups}"
 CONFIG_FILE="$HOME/.config/backup-manager.conf"
-LOG_FILE="/var/log/backup-manager.log"
 
 # Default backup items
 DEFAULT_BACKUP_ITEMS=(
@@ -35,33 +33,18 @@ DEFAULT_BACKUP_ITEMS=(
     "/boot/loader"
 )
 
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
-}
 
-print_success() {
-    echo -e "${GREEN}[OK]${NC} $1"
-}
 
-print_error() {
-    echo -e "${RED}[FAIL]${NC} $1"
-}
 
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
 
-print_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
 
 # Load configuration
 load_config() {
     if [[ -f "$CONFIG_FILE" ]]; then
         source "$CONFIG_FILE"
-        print_info "Configuration loaded from $CONFIG_FILE"
+        log_info "Configuration loaded from $CONFIG_FILE"
     else
-        print_info "No configuration file found, using defaults"
+        log_info "No configuration file found, using defaults"
     fi
 }
 
@@ -78,7 +61,7 @@ EXCLUDE_PATTERNS="${EXCLUDE_PATTERNS:-*.tmp *.cache *.log}"
 BACKUP_ENCRYPTION="${BACKUP_ENCRYPTION:-false}"
 EOF
     
-    print_success "Configuration saved to $CONFIG_FILE"
+    log_success "Configuration saved to $CONFIG_FILE"
 }
 
 # Initialize backup environment
@@ -99,8 +82,8 @@ create_system_backup() {
     local backup_type="${1:-full}"
     local custom_items=("${@:2}")
     
-    print_info "Creating $backup_type backup..."
-    log "Starting $backup_type backup"
+    log_info "Creating $backup_type backup..."
+    log_to_file "Starting $backup_type backup"
     
     local backup_dir
     backup_dir=$(init_backup)
@@ -174,7 +157,7 @@ create_system_backup() {
             item_name=$(basename "$item")
             local backup_file="$backup_dir/${item_name}-backup.tar.gz"
             
-            print_info "Backing up: $item"
+            log_info "Backing up: $item"
             
             # Create exclude file for common patterns
             local exclude_file
@@ -194,18 +177,18 @@ create_system_backup() {
             if tar -czf "$backup_file" -X "$exclude_file" -C "$(dirname "$item")" "$(basename "$item")" 2>/dev/null; then
                 local size
                 size=$(du -h "$backup_file" | cut -f1)
-                print_success "Backed up $item ($size)"
+                log_success "Backed up $item ($size)"
                 echo "$item -> $backup_file ($size)" >> "$backup_dir/backup-log.txt"
                 ((success_count++))
             else
-                print_error "Failed to backup $item"
+                log_error "Failed to backup $item"
                 echo "FAILED: $item" >> "$backup_dir/backup-log.txt"
                 ((fail_count++))
             fi
             
             rm -f "$exclude_file"
         else
-            print_warning "Item not found: $item"
+            log_warn "Item not found: $item"
             echo "NOT_FOUND: $item" >> "$backup_dir/backup-log.txt"
         fi
     done
@@ -226,23 +209,23 @@ create_system_backup() {
     
     # Compress entire backup if requested
     if [[ "${COMPRESS_BACKUP:-true}" == "true" ]]; then
-        print_info "Compressing backup archive..."
+        log_info "Compressing backup archive..."
         local archive_file="$BACKUP_BASE_DIR/backup-$timestamp.tar.gz"
         
         if tar -czf "$archive_file" -C "$BACKUP_BASE_DIR" "$timestamp"; then
             rm -rf "$backup_dir"
-            print_success "Backup archived to: $archive_file"
+            log_success "Backup archived to: $archive_file"
             echo "$archive_file"
         else
-            print_error "Failed to create backup archive"
+            log_error "Failed to create backup archive"
             echo "$backup_dir"
         fi
     else
-        print_success "Backup completed: $backup_dir"
+        log_success "Backup completed: $backup_dir"
         echo "$backup_dir"
     fi
     
-    log "Backup completed: $success_count success, $fail_count failed"
+    log_to_file "Backup completed: $success_count success, $fail_count failed"
     
     # Cleanup old backups
     cleanup_old_backups
@@ -250,10 +233,10 @@ create_system_backup() {
 
 # List available backups
 list_backups() {
-    print_info "Available backups in $BACKUP_BASE_DIR:"
+    log_info "Available backups in $BACKUP_BASE_DIR:"
     
     if [[ ! -d "$BACKUP_BASE_DIR" ]]; then
-        print_warning "Backup directory not found: $BACKUP_BASE_DIR"
+        log_warn "Backup directory not found: $BACKUP_BASE_DIR"
         return 1
     fi
     
@@ -289,9 +272,9 @@ list_backups() {
     done < <(find "$BACKUP_BASE_DIR" -maxdepth 1 -type f -name "backup-*.tar.gz" -print0 2>/dev/null | sort -z)
     
     if [[ $backup_count -eq 0 ]]; then
-        print_info "No backups found"
+        log_info "No backups found"
     else
-        print_info "Total backups: $backup_count"
+        log_info "Total backups: $backup_count"
     fi
 }
 
@@ -300,7 +283,7 @@ show_backup_info() {
     local backup_id="$1"
     
     if [[ -z "$backup_id" ]]; then
-        print_error "No backup ID specified"
+        log_error "No backup ID specified"
         return 1
     fi
     
@@ -309,7 +292,7 @@ show_backup_info() {
     
     # Check for directory
     if [[ -d "$backup_path" ]]; then
-        print_info "Backup Information: $backup_id"
+        log_info "Backup Information: $backup_id"
         
         if [[ -f "$backup_path/backup-summary.txt" ]]; then
             cat "$backup_path/backup-summary.txt"
@@ -323,7 +306,7 @@ show_backup_info() {
         
     # Check for archive
     elif [[ -f "$archive_path" ]]; then
-        print_info "Backup Archive: $archive_path"
+        log_info "Backup Archive: $archive_path"
         
         # Extract and show summary
         local temp_dir
@@ -340,7 +323,7 @@ show_backup_info() {
         
         rm -rf "$temp_dir"
     else
-        print_error "Backup not found: $backup_id"
+        log_error "Backup not found: $backup_id"
         return 1
     fi
 }
@@ -351,14 +334,14 @@ restore_backup() {
     local restore_items=("${@:2}")
     
     if [[ -z "$backup_id" ]]; then
-        print_error "No backup ID specified"
+        log_error "No backup ID specified"
         return 1
     fi
     
-    print_warning "This will overwrite existing files. Are you sure? (y/N)"
+    log_warn "This will overwrite existing files. Are you sure? (y/N)"
     read -r response
     if [[ ! "$response" =~ ^[Yy]$ ]]; then
-        print_info "Restore cancelled"
+        log_info "Restore cancelled"
         return 0
     fi
     
@@ -368,24 +351,24 @@ restore_backup() {
     
     # Handle archive extraction
     if [[ -f "$archive_path" ]]; then
-        print_info "Extracting backup archive..."
+        log_info "Extracting backup archive..."
         temp_dir=$(mktemp -d)
         
         if tar -xzf "$archive_path" -C "$temp_dir"; then
             backup_path=$(find "$temp_dir" -maxdepth 1 -type d -name "20*" | head -1)
         else
-            print_error "Failed to extract backup archive"
+            log_error "Failed to extract backup archive"
             return 1
         fi
     fi
     
     if [[ ! -d "$backup_path" ]]; then
-        print_error "Backup directory not found: $backup_path"
+        log_error "Backup directory not found: $backup_path"
         return 1
     fi
     
-    print_info "Restoring from backup: $backup_id"
-    log "Starting restore from backup: $backup_id"
+    log_info "Restoring from backup: $backup_id"
+    log_to_file "Starting restore from backup: $backup_id"
     
     # If no specific items, restore all
     if [[ ${#restore_items[@]} -eq 0 ]]; then
@@ -399,7 +382,7 @@ restore_backup() {
         local backup_file="$backup_path/${item}-backup.tar.gz"
         
         if [[ -f "$backup_file" ]]; then
-            print_info "Restoring: $item"
+            log_info "Restoring: $item"
             
             # Determine restore location
             local restore_location
@@ -426,20 +409,20 @@ restore_backup() {
             existing_backup="/tmp/restore-backup-$(date +%s)-$item"
             
             if [[ -e "$restore_location/$item" ]]; then
-                print_info "Backing up existing $item to $existing_backup"
+                log_info "Backing up existing $item to $existing_backup"
                 cp -r "$restore_location/$item" "$existing_backup" 2>/dev/null || true
             fi
             
             # Restore files
             if tar -xzf "$backup_file" -C "$restore_location" 2>/dev/null; then
-                print_success "Restored: $item"
+                log_success "Restored: $item"
                 ((success_count++))
             else
-                print_error "Failed to restore: $item"
+                log_error "Failed to restore: $item"
                 
                 # Restore original if backup exists
                 if [[ -e "$existing_backup" ]]; then
-                    print_info "Restoring original $item"
+                    log_info "Restoring original $item"
                     rm -rf "$restore_location/$item" 2>/dev/null || true
                     mv "$existing_backup" "$restore_location/$item" 2>/dev/null || true
                 fi
@@ -447,7 +430,7 @@ restore_backup() {
                 ((fail_count++))
             fi
         else
-            print_warning "Backup file not found: $backup_file"
+            log_warn "Backup file not found: $backup_file"
         fi
     done
     
@@ -456,11 +439,11 @@ restore_backup() {
         rm -rf "$temp_dir"
     fi
     
-    print_info "Restore completed: $success_count success, $fail_count failed"
-    log "Restore completed: $success_count success, $fail_count failed"
+    log_info "Restore completed: $success_count success, $fail_count failed"
+    log_to_file "Restore completed: $success_count success, $fail_count failed"
     
     if [[ $success_count -gt 0 ]]; then
-        print_warning "Some files have been restored. You may need to restart applications or log out/in."
+        log_warn "Some files have been restored. You may need to restart applications or log out/in."
     fi
 }
 
@@ -468,30 +451,30 @@ restore_backup() {
 cleanup_old_backups() {
     local keep_count="${KEEP_BACKUPS:-7}"
     
-    print_info "Cleaning up old backups (keeping $keep_count most recent)..."
+    log_info "Cleaning up old backups (keeping $keep_count most recent)..."
     
     # Count backups
     local backup_count
     backup_count=$(find "$BACKUP_BASE_DIR" -maxdepth 1 \( -type d -name "20*" -o -type f -name "backup-*.tar.gz" \) | wc -l)
     
     if [[ $backup_count -le $keep_count ]]; then
-        print_info "No cleanup needed ($backup_count backups, keeping $keep_count)"
+        log_info "No cleanup needed ($backup_count backups, keeping $keep_count)"
         return 0
     fi
     
     # Remove old directories
     find "$BACKUP_BASE_DIR" -maxdepth 1 -type d -name "20*" | sort | head -n -"$keep_count" | while read -r old_backup; do
-        print_info "Removing old backup: $(basename "$old_backup")"
+        log_info "Removing old backup: $(basename "$old_backup")"
         rm -rf "$old_backup"
     done
     
     # Remove old archives
     find "$BACKUP_BASE_DIR" -maxdepth 1 -type f -name "backup-*.tar.gz" | sort | head -n -"$keep_count" | while read -r old_archive; do
-        print_info "Removing old archive: $(basename "$old_archive")"
+        log_info "Removing old archive: $(basename "$old_archive")"
         rm -f "$old_archive"
     done
     
-    print_success "Cleanup completed"
+    log_success "Cleanup completed"
 }
 
 # Verify backup integrity
@@ -499,22 +482,22 @@ verify_backup() {
     local backup_id="$1"
     
     if [[ -z "$backup_id" ]]; then
-        print_error "No backup ID specified"
+        log_error "No backup ID specified"
         return 1
     fi
     
     local backup_path="$BACKUP_BASE_DIR/$backup_id"
     local archive_path="$BACKUP_BASE_DIR/backup-$backup_id.tar.gz"
     
-    print_info "Verifying backup: $backup_id"
+    log_info "Verifying backup: $backup_id"
     
     # Handle archive
     if [[ -f "$archive_path" ]]; then
-        print_info "Verifying archive integrity..."
+        log_info "Verifying archive integrity..."
         if tar -tzf "$archive_path" >/dev/null 2>&1; then
-            print_success "Archive integrity OK"
+            log_success "Archive integrity OK"
         else
-            print_error "Archive is corrupted"
+            log_error "Archive is corrupted"
             return 1
         fi
         
@@ -526,7 +509,7 @@ verify_backup() {
     fi
     
     if [[ ! -d "$backup_path" ]]; then
-        print_error "Backup directory not found"
+        log_error "Backup directory not found"
         return 1
     fi
     
@@ -538,9 +521,9 @@ verify_backup() {
         ((total_files++))
         
         if tar -tzf "$backup_file" >/dev/null 2>&1; then
-            print_success "OK: $(basename "$backup_file")"
+            log_success "OK: $(basename "$backup_file")"
         else
-            print_error "CORRUPT: $(basename "$backup_file")"
+            log_error "CORRUPT: $(basename "$backup_file")"
             ((corrupt_files++))
         fi
     done < <(find "$backup_path" -name "*-backup.tar.gz" -print0 2>/dev/null)
@@ -550,13 +533,13 @@ verify_backup() {
         rm -rf "$temp_dir"
     fi
     
-    print_info "Verification completed: $((total_files - corrupt_files))/$total_files files OK"
+    log_info "Verification completed: $((total_files - corrupt_files))/$total_files files OK"
     
     if [[ $corrupt_files -eq 0 ]]; then
-        print_success "Backup verification passed"
+        log_success "Backup verification passed"
         return 0
     else
-        print_error "Backup verification failed: $corrupt_files corrupt files"
+        log_error "Backup verification failed: $corrupt_files corrupt files"
         return 1
     fi
 }
@@ -642,7 +625,7 @@ main() {
             show_help
             ;;
         *)
-            print_error "Unknown command: $1"
+            log_error "Unknown command: $1"
             show_help
             exit 1
             ;;

@@ -4,18 +4,32 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Load common functions if available, otherwise use basic logging
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/../internal/common.sh" ]]; then
+    source "$SCRIPT_DIR/../internal/common.sh"
+else
+    # Basic logging fallback
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m' # No Color
+    
+    LOG_DIR="./logs"
+    mkdir -p "$LOG_DIR"
+    LOG_FILE="$LOG_DIR/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+    
+    log_info() { echo -e "${GREEN}INFO: $*${NC}" | tee -a "$LOG_FILE"; }
+    log_warn() { echo -e "${YELLOW}WARNING: $*${NC}" | tee -a "$LOG_FILE"; }
+    log_error() { echo -e "${RED}ERROR: $*${NC}" >&2; echo "ERROR: $*" >> "$LOG_FILE"; exit 1; }
+    log_success() { echo -e "${GREEN}[OK] $*${NC}" | tee -a "$LOG_FILE"; }
+fi
 
 # Configuration
 REPO_URL="https://github.com/LyeosMaouli/lm_archlinux_desktop.git"
 INSTALL_DIR="$HOME/lm_archlinux_desktop"
-LOG_FILE="/var/log/bootstrap.log"
 REQUIRED_PACKAGES=("git" "ansible" "python" "python-pip" "base-devel")
 
 # Default values
@@ -25,36 +39,10 @@ PROFILE="work"
 SETUP_AUR=true
 UPDATE_SYSTEM=true
 
-# Logging functions
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-error() {
-    echo -e "${RED}ERROR: $1${NC}" >&2
-    log "ERROR: $1"
-    exit 1
-}
-
-info() {
-    echo -e "${GREEN}INFO: $1${NC}"
-    log "INFO: $1"
-}
-
-warn() {
-    echo -e "${YELLOW}WARNING: $1${NC}"
-    log "WARNING: $1"
-}
-
-success() {
-    echo -e "${GREEN}[OK] $1${NC}"
-    log "SUCCESS: $1"
-}
-
+# Additional logging function for compatibility
 debug() {
     if [[ "$VERBOSE" == true ]]; then
-        echo -e "${CYAN}DEBUG: $1${NC}"
-        log "DEBUG: $1"
+        echo -e "${CYAN}DEBUG: $*${NC}" | tee -a "$LOG_FILE"
     fi
 }
 
@@ -111,7 +99,7 @@ parse_arguments() {
                 exit 0
                 ;;
             *)
-                error "Unknown option: $1. Use --help for usage information."
+                log_error "Unknown option: $1. Use --help for usage information."
                 ;;
         esac
     done
@@ -119,37 +107,37 @@ parse_arguments() {
 
 # Check prerequisites
 check_prerequisites() {
-    info "Checking prerequisites..."
+    log_info "Checking prerequisites..."
     
     # Check if running on Arch Linux
     if [[ ! -f /etc/arch-release ]]; then
-        error "This script is designed for Arch Linux only"
+        log_error "This script is designed for Arch Linux only"
     fi
     
     # Check if running as root
     if [[ $EUID -eq 0 ]]; then
-        error "This script should not be run as root"
+        log_error "This script should not be run as root"
     fi
     
     # Check sudo access
     if ! sudo -n true 2>/dev/null; then
-        info "Testing sudo access (you may be prompted for password)..."
+        log_info "Testing sudo access (you may be prompted for password)..."
         if ! sudo true; then
-            error "Sudo access required for system operations"
+            log_error "Sudo access required for system operations"
         fi
     fi
     
     # Check internet connectivity
     if ! ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        error "Internet connectivity required for package installation"
+        log_error "Internet connectivity required for package installation"
     fi
     
-    success "Prerequisites check passed"
+    log_success "Prerequisites check passed"
 }
 
 # Display system information
 show_system_info() {
-    info "System Information:"
+    log_info "System Information:"
     echo "  OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '\"')"
     echo "  Kernel: $(uname -r)"
     echo "  Architecture: $(uname -m)"
@@ -163,11 +151,11 @@ show_system_info() {
 # Update system packages
 update_system() {
     if [[ "$UPDATE_SYSTEM" == false ]]; then
-        info "Skipping system update"
+        log_info "Skipping system update"
         return 0
     fi
     
-    info "Updating system packages..."
+    log_info "Updating system packages..."
     
     # Update package database
     sudo pacman -Sy --noconfirm
@@ -183,12 +171,12 @@ update_system() {
         fi
     fi
     
-    success "System packages updated"
+    log_success "System packages updated"
 }
 
 # Install required packages
 install_required_packages() {
-    info "Installing required packages..."
+    log_info "Installing required packages..."
     
     local missing_packages=()
     
@@ -200,29 +188,29 @@ install_required_packages() {
     done
     
     if [[ ${#missing_packages[@]} -eq 0 ]]; then
-        success "All required packages are already installed"
+        log_success "All required packages are already installed"
         return 0
     fi
     
-    info "Installing missing packages: ${missing_packages[*]}"
+    log_info "Installing missing packages: ${missing_packages[*]}"
     
     sudo pacman -S --noconfirm "${missing_packages[@]}"
     
-    success "Required packages installed"
+    log_success "Required packages installed"
 }
 
 # Setup AUR helper (yay)
 setup_aur_helper() {
     if [[ "$SETUP_AUR" == false ]]; then
-        info "Skipping AUR helper installation"
+        log_info "Skipping AUR helper installation"
         return 0
     fi
     
-    info "Setting up AUR helper (yay)..."
+    log_info "Setting up AUR helper (yay)..."
     
     # Check if yay is already installed
     if command -v yay >/dev/null 2>&1; then
-        success "yay is already installed"
+        log_success "yay is already installed"
         return 0
     fi
     
@@ -241,21 +229,21 @@ setup_aur_helper() {
     # Cleanup
     rm -rf "$yay_dir"
     
-    success "AUR helper (yay) installed"
+    log_success "AUR helper (yay) installed"
 }
 
 # Clone automation repository
 clone_repository() {
-    info "Cloning automation repository..."
+    log_info "Cloning automation repository..."
     
     # Remove existing directory if it exists
     if [[ -d "$INSTALL_DIR" ]]; then
-        warn "Existing installation directory found: $INSTALL_DIR"
+        log_warn "Existing installation directory found: $INSTALL_DIR"
         if [[ "$SKIP_CONFIRMATION" == false ]]; then
             echo -n "Remove existing directory and continue? [y/N]: "
             read -r response
             if [[ ! "$response" =~ ^[Yy]$ ]]; then
-                error "Installation cancelled by user"
+                log_error "Installation cancelled by user"
             fi
         fi
         rm -rf "$INSTALL_DIR"
@@ -267,12 +255,12 @@ clone_repository() {
     # Make scripts executable
     find "$INSTALL_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \;
     
-    success "Repository cloned to: $INSTALL_DIR"
+    log_success "Repository cloned to: $INSTALL_DIR"
 }
 
 # Setup Python virtual environment
 setup_python_environment() {
-    info "Setting up Python environment..."
+    log_info "Setting up Python environment..."
     
     local venv_dir="$INSTALL_DIR/.venv"
     
@@ -296,18 +284,18 @@ setup_python_environment() {
         ansible-galaxy collection install -r "$INSTALL_DIR/configs/ansible/requirements.yml"
     fi
     
-    success "Python environment configured"
+    log_success "Python environment configured"
 }
 
 # Configure Ansible
 configure_ansible() {
-    info "Configuring Ansible..."
+    log_info "Configuring Ansible..."
     
     local ansible_cfg="$INSTALL_DIR/configs/ansible/ansible.cfg"
     
     # Verify Ansible configuration exists
     if [[ ! -f "$ansible_cfg" ]]; then
-        warn "Ansible configuration not found, creating basic configuration"
+        log_warn "Ansible configuration not found, creating basic configuration"
         
         mkdir -p "$(dirname "$ansible_cfg")"
         cat > "$ansible_cfg" << EOF
@@ -330,9 +318,9 @@ EOF
     # Test Ansible connectivity
     cd "$INSTALL_DIR"
     if ansible localhost -m ping >/dev/null 2>&1; then
-        success "Ansible configured and connectivity tested"
+        log_success "Ansible configured and connectivity tested"
     else
-        warn "Ansible configuration test failed, but continuing..."
+        log_warn "Ansible configuration test failed, but continuing..."
     fi
     
     cd - >/dev/null
@@ -340,7 +328,7 @@ EOF
 
 # Setup profile configuration
 setup_profile() {
-    info "Setting up profile configuration: $PROFILE"
+    log_info "Setting up profile configuration: $PROFILE"
     
     local profiles_dir="$INSTALL_DIR/profiles"
     local profile_dir="$profiles_dir/$PROFILE"
@@ -411,15 +399,15 @@ automation:
   log_level: "info"
 EOF
         
-        success "Profile configuration created: $profile_dir/config.yml"
+        log_success "Profile configuration created: $profile_dir/config.yml"
     else
-        success "Profile configuration already exists: $profile_dir"
+        log_success "Profile configuration already exists: $profile_dir"
     fi
 }
 
 # Create convenience scripts
 create_convenience_scripts() {
-    info "Creating convenience scripts..."
+    log_info "Creating convenience scripts..."
     
     local bin_dir="$HOME/.local/bin"
     mkdir -p "$bin_dir"
@@ -447,10 +435,10 @@ EOF
     # Add to PATH if not already there
     if [[ ":$PATH:" != *":$bin_dir:"* ]]; then
         echo "export PATH=\"\$PATH:$bin_dir\"" >> "$HOME/.bashrc"
-        info "Added $bin_dir to PATH in .bashrc"
+        log_info "Added $bin_dir to PATH in .bashrc"
     fi
     
-    success "Convenience scripts created in $bin_dir"
+    log_success "Convenience scripts created in $bin_dir"
 }
 
 # Display next steps
@@ -504,14 +492,14 @@ main() {
         echo -n "Proceed with bootstrap? [y/N]: "
         read -r response
         if [[ ! "$response" =~ ^[Yy]$ ]]; then
-            info "Bootstrap cancelled by user"
+            log_info "Bootstrap cancelled by user"
             exit 0
         fi
         echo ""
     fi
     
     # Start bootstrap process
-    info "Starting bootstrap process..."
+    log_info "Starting bootstrap process..."
     
     # Update system
     update_system
