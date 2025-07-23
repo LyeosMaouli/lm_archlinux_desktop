@@ -33,7 +33,10 @@
 # Load common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=internal/common.sh
-source "$SCRIPT_DIR/internal/common.sh"
+source "$SCRIPT_DIR/internal/common.sh" || {
+    echo "Error: Cannot load common.sh from $SCRIPT_DIR/internal/common.sh"
+    exit 1
+}
 
 # Script metadata
 readonly SCRIPT_NAME="deploy.sh"

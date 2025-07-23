@@ -13,6 +13,10 @@ readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly LOG_DIR="$PROJECT_ROOT/logs"
 readonly CONFIG_DIR="$PROJECT_ROOT/config"
 
+# Initialize logging
+mkdir -p "$LOG_DIR"
+readonly LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d_%H%M%S).log"
+
 # Color codes for terminal output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -71,10 +75,8 @@ _log() {
             echo "[${timestamp}] ${prefix}: ${message}" >&2
         fi
         
-        # Also log to file if LOG_DIR exists
-        if [[ -d "$LOG_DIR" ]]; then
-            echo "[${timestamp}] ${prefix}: ${message}" >> "$LOG_DIR/deployment.log"
-        fi
+        # Also log to timestamped file
+        echo "[${timestamp}] ${prefix}: ${message}" >> "$LOG_FILE"
     fi
 }
 
@@ -96,6 +98,16 @@ log_info() {
 # Log debug message
 log_debug() {
     _log $LOG_DEBUG "$CYAN" "DEBUG" "$@"
+}
+
+# Function to log to both console and file (compatible with USB deployment script)
+log_to_file() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+# Log success message (compatible with USB deployment script)
+log_success() {
+    _log $LOG_INFO "$GREEN" "SUCCESS" "$@"
 }
 
 #

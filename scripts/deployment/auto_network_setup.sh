@@ -4,11 +4,12 @@
 
 set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Check if we're connected to internet
 check_internet() {
@@ -21,7 +22,7 @@ check_internet() {
 
 # Auto-detect and setup ethernet
 setup_ethernet() {
-    echo -e "${BLUE}🔌 Checking ethernet connection...${NC}"
+    log_info "🔌 Checking ethernet connection..."
     
     # Enable ethernet interfaces
     for iface in $(ip link show | grep -E "en[ospx]" | cut -d: -f2 | tr -d ' '); do
@@ -33,7 +34,7 @@ setup_ethernet() {
         sleep 3
         
         if check_internet; then
-            echo -e "${GREEN}[SUCCESS] Ethernet connected via $iface${NC}"
+            log_success "Ethernet connected via $iface"
             return 0
         fi
     done
@@ -43,11 +44,11 @@ setup_ethernet() {
 
 # Interactive WiFi setup with auto-detection
 setup_wifi() {
-    echo -e "${BLUE}📶 Setting up WiFi...${NC}"
+    log_info "📶 Setting up WiFi..."
     
     # Check if WiFi hardware exists
     if ! iwctl device list 2>/dev/null | grep -q "wlan"; then
-        echo -e "${YELLOW}[WARNING]  No WiFi hardware detected${NC}"
+        log_warn "No WiFi hardware detected"
         return 1
     fi
     
@@ -56,7 +57,7 @@ setup_wifi() {
     wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
     
     if [[ -z "$wifi_device" ]]; then
-        echo -e "${YELLOW}[WARNING]  No WiFi device found${NC}"
+        log_warn "No WiFi device found"
         return 1
     fi
     
@@ -68,7 +69,7 @@ setup_wifi() {
     sleep 3
     
     # Show available networks
-    echo -e "${BLUE}Available WiFi networks:${NC}"
+    log_info "Available WiFi networks:"
     iwctl station "$wifi_device" get-networks | tail -n +5 | head -20
     echo
     
@@ -92,7 +93,7 @@ setup_wifi() {
     done
     
     if [[ $attempts -eq 3 ]]; then
-        echo -e "${YELLOW}[WARNING]  Too many failed attempts${NC}"
+        log_warn "Too many failed attempts"
         return 1
     fi
     
@@ -110,28 +111,28 @@ setup_wifi() {
         sleep 5
         
         if check_internet; then
-            echo -e "${GREEN}[SUCCESS] WiFi connected successfully!${NC}"
+            log_success "WiFi connected successfully!"
             
             # Save connection for later use (optional)
             echo "WiFi connection saved for future use"
             return 0
         else
-            echo -e "${YELLOW}[WARNING]  Connected to WiFi but no internet access${NC}"
+            log_warn "Connected to WiFi but no internet access"
             return 1
         fi
     else
-        echo -e "${YELLOW}[WARNING]  Failed to connect to WiFi${NC}"
+        log_warn "Failed to connect to WiFi"
         return 1
     fi
 }
 
 # Try automatic connection methods
 auto_connect() {
-    echo -e "${BLUE}[NETWORK] Auto-detecting network connection...${NC}"
+    log_info "Auto-detecting network connection..."
     
     # First check if already connected
     if check_internet; then
-        echo -e "${GREEN}[SUCCESS] Already connected to internet!${NC}"
+        log_success "Already connected to internet!"
         return 0
     fi
     
@@ -141,13 +142,13 @@ auto_connect() {
     fi
     
     # If ethernet fails, try WiFi
-    echo -e "${YELLOW}Ethernet not available, trying WiFi...${NC}"
+    log_warn "Ethernet not available, trying WiFi..."
     if setup_wifi; then
         return 0
     fi
     
     # If both fail, give manual options
-    echo -e "${YELLOW}[WARNING]  Automatic connection failed${NC}"
+    log_warn "Automatic connection failed"
     echo
     echo "Manual options:"
     echo "1. wifi-menu  # Use built-in WiFi menu"
@@ -165,7 +166,7 @@ auto_connect() {
             sleep 5
             ;;
         3)
-            echo -e "${YELLOW}[WARNING]  Skipping network setup${NC}"
+            log_warn "Skipping network setup"
             return 1
             ;;
         *)
@@ -176,23 +177,23 @@ auto_connect() {
     
     # Check if manual method worked
     if check_internet; then
-        echo -e "${GREEN}[SUCCESS] Manual connection successful!${NC}"
+        log_success "Manual connection successful!"
         return 0
     else
-        echo -e "${YELLOW}[WARNING]  Still no internet connection${NC}"
+        log_warn "Still no internet connection"
         return 1
     fi
 }
 
 # Main execution
 main() {
-    echo -e "${BLUE}[DEPLOY] Automatic Network Setup${NC}"
+    log_info "Automatic Network Setup"
     echo "Detecting and configuring internet connection..."
     echo
     
     if auto_connect; then
         echo
-        echo -e "${GREEN}[COMPLETE] Network setup completed successfully!${NC}"
+        log_success "Network setup completed successfully!"
         echo "Internet connection is ready for deployment."
         
         # Test connection
@@ -205,7 +206,7 @@ main() {
         return 0
     else
         echo
-        echo -e "${YELLOW}[WARNING]  Network setup failed${NC}"
+        log_warn "Network setup failed"
         echo "Please configure internet manually before continuing:"
         echo
         echo "For WiFi: wifi-menu"

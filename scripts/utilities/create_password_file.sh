@@ -4,37 +4,19 @@
 
 set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Script configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SECURITY_DIR="$SCRIPT_DIR/../security"
 OUTPUT_FILE=""
 ENCRYPT_OUTPUT=true
 INTERACTIVE_MODE=true
 
-# Logging functions
-log_info() {
-    echo -e "${BLUE}[CREATE]${NC} $1" >&2
-}
-
-log_warn() {
-    echo -e "${YELLOW}[CREATE-WARN]${NC} $1" >&2
-}
-
-log_error() {
-    echo -e "${RED}[CREATE-ERROR]${NC} $1" >&2
-}
-
-log_success() {
-    echo -e "${GREEN}[CREATE-SUCCESS]${NC} $1" >&2
-}
 
 # Print banner
 print_banner() {

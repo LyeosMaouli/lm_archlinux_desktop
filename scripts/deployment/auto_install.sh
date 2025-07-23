@@ -4,50 +4,34 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Configuration file path
 CONFIG_FILE="${CONFIG_FILE:-/tmp/deployment_config.yml}"
-LOG_FILE="/var/log/auto_install.log"
-VERBOSE_LOG="/var/log/auto_install_verbose.log"
 
 # Enhanced logging setup - capture EVERYTHING
 setup_comprehensive_logging() {
-    # Create log directory if it doesn't exist
-    mkdir -p "$(dirname "$LOG_FILE")"
-    mkdir -p "$(dirname "$VERBOSE_LOG")"
+    log_info "Starting comprehensive logging setup"
+    log_info "Command: $0 $*"
     
-    # Start comprehensive logging - capture ALL output
-    exec > >(tee -a "$VERBOSE_LOG")
-    exec 2> >(tee -a "$VERBOSE_LOG" >&2)
+    # Log system information
+    log_info "System Information:"
+    uname -a 2>&1 | log_to_file
+    lsblk 2>&1 | log_to_file
+    free -h 2>&1 | log_to_file
     
-    # Also log to standard log file
-    exec 19>&1
-    exec 20>&2
-    exec 1> >(tee -a "$LOG_FILE" >&19)
-    exec 2> >(tee -a "$LOG_FILE" >&20)
+    log_info "Network Interfaces:"
+    ip addr show 2>&1 | log_to_file
     
-    echo "=== AUTO INSTALL VERBOSE LOG STARTED: $(date) ===" >> "$VERBOSE_LOG"
-    echo "=== Command: $0 $* ===" >> "$VERBOSE_LOG"
-    echo "=== Environment Variables ===" >> "$VERBOSE_LOG"
-    env | sort >> "$VERBOSE_LOG"
-    echo "=== System Information ===" >> "$VERBOSE_LOG"
-    uname -a >> "$VERBOSE_LOG" 2>&1 || true
-    lsblk >> "$VERBOSE_LOG" 2>&1 || true
-    free -h >> "$VERBOSE_LOG" 2>&1 || true
-    echo "=== Network Interfaces ===" >> "$VERBOSE_LOG"
-    ip addr show >> "$VERBOSE_LOG" 2>&1 || true
-    echo "=== DNS Configuration ===" >> "$VERBOSE_LOG"
-    cat /etc/resolv.conf >> "$VERBOSE_LOG" 2>&1 || true
-    echo "=== Starting Installation Process ===" >> "$VERBOSE_LOG"
+    log_info "DNS Configuration:"
+    cat /etc/resolv.conf 2>&1 | log_to_file || true
     
-    # Try to copy logs to common accessible locations
-    copy_logs_to_accessible_locations
+    log_info "Starting Installation Process"
 }
 
 # Copy logs to locations accessible from host

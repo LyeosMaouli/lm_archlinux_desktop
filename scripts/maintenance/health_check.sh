@@ -4,16 +4,14 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Configuration
-LOG_FILE="/var/log/health_check.log"
 REPORT_FILE="/tmp/health_check_report.txt"
 WARNING_THRESHOLD_DISK=85
 WARNING_THRESHOLD_MEMORY=80
@@ -24,37 +22,32 @@ WARNINGS=0
 ERRORS=0
 INFO_ITEMS=0
 
-# Logging functions
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-info() {
-    echo -e "${CYAN}ℹ INFO: $1${NC}"
-    log "INFO: $1"
+info_health() {
+    log_info_health "ℹ $1"
+    log_to_file "INFO: $1"
     INFO_ITEMS=$((INFO_ITEMS + 1))
 }
 
-warn() {
-    echo -e "${YELLOW}⚠ WARNING: $1${NC}"
-    log "WARNING: $1"
+warn_health() {
+    log_warn_health "⚠ $1"
+    log_to_file "WARNING: $1"
     WARNINGS=$((WARNINGS + 1))
 }
 
-error() {
-    echo -e "${RED}[FAIL] ERROR: $1${NC}"
-    log "ERROR: $1"
+error_health() {
+    log_error_health "❌ $1"
+    log_to_file "ERROR: $1"
     ERRORS=$((ERRORS + 1))
 }
 
-success() {
-    echo -e "${GREEN}[OK] OK: $1${NC}"
-    log "OK: $1"
+success_health() {
+    log_success_health "✅ $1"
+    log_to_file "OK: $1"
 }
 
 # Check system uptime and load
 check_system_load() {
-    info "Checking system load and uptime..."
+    info_health "Checking system load and uptime..."
     
     local uptime_info
     uptime_info=$(uptime)
@@ -63,20 +56,20 @@ check_system_load() {
     local cpu_cores
     cpu_cores=$(nproc)
     
-    info "System uptime: $(uptime -p)"
-    info "Load average (1min): $load_avg (cores: $cpu_cores)"
+    info_health "System uptime: $(uptime -p)"
+    info_health "Load average (1min): $load_avg (cores: $cpu_cores)"
     
     # Check if load is high
     if (( $(echo "$load_avg > $cpu_cores" | bc -l) )); then
-        warn "High system load: $load_avg (cores: $cpu_cores)"
+        warn_health "High system load: $load_avg (cores: $cpu_cores)"
     else
-        success "System load normal: $load_avg"
+        success_health "System load normal: $load_avg"
     fi
 }
 
 # Check memory usage
 check_memory() {
-    info "Checking memory usage..."
+    info_health "Checking memory usage..."
     
     local mem_info
     mem_info=$(free -m)
@@ -90,13 +83,13 @@ check_memory() {
     local mem_usage_percent
     mem_usage_percent=$(( (used_mem * 100) / total_mem ))
     
-    info "Memory usage: ${used_mem}MB / ${total_mem}MB (${mem_usage_percent}%)"
-    info "Available memory: ${available_mem}MB"
+    info_health "Memory usage: ${used_mem}MB / ${total_mem}MB (${mem_usage_percent}%)"
+    info_health "Available memory: ${available_mem}MB"
     
     if [[ $mem_usage_percent -gt $WARNING_THRESHOLD_MEMORY ]]; then
-        warn "High memory usage: ${mem_usage_percent}%"
+        warn_health "High memory usage: ${mem_usage_percent}%"
     else
-        success "Memory usage normal: ${mem_usage_percent}%"
+        success_health "Memory usage normal: ${mem_usage_percent}%"
     fi
     
     # Check swap usage
@@ -108,19 +101,19 @@ check_memory() {
     if [[ $swap_total -gt 0 ]]; then
         local swap_percent
         swap_percent=$(( (swap_used * 100) / swap_total ))
-        info "Swap usage: ${swap_used}MB / ${swap_total}MB (${swap_percent}%)"
+        info_health "Swap usage: ${swap_used}MB / ${swap_total}MB (${swap_percent}%)"
         
         if [[ $swap_percent -gt 50 ]]; then
-            warn "High swap usage: ${swap_percent}%"
+            warn_health "High swap usage: ${swap_percent}%"
         fi
     else
-        info "No swap configured"
+        info_health "No swap configured"
     fi
 }
 
 # Check disk usage
 check_disk_usage() {
-    info "Checking disk usage..."
+    info_health "Checking disk usage..."
     
     # Check all mounted filesystems
     while read -r filesystem size used avail percent mount; do
@@ -132,19 +125,19 @@ check_disk_usage() {
         local usage_num
         usage_num=$(echo "$percent" | tr -d '%')
         
-        info "Filesystem $mount: $used / $size ($percent)"
+        info_health "Filesystem $mount: $used / $size ($percent)"
         
         if [[ $usage_num -gt $WARNING_THRESHOLD_DISK ]]; then
-            warn "High disk usage on $mount: $percent"
+            warn_health "High disk usage on $mount: $percent"
         elif [[ $usage_num -gt 95 ]]; then
-            error "Critical disk usage on $mount: $percent"
+            error_health "Critical disk usage on $mount: $percent"
         else
-            success "Disk usage normal on $mount: $percent"
+            success_health "Disk usage normal on $mount: $percent"
         fi
     done < <(df -h | tail -n +2)
     
     # Check inode usage
-    info "Checking inode usage..."
+    info_health "Checking inode usage..."
     while read -r filesystem inodes used avail percent mount; do
         if [[ "$filesystem" =~ ^(tmpfs|devtmpfs|proc|sys|run) ]]; then
             continue
@@ -154,7 +147,7 @@ check_disk_usage() {
             local inode_usage
             inode_usage=$(echo "$percent" | tr -d '%')
             if [[ $inode_usage -gt 80 ]]; then
-                warn "High inode usage on $mount: $percent"
+                warn_health "High inode usage on $mount: $percent"
             fi
         fi
     done < <(df -i | tail -n +2)
@@ -162,7 +155,7 @@ check_disk_usage() {
 
 # Check system services
 check_services() {
-    info "Checking critical system services..."
+    info_health "Checking critical system services..."
     
     local critical_services=("NetworkManager" "sshd" "systemd-resolved" "systemd-timesyncd")
     
@@ -177,14 +170,14 @@ check_services() {
     
     for service in "${critical_services[@]}"; do
         if systemctl is-active --quiet "$service"; then
-            success "Service $service is running"
+            success_health "Service $service is running"
         elif systemctl is-enabled --quiet "$service" 2>/dev/null; then
-            warn "Service $service is enabled but not running"
+            warn_health "Service $service is enabled but not running"
         else
             if systemctl list-unit-files | grep -q "^$service"; then
-                warn "Service $service is not enabled"
+                warn_health "Service $service is not enabled"
             else
-                info "Service $service not installed (optional)"
+                info_health "Service $service not installed (optional)"
             fi
         fi
     done
@@ -194,117 +187,117 @@ check_services() {
     failed_services=$(systemctl --failed --no-legend --no-pager | wc -l)
     
     if [[ $failed_services -gt 0 ]]; then
-        error "$failed_services failed service(s) detected"
+        error_health "$failed_services failed service(s) detected"
         systemctl --failed --no-pager | while read -r service; do
-            warn "Failed service: $service"
+            warn_health "Failed service: $service"
         done
     else
-        success "No failed services detected"
+        success_health "No failed services detected"
     fi
 }
 
 # Check network connectivity
 check_network() {
-    info "Checking network connectivity..."
+    info_health "Checking network connectivity..."
     
     # Check network interfaces
     local interfaces
     interfaces=$(ip link show | grep -E "^[0-9]+:" | awk -F': ' '{print $2}' | grep -v lo)
     
-    info "Network interfaces:"
+    info_health "Network interfaces:"
     echo "$interfaces" | while read -r interface; do
         if ip link show "$interface" | grep -q "state UP"; then
-            success "Interface $interface is UP"
+            success_health "Interface $interface is UP"
         else
-            warn "Interface $interface is DOWN"
+            warn_health "Interface $interface is DOWN"
         fi
     done
     
     # Check internet connectivity
     if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        success "Internet connectivity (8.8.8.8)"
+        success_health "Internet connectivity (8.8.8.8)"
     else
-        error "No internet connectivity"
+        error_health "No internet connectivity"
     fi
     
     if ping -c 1 -W 3 archlinux.org >/dev/null 2>&1; then
-        success "DNS resolution working (archlinux.org)"
+        success_health "DNS resolution working (archlinux.org)"
     else
-        warn "DNS resolution issues"
+        warn_health "DNS resolution issues"
     fi
     
     # Check listening ports
     local listening_ports
     listening_ports=$(ss -tuln | grep LISTEN | wc -l)
-    info "Listening network ports: $listening_ports"
+    info_health "Listening network ports: $listening_ports"
 }
 
 # Check security status
 check_security() {
-    info "Checking security status..."
+    info_health "Checking security status..."
     
     # Check firewall status
     if command -v ufw >/dev/null; then
         if ufw status | grep -q "Status: active"; then
-            success "UFW firewall is active"
+            success_health "UFW firewall is active"
         else
-            warn "UFW firewall is inactive"
+            warn_health "UFW firewall is inactive"
         fi
     else
-        info "UFW not installed"
+        info_health "UFW not installed"
     fi
     
     # Check fail2ban status
     if systemctl is-active --quiet fail2ban 2>/dev/null; then
-        success "Fail2ban is running"
+        success_health "Fail2ban is running"
     else
-        info "Fail2ban not running or not installed"
+        info_health "Fail2ban not running or not installed"
     fi
     
     # Check SSH configuration
     if [[ -f /etc/ssh/sshd_config ]]; then
         if grep -q "PermitRootLogin no" /etc/ssh/sshd_config; then
-            success "SSH root login disabled"
+            success_health "SSH root login disabled"
         else
-            warn "SSH root login may be enabled"
+            warn_health "SSH root login may be enabled"
         fi
         
         if grep -q "PasswordAuthentication no" /etc/ssh/sshd_config; then
-            success "SSH password authentication disabled"
+            success_health "SSH password authentication disabled"
         else
-            info "SSH password authentication enabled"
+            info_health "SSH password authentication enabled"
         fi
     fi
     
     # Check for world-writable files
-    info "Checking for security issues..."
+    info_health "Checking for security issues..."
     local world_writable
     world_writable=$(find /etc /usr/local -type f -perm -002 2>/dev/null | wc -l)
     if [[ $world_writable -gt 0 ]]; then
-        warn "$world_writable world-writable files found in system directories"
+        warn_health "$world_writable world-writable files found in system directories"
     else
-        success "No world-writable files in system directories"
+        success_health "No world-writable files in system directories"
     fi
 }
 
 # Check system logs for errors
 check_logs() {
-    info "Checking system logs for recent errors..."
+    info_health "Checking system logs for recent errors..."
     
     # Check journalctl for errors in the last 24 hours
     local error_count
     error_count=$(journalctl --since "24 hours ago" --priority=err --no-pager | wc -l)
     
     if [[ $error_count -gt 0 ]]; then
-        warn "$error_count error entries in logs (last 24h)"
+        warn_health "$error_count error_health entries in logs (last 24h)"
         
         # Show recent critical errors
-        info "Recent critical errors:"
+        info_health "Recent critical errors:"
         journalctl --since "24 hours ago" --priority=crit --no-pager | tail -5 | while read -r line; do
-            warn "Log: $line"
+            warn_health "Log: $line"
         done
     else
-        success "No critical errors in recent logs"
+        success_health "No critical errors in recent logs"
     fi
     
     # Check dmesg for hardware issues
@@ -312,15 +305,15 @@ check_logs() {
     dmesg_errors=$(dmesg | grep -i "error\|fail\|panic" | wc -l)
     
     if [[ $dmesg_errors -gt 0 ]]; then
-        warn "$dmesg_errors potential hardware issues in dmesg"
+        warn_health "$dmesg_errors potential hardware issues in dmesg"
     else
-        success "No hardware errors in dmesg"
+        success_health "No hardware errors in dmesg"
     fi
 }
 
 # Check package system
 check_packages() {
-    info "Checking package system..."
+    info_health "Checking package system..."
     
     # Check for partial upgrades
     if command -v pacman >/dev/null; then
@@ -328,9 +321,9 @@ check_packages() {
         available_updates=$(pacman -Qu 2>/dev/null | wc -l)
         
         if [[ $available_updates -gt 0 ]]; then
-            info "$available_updates package updates available"
+            info_health "$available_updates package updates available"
         else
-            success "System packages are up to date"
+            success_health "System packages are up to date"
         fi
         
         # Check for orphaned packages
@@ -338,23 +331,23 @@ check_packages() {
         orphans=$(pacman -Qtdq 2>/dev/null | wc -l)
         
         if [[ $orphans -gt 0 ]]; then
-            info "$orphans orphaned packages found"
+            info_health "$orphans orphaned packages found"
         else
-            success "No orphaned packages"
+            success_health "No orphaned packages"
         fi
         
         # Check pacman database
         if pacman -Q linux >/dev/null 2>&1; then
-            success "Package database functional"
+            success_health "Package database functional"
         else
-            error "Package database issues detected"
+            error_health "Package database issues detected"
         fi
     fi
 }
 
 # Check hardware health
 check_hardware() {
-    info "Checking hardware health..."
+    info_health "Checking hardware health..."
     
     # Check CPU temperature if sensors available
     if command -v sensors >/dev/null; then
@@ -362,18 +355,18 @@ check_hardware() {
         cpu_temp=$(sensors | grep -E "(Core|Package)" | head -1 | awk '{print $3}' | tr -d '+°C' || echo "0")
         
         if [[ -n "$cpu_temp" ]] && [[ "$cpu_temp" != "0" ]]; then
-            info "CPU temperature: ${cpu_temp}°C"
+            info_health "CPU temperature: ${cpu_temp}°C"
             
             if (( $(echo "$cpu_temp > 80" | bc -l) )); then
-                warn "High CPU temperature: ${cpu_temp}°C"
+                warn_health "High CPU temperature: ${cpu_temp}°C"
             elif (( $(echo "$cpu_temp > 90" | bc -l) )); then
-                error "Critical CPU temperature: ${cpu_temp}°C"
+                error_health "Critical CPU temperature: ${cpu_temp}°C"
             else
-                success "CPU temperature normal: ${cpu_temp}°C"
+                success_health "CPU temperature normal: ${cpu_temp}°C"
             fi
         fi
     else
-        info "Temperature sensors not available (install lm_sensors)"
+        info_health "Temperature sensors not available (install lm_sensors)"
     fi
     
     # Check SMART status for disks
@@ -384,22 +377,22 @@ check_hardware() {
                 smart_status=$(smartctl -H "$disk" 2>/dev/null | grep "SMART overall-health" | awk '{print $NF}' || echo "UNKNOWN")
                 
                 if [[ "$smart_status" == "PASSED" ]]; then
-                    success "SMART status for $disk: PASSED"
+                    success_health "SMART status for $disk: PASSED"
                 elif [[ "$smart_status" == "FAILED" ]]; then
-                    error "SMART status for $disk: FAILED"
+                    error_health "SMART status for $disk: FAILED"
                 else
-                    info "SMART status for $disk: $smart_status"
+                    info_health "SMART status for $disk: $smart_status"
                 fi
             fi
         done
     else
-        info "SMART monitoring not available (install smartmontools)"
+        info_health "SMART monitoring not available (install smartmontools)"
     fi
 }
 
 # Generate comprehensive report
 generate_report() {
-    info "Generating health check report..."
+    info_health "Generating health check report..."
     
     cat > "$REPORT_FILE" << EOF
 System Health Check Report
@@ -448,7 +441,7 @@ $(journalctl --since "24 hours ago" --priority=err --no-pager | tail -10 || echo
 RECOMMENDATIONS
 ===============
 $(if [[ $ERRORS -gt 0 ]]; then
-echo "- CRITICAL: Address error conditions immediately"
+echo "- CRITICAL: Address error_health conditions immediately"
 echo "- Review system logs: journalctl -xb"
 echo "- Check hardware status"
 fi)
@@ -467,7 +460,7 @@ fi)
 
 EOF
     
-    success "Health check report generated: $REPORT_FILE"
+    success_health "Health check report generated: $REPORT_FILE"
 }
 
 # Main health check function
