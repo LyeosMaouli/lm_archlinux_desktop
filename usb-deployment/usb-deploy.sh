@@ -328,9 +328,9 @@ load_deploy_config() {
             return 1
         }
         
-        # Apply USB-specific overrides if provided
-        [[ -z "$PASSWORD_MODE" ]] && PASSWORD_MODE="${PASSWORD_MODE:-generate}"
-        [[ -z "$PASSWORD_FILE_NAME" ]] && PASSWORD_FILE_NAME="${PASSWORD_FILE_NAME:-passwords.enc}"
+        # Configuration loaded from deploy.conf successfully
+        # USB script variables are empty (""), so deploy.conf values are used
+        log_info "Using PASSWORD_MODE from deploy.conf: $PASSWORD_MODE"
         
         log_success "Configuration loaded from deploy.conf"
         return 0

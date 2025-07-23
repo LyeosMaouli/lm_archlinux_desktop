@@ -76,7 +76,9 @@ DEFAULT_USER="lyeosmaouli"
 DEFAULT_ENCRYPTION="true"
 
 # Project structure
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [[ -z "$PROJECT_ROOT" ]]; then
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 CONFIG_DIR="$PROJECT_ROOT/config"
 
 # Configuration variables (can be overridden by CLI or config file)
