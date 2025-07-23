@@ -46,7 +46,9 @@ if [[ -z "$RED" ]]; then
 fi
 
 # Get script directory (USB mount point)
-USB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$USB_DIR" ]]; then
+    USB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 
 # Setup logging
 if [[ -z "$LOG_DIR" ]]; then

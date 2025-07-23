@@ -4,17 +4,25 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors for output (only set if not already defined)
+if [[ -z "$RED" ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+fi
 
-# Log file paths
-VERBOSE_LOG="/var/log/auto_install_verbose.log"
-VM_VERBOSE_LOG="/var/log/auto_vm_test_verbose.log"
-STANDARD_LOG="/var/log/auto_install.log"
+# Log file paths (only set if not already defined)
+if [[ -z "$VERBOSE_LOG" ]]; then
+    VERBOSE_LOG="/var/log/auto_install_verbose.log"
+fi
+if [[ -z "$VM_VERBOSE_LOG" ]]; then
+    VM_VERBOSE_LOG="/var/log/auto_vm_test_verbose.log"
+fi
+if [[ -z "$STANDARD_LOG" ]]; then
+    STANDARD_LOG="/var/log/auto_install.log"
+fi
 
 info() {
     echo -e "${GREEN}INFO: $1${NC}"

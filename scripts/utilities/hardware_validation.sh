@@ -4,17 +4,23 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Colors for output (only set if not already defined)
+if [[ -z "$RED" ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m' # No Color
+fi
 
 # Configuration
-LOG_FILE="/var/log/hardware_validation.log"
-REPORT_FILE="/tmp/hardware_validation_report.txt"
+if [[ -z "$LOG_FILE" ]]; then
+    LOG_FILE="/var/log/hardware_validation.log"
+fi
+if [[ -z "$REPORT_FILE" ]]; then
+    REPORT_FILE="/tmp/hardware_validation_report.txt"
+fi
 
 # Minimum requirements
 MIN_RAM_GB=4

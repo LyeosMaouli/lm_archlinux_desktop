@@ -4,7 +4,9 @@
 
 set -euo pipefail
 # Load common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
     echo "Error: Cannot load common.sh"
     exit 1
