@@ -78,6 +78,9 @@ secrets/
 .env
 .secrets
 
+# Encrypted password files - NEVER commit password files
+*.enc
+
 # Build artifacts
 *.deb
 *.rpm

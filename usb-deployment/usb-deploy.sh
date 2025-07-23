@@ -250,6 +250,9 @@ download_deployment_script() {
             log_info "Commit date: $commit_date"
             log_info "Project available at: $project_dir"
             
+            # Copy any .enc files from USB to project root for auto-detection
+            copy_enc_files_to_project "$project_dir"
+            
             # Cleanup temp directory
             rm -rf "$temp_repo_dir"
             return 0
@@ -262,6 +265,47 @@ download_deployment_script() {
         log_error "Failed to clone repository from: $repo_url"
         return 1
     fi
+}
+
+# Copy any .enc files from USB to project root for auto-detection
+copy_enc_files_to_project() {
+    local project_dir="$1"
+    
+    log_info "Checking for .enc password files on USB..."
+    
+    # Find all .enc files on USB (excluding the project directory itself)
+    local enc_files=()
+    while IFS= read -r -d '' enc_file; do
+        # Skip if the .enc file is already inside the project directory
+        if [[ "$enc_file" != "$project_dir"* ]]; then
+            enc_files+=("$enc_file")
+        fi
+    done < <(find "$USB_DIR" -maxdepth 2 -name "*.enc" -type f -print0 2>/dev/null)
+    
+    if [[ ${#enc_files[@]} -eq 0 ]]; then
+        log_info "No .enc password files found on USB"
+        return 0
+    fi
+    
+    log_success "Found ${#enc_files[@]} .enc file(s) on USB"
+    
+    # Copy each .enc file to project root
+    for enc_file in "${enc_files[@]}"; do
+        local filename=$(basename "$enc_file")
+        local dest_file="$project_dir/$filename"
+        
+        log_info "Copying $filename to project root for auto-detection..."
+        
+        if cp "$enc_file" "$dest_file"; then
+            log_success "Copied: $filename -> $dest_file"
+            # Set secure permissions
+            chmod 600 "$dest_file" 2>/dev/null || true
+        else
+            log_warn "Failed to copy $filename"
+        fi
+    done
+    
+    log_success "Encrypted password files ready for auto-detection by deploy.sh"
 }
 
 # Setup password file
@@ -351,14 +395,10 @@ run_deployment() {
     load_deploy_config
     
     echo -e "${YELLOW}Deployment Configuration:${NC}"
-    echo "  Password Mode: $PASSWORD_MODE"
     echo "  GitHub Repo: $GITHUB_USERNAME/$GITHUB_REPO"
     echo "  USB Directory: $USB_DIR"
-    echo "  Configuration: Using centralized deploy.conf"
-    
-    if [[ "$PASSWORD_MODE" == "file" ]]; then
-        echo "  Password File: $PASSWORD_FILE_NAME"
-    fi
+    echo "  Configuration: Using centralized deploy.conf with auto-detection"
+    echo "  Password Files: Auto-detected .enc files (if present)"
     
     echo
     echo -e "${BLUE}The deployment will now start...${NC}"
@@ -376,26 +416,11 @@ run_deployment() {
     local project_dir="$USB_DIR/lm_archlinux_desktop"
     cd "$project_dir"
     
-    # Run deployment with configuration file (deploy.conf will be automatically loaded)
-    local deploy_args=("full")
+    # Run deployment - deploy.sh will auto-detect .enc files and configure itself
+    log_info "Executing: ./scripts/deploy.sh full"
+    log_info "Note: deploy.sh will auto-detect .enc files and update configuration automatically"
     
-    # Add password-specific arguments
-    case "$PASSWORD_MODE" in
-        "file")
-            deploy_args+=(--password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME")
-            ;;
-        "env"|"generate"|"interactive")
-            deploy_args+=(--password "$PASSWORD_MODE")
-            ;;
-        *)
-            log_error "Unknown password mode: $PASSWORD_MODE"
-            return 1
-            ;;
-    esac
-    
-    # Run the deployment script (it will load deploy.conf automatically)
-    log_info "Executing: ./scripts/deploy.sh ${deploy_args[*]}"
-    ./scripts/deploy.sh "${deploy_args[@]}"
+    ./scripts/deploy.sh full
 }
 
 # Show help
@@ -476,12 +501,6 @@ main() {
             # Download deployment script
             if ! download_deployment_script; then
                 log_error "Failed to download deployment script"
-                exit 1
-            fi
-            
-            # Setup password file if needed
-            if ! setup_password_file; then
-                log_error "Password file setup failed"
                 exit 1
             fi
             

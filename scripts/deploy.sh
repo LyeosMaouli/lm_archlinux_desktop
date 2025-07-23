@@ -271,6 +271,53 @@ load_configuration() {
     fi
 }
 
+# Auto-detect .enc files and update configuration
+auto_detect_enc_files() {
+    log_info "Checking for .enc password files in project root..."
+    
+    # Find .enc files in project root
+    local enc_files=()
+    while IFS= read -r -d '' enc_file; do
+        enc_files+=("$enc_file")
+    done < <(find "$PROJECT_ROOT" -maxdepth 1 -name "*.enc" -type f -print0 2>/dev/null)
+    
+    if [[ ${#enc_files[@]} -eq 0 ]]; then
+        log_info "No .enc files found, using current PASSWORD_MODE: $PASSWORD_MODE"
+        return 0
+    fi
+    
+    # Found .enc file(s)
+    local enc_file="${enc_files[0]}"  # Use the first one found
+    local enc_filename=$(basename "$enc_file")
+    log_success "Found encrypted password file: $enc_filename"
+    
+    # Update deploy.conf to use the found .enc file
+    local deploy_conf="$CONFIG_DIR/deploy.conf"
+    if [[ -f "$deploy_conf" ]]; then
+        log_info "Updating deploy.conf to use detected password file..."
+        
+        # Create a backup
+        cp "$deploy_conf" "$deploy_conf.bak.$(date +%s)" 2>/dev/null || true
+        
+        # Update PASSWORD_MODE and PASSWORD_FILE
+        sed -i "s/^PASSWORD_MODE=.*/PASSWORD_MODE=\"file\"/" "$deploy_conf"
+        sed -i "s|^PASSWORD_FILE=.*|PASSWORD_FILE=\"$enc_filename\"|" "$deploy_conf"
+        
+        log_success "Updated deploy.conf:"
+        log_info "  PASSWORD_MODE=\"file\""
+        log_info "  PASSWORD_FILE=\"$enc_filename\""
+        
+        # Reload configuration to pick up the changes
+        PASSWORD_MODE="file"
+        PASSWORD_FILE="$enc_filename"
+        
+    else
+        log_warn "deploy.conf not found, using detected file directly"
+        PASSWORD_MODE="file"
+        PASSWORD_FILE="$enc_filename"
+    fi
+}
+
 parse_arguments() {
     if [[ $# -eq 0 ]]; then
         show_usage
@@ -662,6 +709,10 @@ main() {
     # Parse arguments and load configuration
     parse_arguments "$@"
     load_configuration
+    
+    # Auto-detect .enc files and update configuration if needed
+    auto_detect_enc_files
+    
     validate_arguments
     
     # Show banner
