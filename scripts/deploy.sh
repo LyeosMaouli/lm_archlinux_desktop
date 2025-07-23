@@ -30,13 +30,38 @@
 #   --help, -h             Show help
 #
 
-# Load common functions
+# Try to load common functions - handle different deployment scenarios
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=internal/common.sh
-source "$SCRIPT_DIR/internal/common.sh" || {
-    echo "Error: Cannot load common.sh from $SCRIPT_DIR/internal/common.sh"
-    exit 1
-}
+
+# Try multiple paths for common.sh
+COMMON_PATHS=(
+    "$SCRIPT_DIR/internal/common.sh"           # When in scripts/ directory
+    "$SCRIPT_DIR/../scripts/internal/common.sh" # When in project root
+    "$SCRIPT_DIR/scripts/internal/common.sh"   # When in project root (alternative)
+)
+
+COMMON_LOADED=false
+for COMMON_PATH in "${COMMON_PATHS[@]}"; do
+    if [[ -f "$COMMON_PATH" ]]; then
+        # shellcheck source=internal/common.sh
+        source "$COMMON_PATH" && COMMON_LOADED=true && break
+    fi
+done
+
+if [[ "$COMMON_LOADED" != "true" ]]; then
+    echo "Warning: Cannot load common.sh, using basic logging"
+    
+    # Basic logging functions as fallback
+    LOG_DIR="$(pwd)/logs"
+    mkdir -p "$LOG_DIR"
+    LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d_%H%M%S).log"
+    
+    log_info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $*" | tee -a "$LOG_FILE"; }
+    log_warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARN: $*" | tee -a "$LOG_FILE"; }
+    log_error() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" | tee -a "$LOG_FILE"; }
+    log_success() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] SUCCESS: $*" | tee -a "$LOG_FILE"; }
+    log_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
+fi
 
 # Script metadata
 readonly SCRIPT_NAME="deploy.sh"

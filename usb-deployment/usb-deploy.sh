@@ -8,7 +8,8 @@
 # 4. Boot from Arch Linux ISO
 # 5. Mount USB stick and run: ./usb-deploy.sh
 #
-# This script handles everything automatically!
+# This script downloads the complete project structure and runs deployment
+# with full logging support. All logs are saved to USB for debugging.
 
 set -euo pipefail
 
@@ -227,10 +228,28 @@ download_deployment_script() {
     if git clone "$repo_url" "$temp_repo_dir"; then
         log_success "Repository cloned successfully"
         
-        # Copy the deployment script
-        if [[ -f "$temp_repo_dir/scripts/deploy.sh" ]]; then
-            cp "$temp_repo_dir/scripts/deploy.sh" "$USB_DIR/deploy.sh"
-            chmod +x "$USB_DIR/deploy.sh"
+        # Copy the entire project structure to ensure all dependencies are available
+        if [[ -d "$temp_repo_dir/scripts" ]]; then
+            # Create project directory structure
+            local project_dir="$USB_DIR/lm_archlinux_desktop"
+            mkdir -p "$project_dir"
+            
+            # Copy essential directories
+            cp -r "$temp_repo_dir/scripts" "$project_dir/"
+            cp -r "$temp_repo_dir/configs" "$project_dir/" 2>/dev/null || true
+            cp -r "$temp_repo_dir/templates" "$project_dir/" 2>/dev/null || true
+            cp -r "$temp_repo_dir/files" "$project_dir/" 2>/dev/null || true
+            cp -r "$temp_repo_dir/profiles" "$project_dir/" 2>/dev/null || true
+            
+            # Copy root files
+            cp "$temp_repo_dir/local.yml" "$project_dir/" 2>/dev/null || true
+            cp "$temp_repo_dir/Makefile" "$project_dir/" 2>/dev/null || true
+            cp "$temp_repo_dir/README.md" "$project_dir/" 2>/dev/null || true
+            cp "$temp_repo_dir/CLAUDE.md" "$project_dir/" 2>/dev/null || true
+            
+            # Make scripts executable
+            chmod +x "$project_dir/scripts/deploy.sh"
+            chmod +x "$project_dir/scripts"/**/*.sh 2>/dev/null || true
             
             # Show commit info for verification
             cd "$temp_repo_dir"
@@ -238,14 +257,15 @@ download_deployment_script() {
             local commit_date=$(git log -1 --format="%ci")
             cd - >/dev/null
             
-            log_success "Deployment script copied from latest commit: ${commit_sha:0:8}"
+            log_success "Complete project copied from latest commit: ${commit_sha:0:8}"
             log_info "Commit date: $commit_date"
+            log_info "Project available at: $project_dir"
             
             # Cleanup temp directory
             rm -rf "$temp_repo_dir"
             return 0
         else
-            log_error "Deployment script not found in repository"
+            log_error "Scripts directory not found in repository"
             rm -rf "$temp_repo_dir"
             return 1
         fi
@@ -334,22 +354,23 @@ run_deployment() {
         return 1
     fi
     
-    # Change to USB directory
-    cd "$USB_DIR"
+    # Change to project directory
+    local project_dir="$USB_DIR/lm_archlinux_desktop"
+    cd "$project_dir"
     
     # Run deployment with appropriate parameters
     case "$PASSWORD_MODE" in
         "file")
-            ./deploy.sh full --password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
+            ./scripts/deploy.sh full --password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
             ;;
         "env")
-            ./deploy.sh full --password env
+            ./scripts/deploy.sh full --password env
             ;;
         "generate")
-            ./deploy.sh full --password generate
+            ./scripts/deploy.sh full --password generate
             ;;
         "interactive")
-            ./deploy.sh full --password interactive
+            ./scripts/deploy.sh full --password interactive
             ;;
         *)
             log_error "Unknown password mode: $PASSWORD_MODE"
@@ -380,6 +401,12 @@ Usage:
 4. Boot from Arch Linux ISO
 5. Mount USB stick: mount /dev/sdX1 /mnt/usb
 6. Run: cd /mnt/usb && ./usb-deploy.sh
+
+The script will:
+- Download the complete project from GitHub
+- Create lm_archlinux_desktop/ directory on USB
+- Run deployment with full logging support
+- Save all logs to USB for debugging
 
 Password Modes:
 - file: Use encrypted password file (passwords.enc)
