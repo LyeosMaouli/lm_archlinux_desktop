@@ -31,7 +31,9 @@
 #
 
 # Try to load common functions - handle different deployment scenarios
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 
 # Try multiple paths for common.sh
 COMMON_PATHS=(
@@ -52,9 +54,13 @@ if [[ "$COMMON_LOADED" != "true" ]]; then
     echo "Warning: Cannot load common.sh, using basic logging"
     
     # Basic logging functions as fallback
-    LOG_DIR="$(pwd)/logs"
+    if [[ -z "$LOG_DIR" ]]; then
+        LOG_DIR="$(pwd)/logs"
+    fi
     mkdir -p "$LOG_DIR"
-    LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d_%H%M%S).log"
+    if [[ -z "$LOG_FILE" ]]; then
+        LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d_%H%M%S).log"
+    fi
     
     log_info() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $*" | tee -a "$LOG_FILE"; }
     log_warn() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARN: $*" | tee -a "$LOG_FILE"; }
@@ -79,7 +85,9 @@ DEFAULT_ENCRYPTION="true"
 if [[ -z "$PROJECT_ROOT" ]]; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 fi
-CONFIG_DIR="$PROJECT_ROOT/config"
+if [[ -z "$CONFIG_DIR" ]]; then
+    CONFIG_DIR="$PROJECT_ROOT/config"
+fi
 
 # Configuration variables (can be overridden by CLI or config file)
 PROFILE="$DEFAULT_PROFILE"

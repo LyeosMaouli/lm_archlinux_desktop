@@ -269,7 +269,9 @@ cat > /usr/local/bin/security-monitor.sh << 'EOF'
 #!/bin/bash
 # Security monitoring script
 
-LOG_FILE="/var/log/security-monitor.log"
+if [[ -z "$LOG_FILE" ]]; then
+    LOG_FILE="/var/log/security-monitor.log"
+fi
 ALERT_EMAIL="${ADMIN_EMAIL:-root@localhost}"
 
 # Check for failed logins

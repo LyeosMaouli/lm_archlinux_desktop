@@ -26,7 +26,9 @@
 #
 
 # Load common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 # shellcheck source=../internal/common.sh
 source "$SCRIPT_DIR/../internal/common.sh"
 

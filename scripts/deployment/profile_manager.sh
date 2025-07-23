@@ -5,14 +5,18 @@
 set -euo pipefail
 
 # Load common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
     echo "Error: Cannot load common.sh"
     exit 1
 }
 
 # Configuration
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [[ -z "$PROJECT_ROOT" ]]; then
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
 PROFILES_DIR="$PROJECT_ROOT/configs/profiles"
 CURRENT_PROFILE_FILE="/etc/arch-hyprland-profile"
 

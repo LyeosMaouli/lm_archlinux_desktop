@@ -10,16 +10,22 @@ if [[ -f "$SCRIPT_DIR/../internal/common.sh" ]]; then
     source "$SCRIPT_DIR/../internal/common.sh"
 else
     # Basic logging fallback
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    CYAN='\033[0;36m'
-    NC='\033[0m' # No Color
+    if [[ -z "$RED" ]]; then
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        BLUE='\033[0;34m'
+        CYAN='\033[0;36m'
+        NC='\033[0m' # No Color
+    fi
     
-    LOG_DIR="./logs"
+    if [[ -z "$LOG_DIR" ]]; then
+        LOG_DIR="./logs"
+    fi
     mkdir -p "$LOG_DIR"
-    LOG_FILE="$LOG_DIR/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+    if [[ -z "$LOG_FILE" ]]; then
+        LOG_FILE="$LOG_DIR/bootstrap-$(date +%Y%m%d_%H%M%S).log"
+    fi
     
     log_info() { echo -e "${GREEN}INFO: $*${NC}" | tee -a "$LOG_FILE"; }
     log_warn() { echo -e "${YELLOW}WARNING: $*${NC}" | tee -a "$LOG_FILE"; }

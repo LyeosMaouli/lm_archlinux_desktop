@@ -5,7 +5,9 @@
 set -euo pipefail
 
 # Load common functions
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
     echo "Error: Cannot load common.sh"
     exit 1
@@ -154,7 +156,9 @@ cat > /usr/local/bin/firewall-monitor.sh << 'EOF'
 #!/bin/bash
 # UFW monitoring script
 
-LOG_FILE="/var/log/ufw-monitor.log"
+if [[ -z "$LOG_FILE" ]]; then
+    LOG_FILE="/var/log/ufw-monitor.log"
+fi
 ALERT_EMAIL="${ADMIN_EMAIL:-root@localhost}"
 
 # Check for suspicious activity

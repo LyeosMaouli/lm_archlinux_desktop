@@ -35,21 +35,27 @@ WIFI_PASSWORD=""          # WiFi password (empty = prompt if SSID set)
 # SCRIPT STARTS HERE - DO NOT EDIT
 # =====================================
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m'
+# Colors for output (only set if not already defined)
+if [[ -z "$RED" ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    PURPLE='\033[0;35m'
+    NC='\033[0m'
+fi
 
 # Get script directory (USB mount point)
 USB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Setup logging
-LOG_DIR="$USB_DIR/logs"
+if [[ -z "$LOG_DIR" ]]; then
+    LOG_DIR="$USB_DIR/logs"
+fi
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/usb-deploy-$(date +%Y%m%d_%H%M%S).log"
+if [[ -z "$LOG_FILE" ]]; then
+    LOG_FILE="$LOG_DIR/usb-deploy-$(date +%Y%m%d_%H%M%S).log"
+fi
 
 # Function to log to both console and file
 log_to_file() {

@@ -4,7 +4,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$SCRIPT_DIR" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "$SCRIPT_DIR/../internal/common.sh" || {
     echo "Error: Cannot load common.sh"
     exit 1
@@ -166,7 +168,9 @@ cat > /usr/local/bin/fail2ban-monitor.sh << 'EOF'
 #!/bin/bash
 # Fail2ban monitoring script
 
-LOG_FILE="/var/log/fail2ban-monitor.log"
+if [[ -z "$LOG_FILE" ]]; then
+    LOG_FILE="/var/log/fail2ban-monitor.log"
+fi
 ALERT_EMAIL="${ADMIN_EMAIL:-root@localhost}"
 
 # Check fail2ban status
