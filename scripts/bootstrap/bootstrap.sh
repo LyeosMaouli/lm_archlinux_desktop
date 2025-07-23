@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/../internal/common.sh" ]]; then
     source "$SCRIPT_DIR/../internal/common.sh"
 else
     # Basic logging fallback
-    if [[ -z "$RED" ]]; then
+    if [[ -z "${RED:-}" ]]; then
         RED='\033[0;31m'
         GREEN='\033[0;32m'
         YELLOW='\033[1;33m'

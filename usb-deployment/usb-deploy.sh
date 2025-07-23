@@ -36,7 +36,7 @@ WIFI_PASSWORD=""          # WiFi password (empty = prompt if SSID set)
 # =====================================
 
 # Colors for output (only set if not already defined)
-if [[ -z "$RED" ]]; then
+if [[ -z "${RED:-}" ]]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
     YELLOW='\033[1;33m'
@@ -144,7 +144,7 @@ setup_network() {
     if [[ -n "$WIFI_SSID" ]]; then
         log_info "Connecting to WiFi network: $WIFI_SSID"
         
-        if [[ -z "$WIFI_PASSWORD" ]]; then
+        if [[ -z "${WIFI_PASSWORD:-}" ]]; then
             echo -n "Enter WiFi password for $WIFI_SSID: "
             read -s WIFI_PASSWORD
             echo
