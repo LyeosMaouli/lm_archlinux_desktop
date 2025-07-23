@@ -12,6 +12,13 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly LOG_DIR="$PROJECT_ROOT/logs"
 readonly CONFIG_DIR="$PROJECT_ROOT/config"
+readonly CACHE_DIR="$PROJECT_ROOT/.cache"
+
+# Performance and caching configuration
+ENABLE_CACHING=${ENABLE_CACHING:-true}
+CACHE_TTL=${CACHE_TTL:-3600}  # 1 hour default TTL
+PARALLEL_JOBS=${PARALLEL_JOBS:-$(nproc 2>/dev/null || echo 4)}
+MAX_PARALLEL_JOBS=${MAX_PARALLEL_JOBS:-8}
 
 # Initialize logging
 mkdir -p "$LOG_DIR"
@@ -520,6 +527,322 @@ is_laptop() {
 }
 
 #
+# Performance and Caching Functions
+#
+
+# Initialize cache directory
+init_cache() {
+    ensure_dir "$CACHE_DIR" 700
+    ensure_dir "$CACHE_DIR/functions" 700
+    ensure_dir "$CACHE_DIR/downloads" 700
+    ensure_dir "$CACHE_DIR/ansible" 700
+    ensure_dir "$CACHE_DIR/packages" 700
+}
+
+# Generate cache key from input
+generate_cache_key() {
+    local input="$*"
+    echo -n "$input" | sha256sum | cut -d' ' -f1
+}
+
+# Check if cache entry is valid
+is_cache_valid() {
+    local cache_file="$1"
+    local ttl=${2:-$CACHE_TTL}
+    
+    if [[ ! -f "$cache_file" ]]; then
+        return 1
+    fi
+    
+    local file_age
+    file_age=$(stat -c %Y "$cache_file" 2>/dev/null || echo 0)
+    local current_time=$(date +%s)
+    local age=$((current_time - file_age))
+    
+    if [[ $age -gt $ttl ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+# Cache function result
+cache_function_result() {
+    local func_name="$1"
+    local cache_key="$2"
+    local ttl=${3:-$CACHE_TTL}
+    shift 3
+    local func_args=("$@")
+    
+    if [[ "$ENABLE_CACHING" != "true" ]]; then
+        "$func_name" "${func_args[@]}"
+        return $?
+    fi
+    
+    local cache_file="$CACHE_DIR/functions/${func_name}_${cache_key}"
+    local cache_meta="$cache_file.meta"
+    
+    # Check if cache is valid
+    if is_cache_valid "$cache_file" "$ttl"; then
+        log_debug "Cache hit for $func_name($cache_key)"
+        cat "$cache_file"
+        return $(cat "$cache_meta" 2>/dev/null || echo 0)
+    fi
+    
+    log_debug "Cache miss for $func_name($cache_key)"
+    
+    # Execute function and cache result
+    local temp_file="$cache_file.tmp"
+    local exit_code=0
+    
+    "$func_name" "${func_args[@]}" > "$temp_file" || exit_code=$?
+    
+    # Store result and exit code
+    mv "$temp_file" "$cache_file"
+    echo "$exit_code" > "$cache_meta"
+    
+    cat "$cache_file"
+    return $exit_code
+}
+
+# Clear cache
+clear_cache() {
+    local cache_type=${1:-"all"}
+    
+    case "$cache_type" in
+        all)
+            log_info "Clearing all cache..."
+            rm -rf "$CACHE_DIR"/*
+            ;;
+        functions)
+            log_info "Clearing function cache..."
+            rm -rf "$CACHE_DIR/functions"/*
+            ;;
+        downloads)
+            log_info "Clearing download cache..."
+            rm -rf "$CACHE_DIR/downloads"/*
+            ;;
+        ansible)
+            log_info "Clearing Ansible cache..."
+            rm -rf "$CACHE_DIR/ansible"/*
+            ;;
+        packages)
+            log_info "Clearing package cache..."
+            rm -rf "$CACHE_DIR/packages"/*
+            ;;
+        *)
+            log_error "Unknown cache type: $cache_type"
+            return 1
+            ;;
+    esac
+}
+
+# Parallel execution with job control
+parallel_execute() {
+    local max_jobs=${1:-$PARALLEL_JOBS}
+    shift
+    local commands=("$@")
+    
+    if [[ ${#commands[@]} -eq 0 ]]; then
+        log_error "No commands provided for parallel execution"
+        return 1
+    fi
+    
+    # Limit max jobs
+    if [[ $max_jobs -gt $MAX_PARALLEL_JOBS ]]; then
+        max_jobs=$MAX_PARALLEL_JOBS
+        log_warn "Limiting parallel jobs to $MAX_PARALLEL_JOBS"
+    fi
+    
+    log_info "Executing ${#commands[@]} commands with $max_jobs parallel jobs"
+    
+    local pids=()
+    local results=()
+    local job_count=0
+    
+    for cmd in "${commands[@]}"; do
+        # Wait if we've reached max jobs
+        while [[ ${#pids[@]} -ge $max_jobs ]]; do
+            wait_for_job pids results
+        done
+        
+        # Start new job
+        (
+            log_debug "Starting parallel job: $cmd"
+            eval "$cmd"
+        ) &
+        
+        pids+=($!)
+        job_count=$((job_count + 1))
+        log_debug "Started job $job_count (PID: ${pids[-1]})"
+    done
+    
+    # Wait for all remaining jobs
+    while [[ ${#pids[@]} -gt 0 ]]; do
+        wait_for_job pids results
+    done
+    
+    # Check results
+    local failed=0
+    for result in "${results[@]}"; do
+        if [[ $result -ne 0 ]]; then
+            failed=$((failed + 1))
+        fi
+    done
+    
+    if [[ $failed -gt 0 ]]; then
+        log_error "$failed out of ${#commands[@]} parallel jobs failed"
+        return 1
+    fi
+    
+    log_success "All $job_count parallel jobs completed successfully"
+    return 0
+}
+
+# Wait for one job to complete
+wait_for_job() {
+    local -n pids_ref=$1
+    local -n results_ref=$2
+    
+    # Wait for any job to complete
+    local completed_pid
+    completed_pid=$(wait -n; echo $?)
+    
+    # Find which PID completed and get its exit status
+    local i=0
+    while [[ $i -lt ${#pids_ref[@]} ]]; do
+        local pid=${pids_ref[$i]}
+        if ! kill -0 "$pid" 2>/dev/null; then
+            # This process has completed
+            wait "$pid"
+            local exit_status=$?
+            results_ref+=($exit_status)
+            
+            log_debug "Job completed (PID: $pid, Exit: $exit_status)"
+            
+            # Remove from active PIDs array
+            unset pids_ref[$i]
+            pids_ref=("${pids_ref[@]}")  # Reindex array
+            break
+        fi
+        i=$((i + 1))
+    done
+}
+
+# Cached network check
+cached_check_network() {
+    local cache_key
+    cache_key=$(generate_cache_key "network_check" "$@")
+    cache_function_result "check_network" "$cache_key" 300 "$@"  # 5 minute TTL
+}
+
+# Cached package availability check
+cached_check_package() {
+    local package="$1"
+    local cache_key
+    cache_key=$(generate_cache_key "package_check" "$package")
+    cache_function_result "_check_package_availability" "$cache_key" 1800 "$package"  # 30 minute TTL
+}
+
+# Internal function for package checking
+_check_package_availability() {
+    local package="$1"
+    if pacman -Ss "^${package}$" >/dev/null 2>&1; then
+        echo "available"
+        return 0
+    else
+        echo "not_available"
+        return 1
+    fi
+}
+
+# Parallel package installation
+parallel_install_packages() {
+    local packages=("$@")
+    local max_jobs=${PARALLEL_JOBS:-4}
+    
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        log_error "No packages specified for installation"
+        return 1
+    fi
+    
+    log_info "Installing ${#packages[@]} packages in parallel (max jobs: $max_jobs)"
+    
+    # Split packages into chunks
+    local chunk_size=$(( (${#packages[@]} + max_jobs - 1) / max_jobs ))
+    local commands=()
+    
+    for ((i=0; i<${#packages[@]}; i+=chunk_size)); do
+        local chunk=("${packages[@]:$i:$chunk_size}")
+        local pkg_list=$(printf " %s" "${chunk[@]}")
+        commands+=("sudo pacman -S --needed --noconfirm$pkg_list")
+    done
+    
+    parallel_execute "$max_jobs" "${commands[@]}"
+}
+
+# Delta configuration updates
+apply_delta_config() {
+    local config_file="$1"
+    local delta_file="$2"
+    local backup_suffix=".backup.$(date +%Y%m%d_%H%M%S)"
+    
+    if [[ ! -f "$config_file" ]]; then
+        log_error "Configuration file not found: $config_file"
+        return 1
+    fi
+    
+    if [[ ! -f "$delta_file" ]]; then
+        log_error "Delta file not found: $delta_file"
+        return 1
+    fi
+    
+    log_info "Applying delta configuration: $delta_file -> $config_file"
+    
+    # Create backup
+    backup_file "$config_file" "$backup_suffix"
+    
+    # Apply delta using a simple line-based approach
+    local temp_file="${config_file}.delta.tmp"
+    
+    # Start with original file
+    cp "$config_file" "$temp_file"
+    
+    # Process delta file
+    while IFS= read -r line; do
+        case "$line" in
+            "++"*) # Add line
+                local add_line="${line:2}"
+                echo "$add_line" >> "$temp_file"
+                ;;
+            "--"*) # Remove line
+                local remove_line="${line:2}"
+                grep -v "^$remove_line$" "$temp_file" > "$temp_file.tmp" && mv "$temp_file.tmp" "$temp_file"
+                ;;
+            "=="*) # Replace line (format: ==old_line==new_line)
+                local replace_spec="${line:2}"
+                local old_line="${replace_spec%%==*}"
+                local new_line="${replace_spec#*==}"
+                sed -i "s|^$old_line$|$new_line|" "$temp_file"
+                ;;
+        esac
+    done < "$delta_file"
+    
+    # Validate configuration (if validator is available)
+    if command -v validate_config >/dev/null 2>&1; then
+        if ! validate_config "$temp_file"; then
+            log_error "Delta configuration validation failed"
+            rm -f "$temp_file"
+            return 1
+        fi
+    fi
+    
+    # Apply changes
+    mv "$temp_file" "$config_file"
+    log_success "Delta configuration applied successfully"
+}
+
+#
 # System Information
 #
 
@@ -557,6 +880,9 @@ init_common() {
     # Set up logging
     init_logging
     
+    # Initialize cache
+    init_cache
+    
     # Enable error handling if not in debug mode
     if [[ "${DEBUG:-false}" != "true" ]]; then
         enable_error_handling
@@ -565,7 +891,7 @@ init_common() {
     # Set default umask for security
     umask 022
     
-    log_debug "Common functions initialized"
+    log_debug "Common functions initialized (caching: $ENABLE_CACHING, parallel jobs: $PARALLEL_JOBS)"
 }
 
 # Auto-initialize when sourced

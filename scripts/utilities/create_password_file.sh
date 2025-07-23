@@ -201,6 +201,15 @@ create_password_file() {
     # Load encrypted file handler
     load_file_handler
     
+    # Ensure output directory exists with secure permissions
+    local output_dir
+    output_dir="$(dirname "$output_file")"
+    if [[ ! -d "$output_dir" ]]; then
+        log_info "Creating directory: $output_dir"
+        mkdir -p "$output_dir"
+        chmod 700 "$output_dir"
+    fi
+    
     # Create password file using the handler
     if create_password_file_from_data \
         "$output_file" \
@@ -209,6 +218,9 @@ create_password_file() {
         "$COLLECTED_ROOT_PASSWORD" \
         "$COLLECTED_LUKS_PASSPHRASE" \
         "$COLLECTED_WIFI_PASSWORD"; then
+        
+        # Set secure permissions immediately
+        chmod 600 "$output_file"
         
         log_success "Encrypted password file created successfully"
         return 0

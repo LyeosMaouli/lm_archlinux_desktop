@@ -1,11 +1,11 @@
 # System Tools
 
-This directory contains utility tools for system management, monitoring, and maintenance of the Arch Linux Hyprland system.
+This directory contains **next-generation utility tools** for system management, monitoring, and maintenance of the Arch Linux Hyprland system. Now includes **container development support**, **performance monitoring**, and **enhanced structured logging**.
 
 ## Tools Overview
 
 ### 📊 system_info.sh
-Comprehensive system information display tool.
+Comprehensive system information display tool with **container awareness**.
 
 **Features:**
 - Hardware information (CPU, memory, graphics, storage)
@@ -15,10 +15,15 @@ Comprehensive system information display tool.
 - Package information
 - Security status overview
 - Performance metrics
+- **🆕 Container environment detection**
+- **🆕 Development environment status**
+- **🆕 Structured JSON output support**
 
 **Usage:**
 ```bash
-./system_info.sh
+./system_info.sh           # Standard output
+./system_info.sh --json    # 🆕 JSON structured output
+./system_info.sh --dev     # 🆕 Development environment focus
 ```
 
 ### 📦 package_manager.sh
@@ -79,7 +84,7 @@ Comprehensive backup and restore solution.
 ## Tool Categories
 
 ### System Information
-- **system_info.sh**: Real-time system status and configuration display
+- **system_info.sh**: Real-time system status and configuration display with container awareness
 - **hardware_checker.sh**: Hardware compatibility and requirement validation
 
 ### Package Management
@@ -87,6 +92,12 @@ Comprehensive backup and restore solution.
 
 ### Data Management
 - **backup_manager.sh**: Complete backup and restore solution with verification
+
+### 🆕 Development Environment
+- **Container Integration**: All tools work seamlessly in DevContainers and Docker Compose environments
+- **Performance Monitoring**: Built-in deployment performance tracking and analytics
+- **Structured Logging**: JSON-based logging with correlation IDs for monitoring
+- **Development Workflows**: Enhanced support for container-based development
 
 ## Integration
 
@@ -124,12 +135,30 @@ export KEEP_BACKUPS="7"
 
 ## Common Workflows
 
+### 🆕 Container Development Workflow
+```bash
+# In DevContainer or Docker Compose environment
+# All tools work seamlessly in containers
+
+# Container-aware system info
+./system_info.sh --dev
+
+# Performance monitoring for deployments
+dev-monitor deployment_123
+
+# Structured logging analysis
+dev-audit-logs --correlation-id deployment_123
+
+# Container-specific package management
+./package_manager.sh check --container-safe
+```
+
 ### System Health Check
 ```bash
 # Check hardware compatibility
 ./hardware_checker.sh
 
-# View system information
+# View system information (with container detection)
 ./system_info.sh
 
 # Check for updates

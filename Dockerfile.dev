@@ -1,0 +1,276 @@
+# Development Dockerfile for Arch Linux Desktop Automation
+# This provides a complete development environment for local testing
+
+FROM archlinux:latest
+
+# Metadata
+LABEL maintainer="Arch Linux Desktop Automation Team"
+LABEL description="Development environment for Arch Linux desktop automation"
+LABEL version="1.0.0"
+LABEL dev.purpose="Local development and testing"
+
+# Build arguments
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG USERNAME=developer
+ARG NODE_VERSION=lts
+
+# Environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV ANSIBLE_HOST_KEY_CHECKING=False
+ENV ANSIBLE_RETRY_FILES_ENABLED=False
+ENV ANSIBLE_SSH_PIPELINING=True
+
+# Configure pacman and update system
+RUN pacman-key --init && \
+    pacman-key --populate archlinux && \
+    pacman -Sy --noconfirm archlinux-keyring && \
+    pacman -Syu --noconfirm && \
+    # Clean pacman cache to reduce image size
+    pacman -Scc --noconfirm
+
+# Install development packages
+RUN pacman -S --noconfirm \
+    # Core system tools
+    base-devel \
+    sudo \
+    which \
+    # Version control
+    git \
+    git-lfs \
+    # Network tools
+    curl \
+    wget \
+    openssh \
+    rsync \
+    # Text editors and tools
+    vim \
+    nano \
+    tree \
+    less \
+    grep \
+    sed \
+    awk \
+    # Archive tools
+    tar \
+    gzip \
+    unzip \
+    zip \
+    xz \
+    # Development tools
+    make \
+    cmake \
+    gcc \
+    clang \
+    # Python ecosystem
+    python \
+    python-pip \
+    python-setuptools \
+    python-wheel \
+    python-virtualenv \
+    python-yaml \
+    python-jinja \
+    python-cryptography \
+    python-requests \
+    python-paramiko \
+    # Ansible and automation
+    ansible \
+    ansible-lint \
+    # Shell tools
+    bash \
+    bash-completion \
+    zsh \
+    fish \
+    shellcheck \
+    shfmt \
+    # System monitoring
+    htop \
+    iotop \
+    nethogs \
+    # Container tools
+    docker \
+    docker-compose \
+    # Documentation
+    man-db \
+    man-pages \
+    # JSON/YAML tools
+    jq \
+    # Testing tools
+    bats \
+    # Security tools
+    gnupg \
+    # Modern CLI tools
+    fd \
+    ripgrep \
+    bat \
+    exa \
+    fzf \
+    # Network debugging
+    nmap \
+    netcat \
+    tcpdump \
+    # Process tools
+    lsof \
+    strace && \
+    # Clean pacman cache
+    pacman -Scc --noconfirm
+
+# Install additional tools from AUR (using a temporary user)
+RUN useradd -m -G wheel temp_user && \
+    echo "temp_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    su - temp_user -c "
+        git clone https://aur.archlinux.org/yay.git /tmp/yay && \
+        cd /tmp/yay && \
+        makepkg -si --noconfirm
+    " && \
+    su - temp_user -c "
+        yay -S --noconfirm \
+            dive \
+            hadolint-bin \
+            shellcheck-bin
+    " || true && \
+    userdel -r temp_user && \
+    sed -i '/temp_user/d' /etc/sudoers
+
+# Create development user
+RUN groupadd --gid $USER_GID $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash $USERNAME && \
+    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    mkdir -p /home/$USERNAME/.local/bin && \
+    chown -R $USERNAME:$USERNAME /home/$USERNAME
+
+# Switch to development user
+USER $USERNAME
+WORKDIR /home/$USERNAME
+
+# Install Python packages for development
+RUN pip install --user --no-cache-dir \
+    # Core Ansible
+    ansible-core \
+    ansible-runner \
+    # Testing frameworks
+    molecule \
+    molecule-docker \
+    pytest \
+    pytest-ansible \
+    pytest-cov \
+    pytest-xdist \
+    # Code quality
+    black \
+    flake8 \
+    mypy \
+    bandit \
+    safety \
+    # Pre-commit and hooks
+    pre-commit \
+    # YAML/JSON tools
+    yamllint \
+    yq \
+    # Jinja templating
+    jinja2-cli \
+    # Documentation
+    sphinx \
+    mkdocs \
+    mkdocs-material \
+    # Security
+    passlib \
+    bcrypt \
+    # HTTP tools
+    httpie \
+    # Development tools
+    ipython \
+    jupyter \
+    # Performance profiling
+    py-spy \
+    memory-profiler
+
+# Configure shell environment
+RUN echo '# Development environment configuration' >> ~/.bashrc && \
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && \
+    echo 'export EDITOR=vim' >> ~/.bashrc && \
+    echo 'export PAGER=less' >> ~/.bashrc && \
+    # Ansible configuration
+    echo 'export ANSIBLE_CONFIG="${PWD}/configs/ansible/ansible.cfg"' >> ~/.bashrc && \
+    echo 'export ANSIBLE_ROLES_PATH="${PWD}/configs/ansible/roles"' >> ~/.bashrc && \
+    echo 'export ANSIBLE_INVENTORY="${PWD}/configs/ansible/inventory"' >> ~/.bashrc && \
+    echo 'export ANSIBLE_HOST_KEY_CHECKING=False' >> ~/.bashrc && \
+    # Development aliases
+    echo 'alias ll="ls -la"' >> ~/.bashrc && \
+    echo 'alias la="ls -la"' >> ~/.bashrc && \
+    echo 'alias l="ls -l"' >> ~/.bashrc && \
+    echo 'alias ..="cd .."' >> ~/.bashrc && \
+    echo 'alias ...="cd ../.."' >> ~/.bashrc && \
+    # Modern CLI tool aliases
+    echo 'alias cat="bat --paging=never"' >> ~/.bashrc && \
+    echo 'alias ls="exa --group-directories-first"' >> ~/.bashrc && \
+    echo 'alias tree="exa --tree"' >> ~/.bashrc && \
+    echo 'alias find="fd"' >> ~/.bashrc && \
+    echo 'alias grep="rg"' >> ~/.bashrc && \
+    # Project-specific aliases
+    echo 'alias deploy="./scripts/deploy.sh"' >> ~/.bashrc && \
+    echo 'alias test-deploy="./scripts/testing/test_installation.sh"' >> ~/.bashrc && \
+    echo 'alias lint-ansible="ansible-lint configs/ansible/"' >> ~/.bashrc && \
+    echo 'alias lint-shell="find scripts/ -name \"*.sh\" -exec shellcheck {} \\;"' >> ~/.bashrc && \
+    echo 'alias format-yaml="find . -name \"*.yml\" -o -name \"*.yaml\" | xargs yamllint"' >> ~/.bashrc && \
+    # Git aliases
+    echo 'alias gs="git status"' >> ~/.bashrc && \
+    echo 'alias ga="git add"' >> ~/.bashrc && \
+    echo 'alias gc="git commit"' >> ~/.bashrc && \
+    echo 'alias gp="git push"' >> ~/.bashrc && \
+    echo 'alias gl="git log --oneline"' >> ~/.bashrc
+
+# Configure Git for development
+RUN git config --global init.defaultBranch main && \
+    git config --global pull.rebase false && \
+    git config --global user.name "Development User" && \
+    git config --global user.email "dev@example.com" && \
+    git config --global --add safe.directory '*'
+
+# Create development directories
+RUN mkdir -p ~/workspace ~/.cache/ansible ~/.ansible/tmp
+
+# Set up development environment info script
+RUN cat > ~/.local/bin/dev-info << 'EOF'
+#!/bin/bash
+echo "Development Environment Information"
+echo "=================================="
+echo "User: $(whoami)"
+echo "Home: $HOME"
+echo "Workspace: ${PWD}"
+echo "Python: $(python --version 2>&1)"
+echo "Ansible: $(ansible --version | head -1)"
+echo "Git: $(git --version)"
+echo "Docker: $(docker --version 2>/dev/null || echo 'Not available')"
+echo
+echo "Installed Python packages:"
+pip list | grep -E '(ansible|molecule|pytest|black|flake8)' || echo "Core packages not found"
+echo
+echo "Quick commands:"
+echo "  deploy      - Run deployment script"
+echo "  test-deploy - Run test script"
+echo "  lint-ansible- Lint Ansible files"
+echo "  lint-shell  - Lint shell scripts"
+echo "  dev-info    - Show this information"
+EOF
+
+RUN chmod +x ~/.local/bin/dev-info
+
+# Create workspace directory and set it as working directory
+USER root
+RUN mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
+
+USER $USERNAME
+WORKDIR /workspace
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import ansible; print('OK')" || exit 1
+
+# Default command
+CMD ["/bin/bash", "-l"]
+
+# Add labels for development
+LABEL dev.features="ansible,python,testing,linting,git"
+LABEL dev.tools="molecule,pytest,black,flake8,shellcheck"
+LABEL dev.purpose="Local development and testing environment"

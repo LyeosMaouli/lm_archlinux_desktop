@@ -1,0 +1,136 @@
+{
+    "name": "Arch Linux Desktop Automation Development",
+    "dockerFile": "Dockerfile",
+    "context": "..",
+    
+    // Container configuration
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopContainer",
+    "remoteUser": "devuser",
+    
+    // Development features
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "latest",
+            "dockerDashComposeVersion": "v2"
+        }
+    },
+    
+    // VSCode configuration
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.vscode-yaml",
+                "redhat.ansible",
+                "redhat.vscode-yaml",
+                "ms-python.python",
+                "timonwong.shellcheck",
+                "rogalmic.bash-debug",
+                "foxundermoon.shell-format",
+                "ms-vscode.makefile-tools",
+                "yzhang.markdown-all-in-one",
+                "davidanson.vscode-markdownlint",
+                "ms-vscode.vscode-json",
+                "gruntfuggly.todo-tree",
+                "eamodio.gitlens",
+                "github.vscode-github-actions",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "/bin/bash",
+                        "args": ["--login"]
+                    }
+                },
+                "ansible.python.interpreterPath": "/usr/bin/python3",
+                "ansible.validation.enabled": true,
+                "ansible.validation.lint.enabled": true,
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "shellcheck.enable": true,
+                "shellformat.enable": true,
+                "files.associations": {
+                    "*.yml": "yaml",
+                    "*.yaml": "yaml",
+                    "*.j2": "jinja",
+                    "deploy.conf": "shellscript",
+                    "*.conf": "ini"
+                },
+                "yaml.schemas": {
+                    "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook": [
+                        "configs/ansible/playbooks/*.yml",
+                        "local.yml"
+                    ],
+                    "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/tasks": [
+                        "configs/ansible/roles/*/tasks/*.yml"
+                    ]
+                },
+                "todo-tree.tree.showScanModeButton": false,
+                "todo-tree.general.tags": [
+                    "TODO",
+                    "FIXME",
+                    "BUG",
+                    "HACK",
+                    "NOTE",
+                    "REVIEW"
+                ],
+                "git.enableSmartCommit": true,
+                "git.confirmSync": false,
+                "editor.formatOnSave": true,
+                "editor.tabSize": 2,
+                "editor.insertSpaces": true
+            }
+        }
+    },
+    
+    // Development ports  
+    "forwardPorts": [
+        8080,
+        9000
+    ],
+    "portsAttributes": {
+        "8080": {
+            "label": "Development Server",
+            "onAutoForward": "silent"
+        },
+        "9000": {
+            "label": "Testing Server", 
+            "onAutoForward": "silent"
+        }
+    },
+    
+    // Container lifecycle
+    "postCreateCommand": "/workspace/.devcontainer/scripts/post-create.sh",
+    "postStartCommand": "/workspace/.devcontainer/scripts/post-start.sh",
+    
+    // Mounts for development
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+        "source=arch-linux-dev-cache,target=/home/devuser/.cache,type=volume",
+        "source=arch-linux-dev-ansible,target=/home/devuser/.ansible,type=volume"
+    ],
+    
+    // Security and development settings
+    "containerEnv": {
+        "WORKSPACE_ROOT": "/workspace",
+        "ANSIBLE_CONFIG": "/workspace/configs/ansible/ansible.cfg",
+        "ANSIBLE_ROLES_PATH": "/workspace/configs/ansible/roles",
+        "ANSIBLE_INVENTORY": "/workspace/configs/ansible/inventory",
+        "LOG_LEVEL": "3",
+        "DEVELOPMENT_MODE": "true"
+    },
+    
+    // Run arguments for development
+    "runArgs": [
+        "--hostname=arch-dev-container",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt=seccomp=unconfined"
+    ]
+}

@@ -30,6 +30,12 @@
 #   --help, -h             Show help
 #
 
+# Security: Exit on error, undefined variables, and pipe failures
+set -euo pipefail
+
+# Set secure umask
+umask 077
+
 # Try to load common functions - handle different deployment scenarios
 if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,6 +75,238 @@ if [[ "${COMMON_LOADED:-}" != "true" ]]; then
     log_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"; }
 fi
 
+#
+# Enhanced UI Components and Terminal Functions  
+#
+
+# Enhanced color codes and UI components (extend from common.sh)
+readonly BOLD='\033[1m'
+readonly DIM='\033[2m'
+readonly UNDERLINE='\033[4m'
+readonly BLINK='\033[5m'
+readonly REVERSE='\033[7m'
+
+# UI symbols for better visual feedback
+readonly CHECKMARK='✓'
+readonly CROSSMARK='✗'
+readonly ARROW='→'
+readonly BULLET='•'
+readonly SPINNER_CHARS='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+readonly BOX_CHARS='┌─┐│└─┘├┤┬┴┼'
+
+# Terminal capabilities detection
+TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
+TERM_HEIGHT=$(tput lines 2>/dev/null || echo 24)
+TERM_COLORS=$(tput colors 2>/dev/null || echo 8)
+
+# Enhanced UI functions
+draw_box() {
+    local width=${1:-60}
+    local title="$2"
+    local content="$3"
+    
+    # Use fallback characters if Unicode not supported
+    local tl="┌" tr="┐" bl="└" br="┘" h="─" v="│" 
+    local cross="├" rcross="┤"
+    
+    if [[ $TERM_COLORS -lt 8 ]]; then
+        tl="+" tr="+" bl="+" br="+" h="-" v="|" cross="+" rcross="+"
+    fi
+    
+    # Top border
+    echo -ne "${BLUE}$tl"
+    printf "${h}%.0s" $(seq 1 $((width - 2)))
+    echo "$tr${NC}"
+    
+    # Title
+    if [[ -n "$title" ]]; then
+        local title_len=${#title}
+        local padding=$(( (width - title_len - 4) / 2 ))
+        echo -ne "${BLUE}$v${NC}"
+        printf " %.0s" $(seq 1 $padding)
+        echo -ne "${BOLD}$title${NC}"
+        printf " %.0s" $(seq 1 $((width - title_len - padding - 3)))
+        echo -e "${BLUE}$v${NC}"
+        
+        # Separator
+        echo -ne "${BLUE}$cross"
+        printf "${h}%.0s" $(seq 1 $((width - 2)))
+        echo "$rcross${NC}"
+    fi
+    
+    # Content
+    if [[ -n "$content" ]]; then
+        echo "$content" | while IFS= read -r line; do
+            # Strip color codes for length calculation
+            local line_clean=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g')
+            local line_len=${#line_clean}
+            echo -ne "${BLUE}$v${NC} "
+            echo -ne "$line"
+            printf " %.0s" $(seq 1 $((width - line_len - 4)))
+            echo -e " ${BLUE}$v${NC}"
+        done
+    fi
+    
+    # Bottom border
+    echo -ne "${BLUE}$bl"
+    printf "${h}%.0s" $(seq 1 $((width - 2)))
+    echo "$br${NC}"
+}
+
+show_banner() {
+    local version="$1"
+    local width=70
+    
+    clear
+    echo
+    draw_box $width "Arch Linux Desktop Automation v$version" "
+${DIM}Enterprise-grade desktop automation system${NC}
+${DIM}Built with Ansible and modern security practices${NC}
+
+${GREEN}${CHECKMARK}${NC} Hyprland Wayland Desktop
+${GREEN}${CHECKMARK}${NC} Security Hardening  
+${GREEN}${CHECKMARK}${NC} Profile-based Configuration
+${GREEN}${CHECKMARK}${NC} Multiple Deployment Modes"
+    echo
+}
+
+# Enhanced progress indicator
+show_enhanced_progress() {
+    local current=$1
+    local total=$2
+    local description=${3:-"Processing"}
+    local width=40
+    
+    local percentage=$((current * 100 / total))
+    local filled=$((current * width / total))
+    local empty=$((width - filled))
+    
+    # Use different characters for filled/empty parts
+    printf "\r${BOLD}%s:${NC} [${GREEN}" "$description"
+    printf "█%.0s" $(seq 1 $filled)
+    printf "${DIM}░%.0s" $(seq 1 $empty)
+    printf "${NC}] ${CYAN}%d%%${NC} (${YELLOW}%d${NC}/${YELLOW}%d${NC})" $percentage $current $total
+    
+    if [[ $current -eq $total ]]; then
+        echo -e " ${GREEN}${CHECKMARK} Complete${NC}"
+    fi
+}
+
+# Enhanced spinner with custom message
+show_enhanced_spinner() {
+    local pid=$1
+    local message=${2:-"Working"}
+    local delay=0.1
+    local chars="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+    local i=0
+    
+    while kill -0 "$pid" 2>/dev/null; do
+        local char=${chars:$((i % ${#chars})):1}
+        printf "\r${CYAN}%s${NC} %s..." "$char" "$message"
+        sleep $delay
+        i=$((i + 1))
+    done
+    printf "\r%*s\r" $((${#message} + 10)) ""
+}
+
+# Interactive menu system
+show_interactive_menu() {
+    local title="$1"
+    shift
+    local options=("$@")
+    local selected=0
+    
+    while true; do
+        clear
+        echo
+        draw_box 60 "$title" ""
+        echo
+        
+        for i in "${!options[@]}"; do
+            if [[ $i -eq $selected ]]; then
+                echo -e "  ${REVERSE} ${ARROW} ${options[$i]} ${NC}"
+            else
+                echo -e "      ${options[$i]}"
+            fi
+        done
+        
+        echo
+        echo -e "${DIM}Use arrow keys to navigate, Enter to select, 'q' to quit${NC}"
+        
+        # Read single character
+        read -rsn1 key
+        case "$key" in
+            $'\x1b')  # Escape sequence
+                read -rsn2 key
+                case "$key" in
+                    '[A') ((selected > 0)) && ((selected--)) ;;  # Up
+                    '[B') ((selected < ${#options[@]} - 1)) && ((selected++)) ;;  # Down
+                esac
+                ;;
+            '') return $selected ;;  # Enter
+            'q'|'Q') return 255 ;;   # Quit
+        esac
+    done
+}
+
+# Enhanced confirmation with better UI
+enhanced_confirm() {
+    local prompt="$1"
+    local default=${2:-"n"}
+    local response
+    
+    while true; do
+        echo
+        if [[ "$default" == "y" ]]; then
+            echo -ne "${YELLOW}${BULLET}${NC} $prompt ${GREEN}[Y/n]${NC}: "
+            read -r response
+            response=${response:-y}
+        else
+            echo -ne "${YELLOW}${BULLET}${NC} $prompt ${RED}[y/N]${NC}: "
+            read -r response
+            response=${response:-n}
+        fi
+        
+        case $response in
+            [Yy]|[Yy][Ee][Ss]) 
+                echo -e "  ${GREEN}${CHECKMARK} Confirmed${NC}"
+                return 0 
+                ;;
+            [Nn]|[Nn][Oo]) 
+                echo -e "  ${RED}${CROSSMARK} Cancelled${NC}"
+                return 1 
+                ;;
+            *) 
+                echo -e "  ${RED}${CROSSMARK} Please answer yes or no.${NC}" 
+                ;;
+        esac
+    done
+}
+
+# Enhanced error display
+show_error_box() {
+    local error_msg="$1"
+    local details="$2"
+    
+    echo
+    draw_box 70 "${RED}Error${NC}" "${RED}${CROSSMARK} $error_msg${NC}
+
+${details:+${DIM}$details${NC}}"
+    echo
+}
+
+# Enhanced success display  
+show_success_box() {
+    local success_msg="$1"
+    local details="$2"
+    
+    echo
+    draw_box 70 "${GREEN}Success${NC}" "${GREEN}${CHECKMARK} $success_msg${NC}
+
+${details:+${DIM}$details${NC}}"
+    echo
+}
+
 # Script metadata
 readonly SCRIPT_NAME="deploy.sh"
 readonly SCRIPT_VERSION="2.0.0"
@@ -101,55 +339,153 @@ CONFIG_FILE=""
 DRY_RUN=false
 COMMAND=""
 
+# Performance configuration
+ENABLE_PARALLEL_PROCESSING=${ENABLE_PARALLEL_PROCESSING:-true}
+ENABLE_SMART_CACHING=${ENABLE_SMART_CACHING:-true}
+CACHE_CLEANUP=${CACHE_CLEANUP:-false}
+PERFORMANCE_MODE=${PERFORMANCE_MODE:-auto}  # auto, fast, safe
+
+#
+# Performance Optimization Functions
+#
+
+# Smart caching for deployment phases
+enable_deployment_caching() {
+    if [[ "$ENABLE_SMART_CACHING" == "true" ]]; then
+        export ENABLE_CACHING=true
+        export ANSIBLE_CACHE_PLUGIN=memory
+        export ANSIBLE_CACHE_PLUGIN_CONNECTION=/tmp/ansible_cache_$$
+        log_info "Smart caching enabled for deployment"
+    fi
+}
+
+# Optimize Ansible performance
+optimize_ansible_performance() {
+    if [[ "$ENABLE_PARALLEL_PROCESSING" == "true" ]]; then
+        # Set Ansible performance options
+        export ANSIBLE_HOST_KEY_CHECKING=False
+        export ANSIBLE_SSH_PIPELINING=True
+        export ANSIBLE_SSH_MULTIPLEXING=True
+        export ANSIBLE_FORKS=${PARALLEL_JOBS:-4}
+        
+        # Create SSH control master directory
+        mkdir -p ~/.ssh/controlmasters
+        
+        log_info "Ansible performance optimizations enabled (forks: ${ANSIBLE_FORKS})"
+    fi
+}
+
+# Pre-flight performance checks
+check_performance_prerequisites() {
+    log_info "Checking performance prerequisites..."
+    
+    # Check available memory
+    local available_mem
+    available_mem=$(free -m | awk '/^Mem:/{print $7}')
+    
+    if [[ $available_mem -lt 1024 ]]; then
+        log_warn "Low available memory: ${available_mem}MB"
+        log_warn "Consider reducing parallel jobs or enabling swap"
+        
+        # Automatically reduce parallel jobs if memory is low
+        if [[ $PARALLEL_JOBS -gt 2 ]]; then
+            PARALLEL_JOBS=2
+            log_info "Reduced parallel jobs to 2 due to low memory"
+        fi
+    fi
+    
+    # Check CPU cores
+    local cpu_cores
+    cpu_cores=$(nproc 2>/dev/null || echo 1)
+    
+    if [[ $PARALLEL_JOBS -gt $cpu_cores ]]; then
+        log_warn "Parallel jobs ($PARALLEL_JOBS) exceed CPU cores ($cpu_cores)"
+        log_info "This may cause context switching overhead"
+    fi
+    
+    # Check disk space
+    local available_space
+    available_space=$(df /tmp | tail -1 | awk '{print $4}')
+    
+    if [[ $available_space -lt 1048576 ]]; then  # Less than 1GB
+        log_warn "Low disk space in /tmp: ${available_space}KB"
+        log_warn "Consider cleaning up or disabling caching"
+        
+        if [[ "$ENABLE_SMART_CACHING" == "true" ]]; then
+            log_info "Disabling caching due to low disk space"
+            ENABLE_SMART_CACHING=false
+        fi
+    fi
+    
+    log_info "Performance prerequisites check completed"
+}
+
+# Clean up performance artifacts
+cleanup_performance_artifacts() {
+    if [[ "$CACHE_CLEANUP" == "true" ]]; then
+        log_info "Cleaning up performance artifacts..."
+        
+        # Clean Ansible cache
+        rm -rf /tmp/ansible_cache_* 2>/dev/null || true
+        
+        # Clean SSH control masters
+        rm -rf ~/.ssh/controlmasters/* 2>/dev/null || true
+        
+        # Clean deployment cache if function exists
+        if command -v clear_cache >/dev/null 2>&1; then
+            clear_cache functions
+        fi
+        
+        log_info "Performance cleanup completed"
+    fi
+}
+
 #
 # Help and Usage Functions
 #
 
 show_usage() {
-    cat << EOF
-Usage: $SCRIPT_NAME [COMMAND] [OPTIONS]
+    draw_box 80 "Usage: $SCRIPT_NAME [COMMAND] [OPTIONS]" "
+${BOLD}COMMANDS:${NC}
+  ${GREEN}install${NC}     Install base Arch Linux system
+  ${GREEN}desktop${NC}     Set up Hyprland desktop environment  
+  ${GREEN}security${NC}    Apply security hardening
+  ${GREEN}full${NC}        Complete end-to-end deployment
+  ${GREEN}help${NC}        Show detailed help and examples
 
-COMMANDS:
-  install     Install base Arch Linux system
-  desktop     Set up Hyprland desktop environment
-  security    Apply security hardening
-  full        Complete end-to-end deployment
-  help        Show detailed help and examples
+${BOLD}OPTIONS:${NC}
+  ${YELLOW}--profile${NC} PROFILE         Deployment profile (work|personal|development)
+  ${YELLOW}--password${NC} MODE           Password handling (env|file|generate|interactive)
+  ${YELLOW}--password-file${NC} FILE      Encrypted password file path
+  ${YELLOW}--network${NC} MODE            Network setup (auto|manual|skip)
+  ${YELLOW}--encryption${NC}              Enable disk encryption (default)
+  ${YELLOW}--no-encryption${NC}           Disable disk encryption
+  ${YELLOW}--hostname${NC} HOSTNAME       System hostname (default: phoenix)
+  ${YELLOW}--user${NC} USERNAME           Primary user (default: lyeosmaouli)
+  ${YELLOW}--config${NC} FILE             Custom configuration file
+  ${YELLOW}--dry-run${NC}                 Preview actions without executing  
+  ${YELLOW}--verbose${NC}, -v             Enable verbose output
+  ${YELLOW}--quiet${NC}, -q               Suppress non-essential output
+  ${YELLOW}--parallel${NC}                Enable parallel processing (default)
+  ${YELLOW}--no-parallel${NC}             Disable parallel processing
+  ${YELLOW}--cache${NC}                   Enable smart caching (default)
+  ${YELLOW}--no-cache${NC}                Disable caching
+  ${YELLOW}--performance${NC} MODE        Performance mode (auto|fast|safe)
+  ${YELLOW}--cleanup${NC}                 Clean up cache after deployment
+  ${YELLOW}--help${NC}, -h                Show this help
 
-OPTIONS:
-  --profile PROFILE         Deployment profile (work|personal|development)
-  --password MODE           Password handling (env|file|generate|interactive)
-  --password-file FILE      Encrypted password file path
-  --network MODE            Network setup (auto|manual|skip)
-  --encryption              Enable disk encryption (default)
-  --no-encryption           Disable disk encryption
-  --hostname HOSTNAME       System hostname (default: phoenix)
-  --user USERNAME           Primary user (default: lyeosmaouli)
-  --config FILE             Custom configuration file
-  --dry-run                 Preview actions without executing
-  --verbose, -v             Enable verbose output
-  --quiet, -q               Suppress non-essential output
-  --help, -h                Show this help
-
-EXAMPLES:
-  # Complete automated deployment
-  $SCRIPT_NAME full
-
-  # Custom deployment with options
-  $SCRIPT_NAME full --profile personal --password generate --hostname myarch
-
-  # Step-by-step deployment
-  $SCRIPT_NAME install --encryption
-  $SCRIPT_NAME desktop --profile work
-  $SCRIPT_NAME security
-
-  # Use encrypted password file
-  $SCRIPT_NAME full --password file --password-file /path/to/passwords.enc
-
-  # Dry run to preview actions
-  $SCRIPT_NAME full --dry-run --verbose
-
-EOF
+${BOLD}EXAMPLES:${NC}
+  ${CYAN}$SCRIPT_NAME full${NC}
+      Complete automated deployment
+  
+  ${CYAN}$SCRIPT_NAME full --profile personal --hostname myarch${NC}
+      Custom deployment with options
+  
+  ${CYAN}$SCRIPT_NAME install --encryption${NC}
+      Step 1: Base system installation
+  
+  ${CYAN}$SCRIPT_NAME full --dry-run --verbose${NC}
+      Preview actions without executing"
 }
 
 show_detailed_help() {
@@ -239,7 +575,7 @@ load_configuration() {
     # Load from config file if it exists
     if [[ -n "${CONFIG_FILE:-}" ]]; then
         if ! load_config "$CONFIG_FILE"; then
-            log_error "Failed to load configuration file: $CONFIG_FILE"
+            show_error_box "Configuration Error" "Failed to load configuration file: $CONFIG_FILE"
             exit $EXIT_CONFIG_ERROR
         fi
     else
@@ -328,30 +664,63 @@ auto_detect_enc_files() {
 
 parse_arguments() {
     if [[ $# -eq 0 ]]; then
+        echo
+        show_error_box "Missing Command" "No command specified. Use --help for usage information."
         show_usage
-        exit $EXIT_INVALID_ARGS
+        exit "${EXIT_INVALID_ARGS:-1}"
     fi
     
     # First argument is the command
-    COMMAND="$1"
+    COMMAND="${1:-}"
     shift
+    
+    # Validate command before processing options
+    case "$COMMAND" in
+        install|desktop|security|full|help) ;;
+        "")
+            show_error_box "Missing Command" "Command is required"
+            show_usage
+            exit "${EXIT_INVALID_ARGS:-1}"
+            ;;
+        *)
+            show_error_box "Invalid Command: $COMMAND" "Valid commands: install, desktop, security, full, help"
+            show_usage
+            exit "${EXIT_INVALID_ARGS:-1}"
+            ;;
+    esac
     
     # Parse options
     while [[ $# -gt 0 ]]; do
         case $1 in
             --profile)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--profile requires a value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 PROFILE="$2"
                 shift 2
                 ;;
             --password)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--password requires a value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 PASSWORD_MODE="$2"
                 shift 2
                 ;;
             --password-file)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--password-file requires a file path"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 PASSWORD_FILE="$2"
                 shift 2
                 ;;
             --network)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--network requires a value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 NETWORK_MODE="$2"
                 shift 2
                 ;;
@@ -364,14 +733,26 @@ parse_arguments() {
                 shift
                 ;;
             --hostname)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--hostname requires a hostname value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 HOSTNAME="$2"
                 shift 2
                 ;;
             --user)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--user requires a username value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 USER_NAME="$2"
                 shift 2
                 ;;
             --config)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--config requires a file path"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
                 CONFIG_FILE="$2"
                 shift 2
                 ;;
@@ -380,21 +761,49 @@ parse_arguments() {
                 shift
                 ;;
             --verbose|-v)
-                LOG_LEVEL=$LOG_DEBUG
+                LOG_LEVEL="${LOG_DEBUG:-4}"
                 shift
                 ;;
             --quiet|-q)
-                LOG_LEVEL=$LOG_ERROR
+                LOG_LEVEL="${LOG_ERROR:-1}"
+                shift
+                ;;
+            --parallel)
+                ENABLE_PARALLEL_PROCESSING=true
+                shift
+                ;;
+            --no-parallel)
+                ENABLE_PARALLEL_PROCESSING=false
+                shift
+                ;;
+            --cache)
+                ENABLE_SMART_CACHING=true
+                shift
+                ;;
+            --no-cache)
+                ENABLE_SMART_CACHING=false
+                shift
+                ;;
+            --performance)
+                if [[ $# -lt 2 ]] || [[ "${2:-}" == --* ]]; then
+                    log_error "--performance requires a mode value"
+                    exit "${EXIT_INVALID_ARGS:-1}"
+                fi
+                PERFORMANCE_MODE="$2"
+                shift 2
+                ;;
+            --cleanup)
+                CACHE_CLEANUP=true
                 shift
                 ;;
             --help|-h)
                 show_detailed_help
-                exit $EXIT_SUCCESS
+                exit "${EXIT_SUCCESS:-0}"
                 ;;
             *)
-                log_error "Unknown option: $1"
+                show_error_box "Unknown Option: $1" "Use --help for available options"
                 show_usage
-                exit $EXIT_INVALID_ARGS
+                exit "${EXIT_INVALID_ARGS:-1}"
                 ;;
         esac
     done
@@ -671,21 +1080,21 @@ execute_full_deployment() {
         return $EXIT_INSTALL_ERROR
     fi
     
-    show_progress 1 3 "Full Deployment"
+    show_enhanced_progress 1 3 "Full Deployment"
     
     if ! execute_desktop_phase; then
         log_error "Full deployment failed at desktop phase"
         return $EXIT_INSTALL_ERROR
     fi
     
-    show_progress 2 3 "Full Deployment"
+    show_enhanced_progress 2 3 "Full Deployment"
     
     if ! execute_security_phase; then
         log_error "Full deployment failed at security phase"
         return $EXIT_INSTALL_ERROR
     fi
     
-    show_progress 3 3 "Full Deployment"
+    show_enhanced_progress 3 3 "Full Deployment"
     
     local end_time
     end_time=$(date +%s)
@@ -695,17 +1104,17 @@ execute_full_deployment() {
     
     log_info "Full deployment completed successfully in ${minutes}m${seconds}s"
     
-    # Show final system information
-    echo
-    echo "🎉 Deployment Complete!"
-    echo "===================="
-    get_system_info
-    echo
-    echo "Next Steps:"
-    echo "  1. Reboot the system: sudo reboot"
-    echo "  2. Log in with user: $USER_NAME"
-    echo "  3. Desktop environment: Hyprland"
-    echo "  4. Check logs: $LOG_DIR/"
+    # Show final success with system information
+    show_success_box "Deployment Complete!" "Full deployment completed in ${minutes}m${seconds}s
+
+System Information:
+$(get_system_info | sed 's/^/  /')"
+    
+    draw_box 60 "Next Steps" "
+${GREEN}1.${NC} Reboot the system: ${CYAN}sudo reboot${NC}
+${GREEN}2.${NC} Log in with user: ${YELLOW}$USER_NAME${NC}
+${GREEN}3.${NC} Desktop environment: ${PURPLE}Hyprland${NC}
+${GREEN}4.${NC} Check logs: ${BLUE}$LOG_DIR/${NC}"
     echo
 }
 
@@ -723,21 +1132,19 @@ main() {
     
     validate_arguments
     
-    # Show banner
-    echo "=========================================="
-    echo "  Arch Linux Desktop Deployment v$SCRIPT_VERSION"
-    echo "=========================================="
-    echo "Command: $COMMAND"
-    echo "Profile: $PROFILE"
-    echo "User: $USER_NAME"
-    echo "Hostname: $HOSTNAME"
-    echo "Password Mode: $PASSWORD_MODE"
-    echo "Encryption: $ENCRYPTION_ENABLED"
-    echo "Network: $NETWORK_MODE"
-    if [[ "${DRY_RUN:-}" == "true" ]]; then
-        echo "Mode: DRY RUN (preview only)"
-    fi
-    echo "=========================================="
+    # Show enhanced banner
+    show_banner "$SCRIPT_VERSION"
+    
+    # Show configuration summary
+    draw_box 60 "Deployment Configuration" "
+${BOLD}Command:${NC}      ${GREEN}$COMMAND${NC}
+${BOLD}Profile:${NC}      ${CYAN}$PROFILE${NC}
+${BOLD}User:${NC}         ${YELLOW}$USER_NAME${NC}
+${BOLD}Hostname:${NC}     ${YELLOW}$HOSTNAME${NC}
+${BOLD}Password:${NC}     ${PURPLE}$PASSWORD_MODE${NC}
+${BOLD}Encryption:${NC}   $([ "$ENCRYPTION_ENABLED" == "true" ] && echo "${GREEN}Enabled${NC}" || echo "${RED}Disabled${NC}")
+${BOLD}Network:${NC}      ${BLUE}$NETWORK_MODE${NC}$([ "${DRY_RUN:-}" == "true" ] && echo "
+${BOLD}Mode:${NC}         ${YELLOW}DRY RUN (preview only)${NC}" || echo "")"
     echo
     
     # Handle help command
@@ -745,6 +1152,11 @@ main() {
         show_detailed_help
         exit $EXIT_SUCCESS
     fi
+    
+    # Performance setup
+    check_performance_prerequisites
+    enable_deployment_caching
+    optimize_ansible_performance
     
     # Pre-flight checks
     check_system_requirements
@@ -767,7 +1179,10 @@ main() {
     esac
     
     log_info "Deployment command '$COMMAND' completed successfully"
+    
+    # Performance cleanup
+    cleanup_performance_artifacts
 }
 
-# Execute main function with all arguments
+# Execute main function with all arguments  
 main "$@"

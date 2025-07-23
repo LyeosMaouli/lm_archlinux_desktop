@@ -17,37 +17,197 @@ WARNING_THRESHOLD_DISK=85
 WARNING_THRESHOLD_MEMORY=80
 WARNING_THRESHOLD_CPU=90
 
-# Health check results
+# Health check results and structured logging
 WARNINGS=0
 ERRORS=0
 INFO_ITEMS=0
+SUCCESS_ITEMS=0
+
+# Structured logging for health checks
+HEALTH_LOG_FORMAT="json"  # json, plain, structured
+HEALTH_METRICS=()
+
+# Create structured log entry
+log_structured() {
+    local level="$1"
+    local component="$2"
+    local message="$3"
+    local value="${4:-}"
+    local threshold="${5:-}"
+    local timestamp=$(date -Iseconds)
+    
+    if [[ "$HEALTH_LOG_FORMAT" == "json" ]]; then
+        local json_entry
+        json_entry=$(cat << EOF
+{
+  "timestamp": "$timestamp",
+  "level": "$level", 
+  "component": "$component",
+  "message": "$message",
+  "value": "$value",
+  "threshold": "$threshold",
+  "hostname": "$(hostname)",
+  "check_id": "$(echo -n "${component}_${message}" | sha256sum | cut -c1-8)"
+}
+EOF
+        )
+        echo "$json_entry" >> "$LOG_FILE.structured"
+    fi
+    
+    # Also log to regular file
+    log_to_file "[$level] $component: $message${value:+ (value: $value)}${threshold:+ (threshold: $threshold)}"
+}
+
+# Add metric for monitoring
+add_metric() {
+    local metric_name="$1"
+    local metric_value="$2"
+    local metric_unit="${3:-}"
+    local metric_labels="${4:-}"
+    
+    HEALTH_METRICS+=("$metric_name:$metric_value:$metric_unit:$metric_labels")
+    
+    # Log metric in Prometheus format
+    local prometheus_line="health_check_${metric_name}"
+    if [[ -n "$metric_labels" ]]; then
+        prometheus_line+="{$metric_labels}"
+    fi
+    prometheus_line+=" $metric_value"
+    echo "$prometheus_line" >> "$LOG_FILE.metrics"
+}
 
 info_health() {
-    log_info_health "ℹ $1"
-    log_to_file "INFO: $1"
+    local component="${2:-general}"
+    log_info "ℹ $1"
+    log_structured "INFO" "$component" "$1"
     INFO_ITEMS=$((INFO_ITEMS + 1))
 }
 
 warn_health() {
-    log_warn_health "⚠ $1"
-    log_to_file "WARNING: $1"
+    local component="${2:-general}"
+    log_warn "⚠ $1"
+    log_structured "WARNING" "$component" "$1"
     WARNINGS=$((WARNINGS + 1))
 }
 
 error_health() {
-    log_error_health "❌ $1"
-    log_to_file "ERROR: $1"
+    local component="${2:-general}"
+    log_error "❌ $1"
+    log_structured "ERROR" "$component" "$1"
     ERRORS=$((ERRORS + 1))
 }
 
 success_health() {
-    log_success_health "✅ $1"
-    log_to_file "OK: $1"
+    local component="${2:-general}"
+    log_success "✅ $1"
+    log_structured "SUCCESS" "$component" "$1"
+    SUCCESS_ITEMS=$((SUCCESS_ITEMS + 1))
+}
+
+# Performance monitoring functions
+measure_performance() {
+    local operation="$1"
+    local start_time=$(date +%s.%N)
+    
+    shift
+    "$@"
+    local exit_code=$?
+    
+    local end_time=$(date +%s.%N)
+    local duration=$(echo "$end_time - $start_time" | bc -l)
+    
+    add_metric "operation_duration_seconds" "$duration" "seconds" "operation=\"$operation\""
+    log_structured "PERFORMANCE" "timing" "Operation $operation completed" "$duration" ""
+    
+    return $exit_code
+}
+
+# Advanced monitoring checks
+check_monitoring_health() {
+    info_health "Checking monitoring infrastructure..." "monitoring"
+    
+    # Check if monitoring agents are running
+    local monitoring_services=("node_exporter" "prometheus" "grafana-server")
+    
+    for service in "${monitoring_services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            success_health "Monitoring service $service is running" "monitoring"
+            add_metric "service_status" "1" "" "service=\"$service\""
+        else
+            info_health "Monitoring service $service not running (optional)" "monitoring"
+            add_metric "service_status" "0" "" "service=\"$service\""
+        fi
+    done
+    
+    # Check log rotation
+    local log_files_count=$(find /var/log -name "*.log" -type f | wc -l)
+    add_metric "log_files_count" "$log_files_count" "files" ""
+    
+    if [[ $log_files_count -gt 1000 ]]; then
+        warn_health "Large number of log files: $log_files_count" "monitoring"
+    else
+        success_health "Log file count normal: $log_files_count" "monitoring"
+    fi
+    
+    # Check for large log files
+    local large_logs
+    large_logs=$(find /var/log -name "*.log" -size +100M 2>/dev/null | wc -l)
+    add_metric "large_log_files_count" "$large_logs" "files" ""
+    
+    if [[ $large_logs -gt 0 ]]; then
+        warn_health "$large_logs log files larger than 100MB" "monitoring"
+    else
+        success_health "No oversized log files detected" "monitoring"
+    fi
+}
+
+# Container and virtualization checks
+check_container_health() {
+    info_health "Checking container and virtualization..." "containers"
+    
+    # Check if running in container
+    if [[ -f /.dockerenv ]]; then
+        info_health "Running in Docker container" "containers"
+        add_metric "container_type" "1" "" "type=\"docker\""
+    elif [[ -n "${container:-}" ]]; then
+        info_health "Running in container: $container" "containers"
+        add_metric "container_type" "1" "" "type=\"$container\""
+    else
+        add_metric "container_type" "0" "" "type=\"none\""
+    fi
+    
+    # Check Docker if available
+    if command -v docker >/dev/null 2>&1; then
+        if docker info >/dev/null 2>&1; then
+            local running_containers
+            running_containers=$(docker ps -q | wc -l)
+            success_health "Docker daemon accessible" "containers"
+            add_metric "docker_containers_running" "$running_containers" "containers" ""
+            
+            if [[ $running_containers -gt 0 ]]; then
+                info_health "$running_containers Docker containers running" "containers"
+            fi
+        else
+            warn_health "Docker daemon not accessible" "containers"
+            add_metric "docker_accessible" "0" "" ""
+        fi
+    fi
+    
+    # Check systemd-nspawn containers
+    if command -v machinectl >/dev/null 2>&1; then
+        local machines
+        machines=$(machinectl list --no-legend 2>/dev/null | wc -l)
+        add_metric "systemd_machines_count" "$machines" "machines" ""
+        
+        if [[ $machines -gt 0 ]]; then
+            info_health "$machines systemd machines detected" "containers"
+        fi
+    fi
 }
 
 # Check system uptime and load
 check_system_load() {
-    info_health "Checking system load and uptime..."
+    info_health "Checking system load and uptime..." "system"
     
     local uptime_info
     uptime_info=$(uptime)
@@ -56,14 +216,27 @@ check_system_load() {
     local cpu_cores
     cpu_cores=$(nproc)
     
-    info_health "System uptime: $(uptime -p)"
-    info_health "Load average (1min): $load_avg (cores: $cpu_cores)"
+    # Add metrics
+    add_metric "load_average_1min" "$load_avg" "" ""
+    add_metric "cpu_cores_total" "$cpu_cores" "cores" ""
+    
+    # Get uptime in seconds
+    local uptime_seconds
+    uptime_seconds=$(awk '{print $1}' /proc/uptime)
+    add_metric "uptime_seconds" "$uptime_seconds" "seconds" ""
+    
+    info_health "System uptime: $(uptime -p)" "system"
+    info_health "Load average (1min): $load_avg (cores: $cpu_cores)" "system"
     
     # Check if load is high
+    local load_ratio
+    load_ratio=$(echo "scale=2; $load_avg / $cpu_cores" | bc -l)
+    add_metric "load_ratio" "$load_ratio" "" ""
+    
     if (( $(echo "$load_avg > $cpu_cores" | bc -l) )); then
-        warn_health "High system load: $load_avg (cores: $cpu_cores)"
+        warn_health "High system load: $load_avg (cores: $cpu_cores)" "system"
     else
-        success_health "System load normal: $load_avg"
+        success_health "System load normal: $load_avg" "system"
     fi
 }
 
@@ -465,58 +638,111 @@ EOF
 
 # Main health check function
 run_health_check() {
-    echo -e "${BLUE}Arch Linux System Health Check${NC}"
-    echo "==============================="
+    local start_time=$(date +%s)
+    
+    echo -e "${BLUE}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}${BOLD}║${NC}               ${GREEN}Arch Linux System Health Check${NC}               ${BLUE}${BOLD}║${NC}"
+    echo -e "${BLUE}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    check_system_load
+    # Initialize structured logging files
+    echo "# Health Check Structured Log - $(date)" > "$LOG_FILE.structured"
+    echo "# Health Check Metrics - $(date)" > "$LOG_FILE.metrics"
+    
+    # Run checks with performance measurement
+    measure_performance "system_load" check_system_load
     echo ""
     
-    check_memory
+    measure_performance "memory_check" check_memory
     echo ""
     
-    check_disk_usage
+    measure_performance "disk_check" check_disk_usage
     echo ""
     
-    check_services
+    measure_performance "services_check" check_services
     echo ""
     
-    check_network
+    measure_performance "network_check" check_network
     echo ""
     
-    check_security
+    measure_performance "security_check" check_security
     echo ""
     
-    check_logs
+    measure_performance "logs_check" check_logs
     echo ""
     
-    check_packages
+    measure_performance "packages_check" check_packages
     echo ""
     
-    check_hardware
+    measure_performance "hardware_check" check_hardware
     echo ""
     
-    # Summary
-    echo "==============================="
-    echo -e "${BLUE}Health Check Summary${NC}"
-    echo "==============================="
-    echo "Total Items: $((INFO_ITEMS + WARNINGS + ERRORS))"
-    echo -e "Warnings: ${YELLOW}$WARNINGS${NC}"
-    echo -e "Errors: ${RED}$ERRORS${NC}"
+    measure_performance "monitoring_check" check_monitoring_health
+    echo ""
+    
+    measure_performance "container_check" check_container_health
+    echo ""
+    
+    local end_time=$(date +%s)
+    local total_duration=$((end_time - start_time))
+    add_metric "health_check_duration_total" "$total_duration" "seconds" ""
+    
+    # Enhanced Summary
+    echo -e "${BLUE}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}${BOLD}║${NC}                    ${YELLOW}Health Check Summary${NC}                    ${BLUE}${BOLD}║${NC}"
+    echo -e "${BLUE}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    local total_checks=$((INFO_ITEMS + SUCCESS_ITEMS + WARNINGS + ERRORS))
+    echo -e "${BOLD}Total Checks:${NC}   $total_checks"
+    echo -e "${GREEN}${BOLD}Success:${NC}        $SUCCESS_ITEMS"
+    echo -e "${BLUE}${BOLD}Info:${NC}           $INFO_ITEMS"
+    echo -e "${YELLOW}${BOLD}Warnings:${NC}       $WARNINGS"
+    echo -e "${RED}${BOLD}Errors:${NC}         $ERRORS"
+    echo -e "${BOLD}Duration:${NC}       ${total_duration}s"
+    echo ""
+    
+    # Add final metrics
+    add_metric "health_check_total" "$total_checks" "checks" ""
+    add_metric "health_check_success" "$SUCCESS_ITEMS" "checks" ""
+    add_metric "health_check_warnings" "$WARNINGS" "checks" ""
+    add_metric "health_check_errors" "$ERRORS" "checks" ""
+    
+    # Overall status determination
+    local overall_status
+    local exit_code
     
     if [[ $ERRORS -eq 0 && $WARNINGS -eq 0 ]]; then
-        echo ""
-        echo -e "${GREEN}[OK] System appears healthy!${NC}"
-        return 0
+        overall_status="HEALTHY"
+        exit_code=0
+        echo -e "${GREEN}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}                    ${GREEN}✅ SYSTEM HEALTHY${NC}                     ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
     elif [[ $ERRORS -eq 0 ]]; then
-        echo ""
-        echo -e "${YELLOW}⚠ Minor issues detected (see warnings above)${NC}"
-        return 1
+        overall_status="MINOR_ISSUES"
+        exit_code=1
+        echo -e "${YELLOW}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}${BOLD}║${NC}                   ${YELLOW}⚠ MINOR ISSUES DETECTED${NC}               ${YELLOW}${BOLD}║${NC}"
+        echo -e "${YELLOW}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${YELLOW}Review warning conditions above${NC}"
     else
-        echo ""
-        echo -e "${RED}[FAIL] Issues detected that require attention${NC}"
-        return 2
+        overall_status="CRITICAL_ISSUES"
+        exit_code=2
+        echo -e "${RED}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}${BOLD}║${NC}                 ${RED}❌ CRITICAL ISSUES DETECTED${NC}              ${RED}${BOLD}║${NC}"
+        echo -e "${RED}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${RED}${BOLD}Immediate attention required!${NC}"
     fi
+    
+    add_metric "health_check_status" "$exit_code" "" "status=\"$overall_status\""
+    
+    echo ""
+    echo -e "${BOLD}Log Files:${NC}"
+    echo -e "  Standard:   ${BLUE}$LOG_FILE${NC}"
+    echo -e "  Structured: ${BLUE}$LOG_FILE.structured${NC}"
+    echo -e "  Metrics:    ${BLUE}$LOG_FILE.metrics${NC}"
+    
+    return $exit_code
 }
 
 # Main function

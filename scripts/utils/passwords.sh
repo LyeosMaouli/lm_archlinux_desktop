@@ -17,6 +17,9 @@
 # Types: user, root, luks
 #
 
+# Security: Exit on error, undefined variables, and pipe failures
+set -euo pipefail
+
 # Load common functions
 if [[ -z "${SCRIPT_DIR:-}" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,10 +53,21 @@ readonly PASSWORD_METHODS=("env" "file" "generate" "interactive")
 
 # Get password for specific type
 get_password() {
-    local password_type="$1"
+    local password_type="${1:-}"
+    
+    if [[ -z "$password_type" ]]; then
+        log_error "Password type is required"
+        return 1
+    fi
     
     if [[ -v SECURE_PASSWORDS[$password_type] ]]; then
-        echo "${SECURE_PASSWORDS[$password_type]}"
+        local password="${SECURE_PASSWORDS[$password_type]:-}"
+        if [[ -n "$password" ]]; then
+            echo "$password"
+        else
+            log_error "Password for type '$password_type' is empty"
+            return 1
+        fi
     else
         log_error "Unknown password type: $password_type"
         return 1
@@ -62,8 +76,27 @@ get_password() {
 
 # Set password for specific type
 set_password() {
-    local password_type="$1"
-    local password="$2"
+    local password_type="${1:-}"
+    local password="${2:-}"
+    
+    if [[ -z "$password_type" ]]; then
+        log_error "Password type is required"
+        return 1
+    fi
+    
+    if [[ -z "$password" ]]; then
+        log_error "Password cannot be empty"
+        return 1
+    fi
+    
+    # Validate password type
+    case "$password_type" in
+        user|root|luks) ;;
+        *)
+            log_error "Invalid password type: $password_type"
+            return 1
+            ;;
+    esac
     
     if [[ -v SECURE_PASSWORDS ]]; then
         SECURE_PASSWORDS[$password_type]="$password"
@@ -478,15 +511,44 @@ load_file_passwords() {
 
 # Create encrypted password file
 create_password_file() {
-    local output_file="$1"
-    local passphrase="$2"
-    local user_pass="$3"
-    local root_pass="$4"
-    local luks_pass="$5"
+    local output_file="${1:-}"
+    local passphrase="${2:-}"
+    local user_pass="${3:-}"
+    local root_pass="${4:-}"
+    local luks_pass="${5:-}"
+    
+    # Validate input parameters
+    if [[ -z "$output_file" ]]; then
+        log_error "Output file path is required"
+        return 1
+    fi
+    
+    if [[ -z "$passphrase" ]]; then
+        log_error "Passphrase is required for file encryption"
+        return 1
+    fi
+    
+    if [[ -z "$user_pass" || -z "$root_pass" || -z "$luks_pass" ]]; then
+        log_error "All passwords (user, root, luks) are required"
+        return 1
+    fi
+    
+    # Ensure output directory exists and has secure permissions
+    local output_dir
+    output_dir="$(dirname "$output_file")"
+    if [[ ! -d "$output_dir" ]]; then
+        log_info "Creating directory: $output_dir"
+        mkdir -p "$output_dir"
+        chmod 700 "$output_dir"
+    fi
     
     # Create temporary file with password data
     local temp_file="/tmp/password_create_$$"
     trap 'shred -f "$temp_file" 2>/dev/null || rm -f "$temp_file"' RETURN
+    
+    # Set secure permissions on temp file immediately
+    touch "$temp_file"
+    chmod 600 "$temp_file"
     
     cat > "$temp_file" << EOF
 # Encrypted Password File for Arch Linux Deployment
