@@ -4,16 +4,14 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROFILES_DIR="$PROJECT_ROOT/configs/profiles"
 CURRENT_PROFILE_FILE="/etc/arch-hyprland-profile"
@@ -21,23 +19,14 @@ CURRENT_PROFILE_FILE="/etc/arch-hyprland-profile"
 # Available profiles
 AVAILABLE_PROFILES=("work" "personal" "development" "minimal")
 
-# Logging functions
-info() {
-    echo -e "${GREEN}INFO: $1${NC}"
-}
+# Use common logging functions instead of custom ones
 
-warn() {
-    echo -e "${YELLOW}WARNING: $1${NC}"
-}
 
 error() {
-    echo -e "${RED}ERROR: $1${NC}"
+    log_error "$1"
     exit 1
 }
 
-success() {
-    echo -e "${GREEN}[OK] $1${NC}"
-}
 
 # Display usage
 usage() {
@@ -74,7 +63,7 @@ EOF
 
 # List available profiles
 list_profiles() {
-    info "Available Profiles:"
+    log_info "Available Profiles:"
     echo ""
     
     for profile in "${AVAILABLE_PROFILES[@]}"; do
@@ -113,14 +102,14 @@ show_current() {
     if [[ -f "$CURRENT_PROFILE_FILE" ]]; then
         local current
         current=$(cat "$CURRENT_PROFILE_FILE")
-        success "Current profile: $current"
+        log_log_success "Current profile: $current"
         
         # Show when it was applied
         local timestamp
         timestamp=$(stat -c %y "$CURRENT_PROFILE_FILE" 2>/dev/null || echo "Unknown")
         echo "Applied: $timestamp"
     else
-        warn "No active profile found"
+        log_warn "No active profile found"
         echo "Use '$0 apply PROFILE' to set a profile"
     fi
 }
@@ -135,7 +124,7 @@ show_profile_info() {
         error "Profile configuration not found: $profile"
     fi
     
-    info "Profile Information: $profile"
+    log_info "Profile Information: $profile"
     echo ""
     
     # Extract key information from profile
@@ -190,7 +179,7 @@ validate_profile() {
     local profile_dir="$PROFILES_DIR/$profile"
     local profile_vars="$profile_dir/ansible/vars.yml"
     
-    info "Validating profile: $profile"
+    log_info "Validating profile: $profile"
     
     # Check if profile exists
     if [[ ! -d "$profile_dir" ]]; then
@@ -207,22 +196,22 @@ validate_profile() {
         if ! python3 -c "import yaml; yaml.safe_load(open('$profile_vars'))" 2>/dev/null; then
             error "Invalid YAML syntax in profile configuration"
         fi
-        success "YAML syntax valid"
+        log_success "YAML syntax valid"
     else
-        warn "Python3 not available, skipping YAML validation"
+        log_warn "Python3 not available, skipping YAML validation"
     fi
     
     # Check required fields
     local required_fields=("profile_name" "system" "user" "desktop")
     for field in "${required_fields[@]}"; do
         if grep -q "^$field:" "$profile_vars"; then
-            success "Required field present: $field"
+            log_success "Required field present: $field"
         else
             error "Missing required field: $field"
         fi
     done
     
-    success "Profile validation completed: $profile"
+    log_success "Profile validation completed: $profile"
 }
 
 # Switch profile
@@ -231,21 +220,21 @@ switch_profile() {
     
     validate_profile "$profile"
     
-    info "Switching to profile: $profile"
+    log_info "Switching to profile: $profile"
     
     # Backup current configuration if it exists
     if [[ -f "$CURRENT_PROFILE_FILE" ]]; then
         local current
         current=$(cat "$CURRENT_PROFILE_FILE")
-        info "Creating backup of current profile: $current"
+        log_info "Creating backup of current profile: $current"
         backup_profile "$current"
     fi
     
     # Apply new profile
     apply_profile "$profile"
     
-    success "Profile switched to: $profile"
-    info "Reboot recommended to ensure all changes take effect"
+    log_success "Profile switched to: $profile"
+    log_info "Reboot recommended to ensure all changes take effect"
 }
 
 # Apply profile configuration
@@ -254,7 +243,7 @@ apply_profile() {
     
     validate_profile "$profile"
     
-    info "Applying profile: $profile"
+    log_info "Applying profile: $profile"
     
     # Set current profile
     echo "$profile" | sudo tee "$CURRENT_PROFILE_FILE" >/dev/null
@@ -271,13 +260,13 @@ apply_profile() {
             --extra-vars "deployment_profile=$profile" \
             "configs/ansible/playbooks/site.yml"
     else
-        warn "Ansible not found, profile set but not applied"
-        info "Run the following to apply manually:"
-        info "cd $PROJECT_ROOT"
-        info "ansible-playbook -i configs/ansible/inventory/localhost.yml --extra-vars @$profile_vars configs/ansible/playbooks/site.yml"
+        log_warn "Ansible not found, profile set but not applied"
+        log_info "Run the following to apply manually:"
+        log_info "cd $PROJECT_ROOT"
+        log_info "ansible-playbook -i configs/ansible/inventory/localhost.yml --extra-vars @$profile_vars configs/ansible/playbooks/site.yml"
     fi
     
-    success "Profile applied: $profile"
+    log_success "Profile applied: $profile"
 }
 
 # Backup current profile
@@ -285,7 +274,7 @@ backup_profile() {
     local profile="${1:-$(cat "$CURRENT_PROFILE_FILE" 2>/dev/null || echo "unknown")}"
     local backup_dir="/backup/profile-$profile-$(date +%Y%m%d-%H%M%S)"
     
-    info "Creating profile backup: $backup_dir"
+    log_info "Creating profile backup: $backup_dir"
     
     sudo mkdir -p "$backup_dir"
     
@@ -298,7 +287,7 @@ backup_profile() {
     
     for path in "${backup_paths[@]}"; do
         if [[ -d "$path" ]]; then
-            sudo cp -r "$path" "$backup_dir/" 2>/dev/null || warn "Could not backup: $path"
+            sudo cp -r "$path" "$backup_dir/" 2>/dev/null || log_warn "Could not backup: $path"
         fi
     done
     
@@ -306,14 +295,14 @@ backup_profile() {
     echo "Profile: $profile" | sudo tee "$backup_dir/profile_info.txt" >/dev/null
     echo "Created: $(date)" | sudo tee -a "$backup_dir/profile_info.txt" >/dev/null
     
-    success "Backup created: $backup_dir"
+    log_success "Backup created: $backup_dir"
 }
 
 # Restore from backup
 restore_profile() {
     local profile="$1"
     
-    info "Looking for backups of profile: $profile"
+    log_info "Looking for backups of profile: $profile"
     
     local backup_pattern="/backup/profile-$profile-*"
     local backups
@@ -323,7 +312,7 @@ restore_profile() {
         error "No backups found for profile: $profile"
     fi
     
-    info "Available backups:"
+    log_info "Available backups:"
     for i in "${!backups[@]}"; do
         local backup_info="${backups["$i"]}/profile_info.txt"
         local created="Unknown"
@@ -342,31 +331,31 @@ restore_profile() {
     
     local selected_backup="${backups["$((selection-1))"]}"
     
-    warn "This will overwrite current configuration!"
+    log_warn "This will overwrite current configuration!"
     echo -n "Are you sure? [y/N]: "
     read -r confirm
     
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        info "Restore cancelled"
+        log_info "Restore cancelled"
         exit 0
     fi
     
-    info "Restoring from: $selected_backup"
+    log_info "Restoring from: $selected_backup"
     
     # Restore configuration
     if [[ -d "$selected_backup/etc" ]]; then
-        sudo cp -r "$selected_backup/etc/"* /etc/ || warn "Could not restore /etc"
+        sudo cp -r "$selected_backup/etc/"* /etc/ || log_warn "Could not restore /etc"
     fi
     
     if [[ -d "$selected_backup/home" ]] && [[ -d "/home/$USER" ]]; then
-        cp -r "$selected_backup/home/"* "/home/$USER/" 2>/dev/null || warn "Could not restore home directory"
+        cp -r "$selected_backup/home/"* "/home/$USER/" 2>/dev/null || log_warn "Could not restore home directory"
     fi
     
     # Set profile
     echo "$profile" | sudo tee "$CURRENT_PROFILE_FILE" >/dev/null
     
-    success "Profile restored: $profile"
-    info "Reboot recommended to ensure all changes take effect"
+    log_success "Profile restored: $profile"
+    log_info "Reboot recommended to ensure all changes take effect"
 }
 
 # Main function
@@ -389,7 +378,7 @@ main() {
             if [[ $# -lt 2 ]]; then
                 error "Profile name required for info command"
             fi
-            show_profile_info "$2"
+            show_profile_log_info "$2"
             ;;
         switch)
             if [[ $# -lt 2 ]]; then

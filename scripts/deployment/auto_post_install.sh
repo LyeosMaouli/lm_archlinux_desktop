@@ -4,48 +4,27 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
-CONFIG_FILE="${CONFIG_FILE:-$HOME/lm_archlinux_desktop/deployment_config.yml}"
-LOG_FILE="/var/log/auto_post_install.log"
-INSTALL_DIR="$HOME/lm_archlinux_desktop"
-
-# Logging function
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | sudo tee -a "$LOG_FILE"
-}
-
-error() {
-    echo -e "${RED}ERROR: $1${NC}" >&2
-    log "ERROR: $1"
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
     exit 1
 }
 
-info() {
-    echo -e "${GREEN}INFO: $1${NC}"
-    log "INFO: $1"
+# Configuration
+CONFIG_FILE="${CONFIG_FILE:-$HOME/lm_archlinux_desktop/deployment_config.yml}"
+INSTALL_DIR="$HOME/lm_archlinux_desktop"
+
+# Legacy error function that exits (keep for compatibility)
+error() {
+    log_error "$1"
+    exit 1
 }
 
-warn() {
-    echo -e "${YELLOW}WARNING: $1${NC}"
-    log "WARNING: $1"
-}
+# Use common logging functions instead
 
-success() {
-    echo -e "${GREEN}[OK] $1${NC}"
-    log "SUCCESS: $1"
-}
 
-fail() {
-    echo -e "${RED}[FAIL] $1${NC}"
-    log "FAIL: $1"
-}
+
 
 # Parse YAML configuration
 parse_nested_config() {
@@ -66,9 +45,9 @@ validate_desktop() {
     
     # Check if Hyprland is installed
     if command -v Hyprland >/dev/null 2>&1; then
-        success "Hyprland compositor installed"
+        log_log_success "Hyprland compositor installed"
     else
-        fail "Hyprland compositor not found"
+        log_error "Hyprland compositor not found"
         validation_passed=false
     fi
     
@@ -76,18 +55,18 @@ validate_desktop() {
     local components=("waybar" "wofi" "mako" "kitty" "thunar" "sddm")
     for component in "${components[@]}"; do
         if command -v "$component" >/dev/null 2>&1; then
-            success "$component installed"
+            log_success "$component installed"
         else
-            fail "$component not found"
+            log_error "$component not found"
             validation_passed=false
         fi
     done
     
     # Check desktop session files
     if [[ -f /usr/share/wayland-sessions/hyprland.desktop ]]; then
-        success "Hyprland session file found"
+        log_success "Hyprland session file found"
     else
-        fail "Hyprland session file missing"
+        log_error "Hyprland session file missing"
         validation_passed=false
     fi
     
@@ -117,12 +96,12 @@ validate_services() {
         
         if systemctl is-enabled --quiet "$service" 2>/dev/null; then
             if systemctl is-active --quiet "$service" 2>/dev/null; then
-                success "$description ($service): enabled and running"
+                log_success "$description ($service): enabled and running"
             else
-                warn "$description ($service): enabled but not running"
+                log_warn "$description ($service): enabled but not running"
             fi
         else
-            fail "$description ($service): not enabled"
+            log_error "$description ($service): not enabled"
             validation_passed=false
         fi
     done
@@ -138,16 +117,16 @@ validate_services() {
         local description=$(echo "$service_info" | cut -d':' -f2)
         
         if systemctl --user is-enabled --quiet "$service" 2>/dev/null; then
-            success "$description ($service): enabled"
+            log_success "$description ($service): enabled"
         else
-            warn "$description ($service): not enabled"
+            log_warn "$description ($service): not enabled"
         fi
     done
     
     if [[ "$validation_passed" == true ]]; then
         info "Services validation: PASSED"
     else
-        warn "Services validation: WARNINGS FOUND"
+        log_warn "Services validation: WARNINGS FOUND"
     fi
 }
 
@@ -161,29 +140,29 @@ validate_security() {
     if command -v ufw >/dev/null 2>&1; then
         local ufw_status=$(sudo ufw status | head -n1)
         if [[ "$ufw_status" == *"active"* ]]; then
-            success "UFW firewall is active"
+            log_success "UFW firewall is active"
         else
-            fail "UFW firewall is not active"
+            log_error "UFW firewall is not active"
             validation_passed=false
         fi
     else
-        fail "UFW firewall not installed"
+        log_error "UFW firewall not installed"
         validation_passed=false
     fi
     
     # Check fail2ban
     if systemctl is-active --quiet fail2ban 2>/dev/null; then
-        success "fail2ban intrusion prevention is running"
+        log_success "fail2ban intrusion prevention is running"
     else
-        fail "fail2ban is not running"
+        log_error "fail2ban is not running"
         validation_passed=false
     fi
     
     # Check audit system
     if systemctl is-active --quiet auditd 2>/dev/null; then
-        success "Audit system is running"
+        log_success "Audit system is running"
     else
-        warn "Audit system is not running"
+        log_warn "Audit system is not running"
     fi
     
     # Check SSH security
@@ -192,22 +171,22 @@ validate_security() {
         local password_auth=$(grep "^PasswordAuthentication" /etc/ssh/sshd_config | awk '{print $2}' || echo "unknown")
         
         if [[ "$root_login" == "no" ]]; then
-            success "SSH root login disabled"
+            log_success "SSH root login disabled"
         else
-            warn "SSH root login not disabled (current: $root_login)"
+            log_warn "SSH root login not disabled (current: $root_login)"
         fi
         
         if [[ "$password_auth" == "no" ]]; then
-            success "SSH password authentication disabled"
+            log_success "SSH password authentication disabled"
         else
-            warn "SSH password authentication not disabled (current: $password_auth)"
+            log_warn "SSH password authentication not disabled (current: $password_auth)"
         fi
     fi
     
     if [[ "$validation_passed" == true ]]; then
         info "Security validation: PASSED"
     else
-        warn "Security validation: ISSUES FOUND"
+        log_warn "Security validation: ISSUES FOUND"
     fi
 }
 
@@ -219,43 +198,43 @@ validate_audio() {
     
     # Check PipeWire installation
     if command -v pipewire >/dev/null 2>&1; then
-        success "PipeWire installed"
+        log_success "PipeWire installed"
     else
-        fail "PipeWire not installed"
+        log_error "PipeWire not installed"
         validation_passed=false
     fi
     
     # Check PipeWire services
     if systemctl --user is-active --quiet pipewire 2>/dev/null; then
-        success "PipeWire service running"
+        log_success "PipeWire service running"
     else
-        warn "PipeWire service not running"
+        log_warn "PipeWire service not running"
         # Try to start it
-        systemctl --user start pipewire || warn "Failed to start PipeWire"
+        systemctl --user start pipewire || log_warn "Failed to start PipeWire"
     fi
     
     # Check WirePlumber
     if systemctl --user is-active --quiet wireplumber 2>/dev/null; then
-        success "WirePlumber session manager running"
+        log_success "WirePlumber session manager running"
     else
-        warn "WirePlumber not running"
-        systemctl --user start wireplumber || warn "Failed to start WirePlumber"
+        log_warn "WirePlumber not running"
+        systemctl --user start wireplumber || log_warn "Failed to start WirePlumber"
     fi
     
     # Check audio device detection
     if command -v pactl >/dev/null 2>&1; then
         local audio_info=$(pactl info 2>/dev/null | grep "Server Name" || echo "")
         if [[ -n "$audio_info" ]]; then
-            success "PulseAudio compatibility layer working"
+            log_success "PulseAudio compatibility layer working"
         else
-            warn "PulseAudio compatibility layer not working"
+            log_warn "PulseAudio compatibility layer not working"
         fi
     fi
     
     if [[ "$validation_passed" == true ]]; then
         info "Audio system validation: PASSED"
     else
-        warn "Audio system validation: ISSUES FOUND"
+        log_warn "Audio system validation: ISSUES FOUND"
     fi
 }
 
@@ -267,26 +246,26 @@ validate_network() {
     
     # Check NetworkManager
     if systemctl is-active --quiet NetworkManager; then
-        success "NetworkManager is running"
+        log_success "NetworkManager is running"
     else
-        fail "NetworkManager is not running"
+        log_error "NetworkManager is not running"
         validation_passed=false
     fi
     
     # Check internet connectivity
     if ping -c 3 archlinux.org >/dev/null 2>&1; then
-        success "Internet connectivity working"
+        log_success "Internet connectivity working"
     else
-        fail "No internet connectivity"
+        log_error "No internet connectivity"
         validation_passed=false
     fi
     
     # Check network interfaces
     local interfaces=$(ip link show | grep -E '^[0-9]+:' | grep -v lo | wc -l)
     if [[ "$interfaces" -gt 0 ]]; then
-        success "Network interfaces detected ($interfaces)"
+        log_success "Network interfaces detected ($interfaces)"
     else
-        warn "No network interfaces found"
+        log_warn "No network interfaces found"
     fi
     
     # Check WiFi if configured
@@ -295,9 +274,9 @@ validate_network() {
         if command -v nmcli >/dev/null 2>&1; then
             local wifi_status=$(nmcli -t -f WIFI general status)
             if [[ "$wifi_status" == "enabled" ]]; then
-                success "WiFi is enabled"
+                log_success "WiFi is enabled"
             else
-                warn "WiFi is disabled"
+                log_warn "WiFi is disabled"
             fi
         fi
     fi
@@ -305,7 +284,7 @@ validate_network() {
     if [[ "$validation_passed" == true ]]; then
         info "Network validation: PASSED"
     else
-        warn "Network validation: ISSUES FOUND"
+        log_warn "Network validation: ISSUES FOUND"
     fi
 }
 
@@ -317,9 +296,9 @@ validate_aur() {
     
     # Check yay installation
     if command -v yay >/dev/null 2>&1; then
-        success "Yay AUR helper installed"
+        log_success "Yay AUR helper installed"
     else
-        fail "Yay AUR helper not found"
+        log_error "Yay AUR helper not found"
         validation_passed=false
         return
     fi
@@ -335,9 +314,9 @@ validate_aur() {
         
         for package in "${expected_packages[@]}"; do
             if echo "$installed_aur" | grep -q "^$package$"; then
-                success "AUR package '$package' installed"
+                log_success "AUR package '$package' installed"
             else
-                warn "AUR package '$package' not found"
+                log_warn "AUR package '$package' not found"
             fi
         done
     fi
@@ -345,7 +324,7 @@ validate_aur() {
     if [[ "$validation_passed" == true ]]; then
         info "AUR packages validation: PASSED"
     else
-        warn "AUR packages validation: ISSUES FOUND"
+        log_warn "AUR packages validation: ISSUES FOUND"
     fi
 }
 
@@ -411,7 +390,7 @@ $(free -h)
 
 EOF
     
-    success "System report created: $report_file"
+    log_success "System report created: $report_file"
 }
 
 # Setup maintenance scripts
@@ -474,7 +453,7 @@ EOF
         echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
     fi
     
-    success "Maintenance scripts created in ~/.local/bin/"
+    log_success "Maintenance scripts created in ~/.local/bin/"
 }
 
 # Run comprehensive validation
@@ -497,7 +476,7 @@ main() {
     
     # Check if running on the installed system
     if [[ ! -d "$INSTALL_DIR" ]]; then
-        warn "Installation directory not found, some validations may be skipped"
+        log_warn "Installation directory not found, some validations may be skipped"
     fi
     
     # Run validation
