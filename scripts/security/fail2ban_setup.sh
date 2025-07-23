@@ -5,10 +5,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_FILE="/var/log/fail2ban-setup.log"
-
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
 }
 
 # Check if running as root
@@ -17,16 +16,16 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-log "Starting fail2ban setup"
+log_info "Starting fail2ban setup"
 
 # Install fail2ban
 if ! command -v fail2ban-server >/dev/null 2>&1; then
-    log "Installing fail2ban"
+    log_info "Installing fail2ban"
     pacman -S --noconfirm fail2ban
 fi
 
 # Create main configuration
-log "Creating fail2ban configuration"
+log_info "Creating fail2ban configuration"
 
 cat > /etc/fail2ban/jail.local << 'EOF'
 [DEFAULT]
@@ -105,7 +104,7 @@ findtime = 3600
 EOF
 
 # Create custom filters
-log "Creating custom fail2ban filters"
+log_info "Creating custom fail2ban filters"
 
 # Auth failures filter
 cat > /etc/fail2ban/filter.d/auth-failures.conf << 'EOF'
@@ -244,7 +243,7 @@ WantedBy=multi-user.target
 EOF
 
 # Enable and start services
-log "Enabling fail2ban services"
+log_info "Enabling fail2ban services"
 systemctl daemon-reload
 systemctl enable fail2ban
 systemctl start fail2ban
@@ -252,9 +251,9 @@ systemctl enable fail2ban-monitor.timer
 systemctl start fail2ban-monitor.timer
 
 # Display status
-log "Fail2ban setup completed. Current status:"
+log_info "Fail2ban setup completed. Current status:"
 fail2ban-client status | tee -a "$LOG_FILE"
 
-log "Fail2ban setup completed successfully"
+log_info "Fail2ban setup completed successfully"
 echo "Check fail2ban status with: fail2ban-client status"
 echo "Monitor fail2ban logs with: journalctl -u fail2ban -f"

@@ -4,11 +4,11 @@
 
 set -euo pipefail
 
+# Load common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_FILE="/var/log/system-hardening.log"
-
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
 }
 
 # Check if running as root
@@ -17,19 +17,19 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-log "Starting system hardening"
+log_info "Starting system hardening"
 
 # Backup original configurations
 backup_config() {
     local file="$1"
     if [[ -f "$file" ]]; then
         cp "$file" "${file}.backup.$(date +%Y%m%d-%H%M%S)"
-        log "Backed up $file"
+        log_info "Backed up $file"
     fi
 }
 
 # Kernel parameter hardening
-log "Applying kernel parameter hardening"
+log_info "Applying kernel parameter hardening"
 backup_config "/etc/sysctl.conf"
 
 cat > /etc/sysctl.d/99-security-hardening.conf << 'EOF'
@@ -127,7 +127,7 @@ EOF
 sysctl -p /etc/sysctl.d/99-security-hardening.conf
 
 # SSH hardening
-log "Hardening SSH configuration"
+log_info "Hardening SSH configuration"
 backup_config "/etc/ssh/sshd_config"
 
 # Create hardened SSH config
@@ -175,7 +175,7 @@ PermitUserEnvironment no
 EOF
 
 # PAM hardening
-log "Configuring PAM security policies"
+log_info "Configuring PAM security policies"
 backup_config "/etc/pam.d/passwd"
 
 # Password quality requirements
@@ -194,7 +194,7 @@ EOF
 fi
 
 # Set password aging
-log "Configuring password aging policies"
+log_info "Configuring password aging policies"
 backup_config "/etc/login.defs"
 
 sed -i 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs
@@ -202,7 +202,7 @@ sed -i 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS 1/' /etc/login.defs
 sed -i 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs
 
 # Audit logging setup
-log "Setting up audit logging"
+log_info "Setting up audit logging"
 if ! command -v auditd >/dev/null 2>&1; then
     pacman -S --noconfirm audit
 fi
@@ -246,7 +246,7 @@ systemctl enable auditd
 systemctl start auditd
 
 # File permission hardening
-log "Hardening file permissions"
+log_info "Hardening file permissions"
 
 # Secure important files
 chmod 600 /etc/ssh/ssh_host_*_key
@@ -261,7 +261,7 @@ chmod 700 /root
 chmod 755 /boot
 
 # Remove unnecessary SUID/SGID binaries
-log "Reviewing SUID/SGID binaries"
+log_info "Reviewing SUID/SGID binaries"
 find / -type f \( -perm -4000 -o -perm -2000 \) -exec ls -la {} \; 2>/dev/null | tee /tmp/suid_sgid_files.txt
 
 # Create security monitoring script
@@ -357,6 +357,6 @@ systemctl start security-monitor.timer
 # Restart SSH service to apply changes
 systemctl restart sshd
 
-log "System hardening completed successfully"
+log_info "System hardening completed successfully"
 echo "Review security settings and test SSH access before logging out!"
 echo "Monitor security logs with: journalctl -f | grep -i security"

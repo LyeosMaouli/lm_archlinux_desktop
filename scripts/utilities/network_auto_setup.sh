@@ -4,42 +4,23 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
-CONFIG_FILE="${CONFIG_FILE:-$HOME/deployment_config.yml}"
-LOG_FILE="/var/log/network_auto_setup.log"
-
-# Logging function
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-}
-
-error() {
-    echo -e "${RED}ERROR: $1${NC}" >&2
-    log "ERROR: $1"
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
     exit 1
 }
 
-info() {
-    echo -e "${GREEN}INFO: $1${NC}"
-    log "INFO: $1"
+# Configuration
+CONFIG_FILE="${CONFIG_FILE:-$HOME/deployment_config.yml}"
+
+error() {
+    log_error "$1"
+    exit 1
 }
 
-warn() {
-    echo -e "${YELLOW}WARNING: $1${NC}"
-    log "WARNING: $1"
-}
 
-success() {
-    echo -e "${GREEN}[OK] $1${NC}"
-    log "SUCCESS: $1"
-}
+
 
 # Parse YAML configuration
 parse_nested_config() {
@@ -54,20 +35,20 @@ parse_nested_config() {
 
 # Check if NetworkManager is available
 check_network_manager() {
-    info "Checking NetworkManager availability..."
+    log_info "Checking NetworkManager availability..."
     
     if command -v nmcli >/dev/null 2>&1; then
         if systemctl is-active --quiet NetworkManager; then
-            success "NetworkManager is running"
+            log_success "NetworkManager is running"
             return 0
         else
-            info "Starting NetworkManager..."
+            log_info "Starting NetworkManager..."
             sudo systemctl start NetworkManager || error "Failed to start NetworkManager"
             sleep 2
             return 0
         fi
     else
-        warn "NetworkManager not available, using alternative methods"
+        log_warn "NetworkManager not available, using alternative methods"
         return 1
     fi
 }
@@ -78,7 +59,7 @@ setup_wifi_networkmanager() {
     local password="$2"
     local security="${3:-wpa2}"
     
-    info "Connecting to WiFi '$ssid' using NetworkManager..."
+    log_info "Connecting to WiFi '$ssid' using NetworkManager..."
     
     # Delete existing connections with same SSID
     nmcli connection delete "$ssid" 2>/dev/null || true
@@ -97,7 +78,7 @@ setup_wifi_networkmanager() {
     local attempts=0
     while [[ $attempts -lt 30 ]]; do
         if nmcli -t -f STATE general status | grep -q "connected"; then
-            success "WiFi connected successfully"
+            log_success "WiFi connected successfully"
             return 0
         fi
         sleep 1
@@ -112,7 +93,7 @@ setup_wifi_iwctl() {
     local ssid="$1"
     local password="$2"
     
-    info "Connecting to WiFi '$ssid' using iwctl..."
+    log_info "Connecting to WiFi '$ssid' using iwctl..."
     
     # Get wireless interface
     local interface=$(iwctl device list | grep -E 'wlan[0-9]' | awk '{print $1}' | head -n1)
@@ -120,7 +101,7 @@ setup_wifi_iwctl() {
         error "No wireless interface found"
     fi
     
-    info "Using wireless interface: $interface"
+    log_info "Using wireless interface: $interface"
     
     # Scan for networks
     iwctl station "$interface" scan
@@ -139,7 +120,7 @@ setup_wifi_iwctl() {
     
     # Verify connection
     if iwctl station "$interface" show | grep -q "connected"; then
-        success "WiFi connected using iwctl"
+        log_success "WiFi connected using iwctl"
     else
         error "WiFi connection failed"
     fi
@@ -150,7 +131,7 @@ setup_wifi_manual() {
     local ssid="$1"
     local password="$2"
     
-    info "Connecting to WiFi '$ssid' using wpa_supplicant..."
+    log_info "Connecting to WiFi '$ssid' using wpa_supplicant..."
     
     # Get wireless interface
     local interface=$(ip link show | grep -E '^[0-9]+: wl' | cut -d':' -f2 | xargs | head -n1)
@@ -162,7 +143,7 @@ setup_wifi_manual() {
         error "No wireless interface found"
     fi
     
-    info "Using wireless interface: $interface"
+    log_info "Using wireless interface: $interface"
     
     # Create temporary wpa_supplicant configuration
     local wpa_config="/tmp/wpa_supplicant_temp.conf"
@@ -189,21 +170,21 @@ EOF
     # Clean up
     rm -f "$wpa_config"
     
-    success "WiFi connected using wpa_supplicant"
+    log_success "WiFi connected using wpa_supplicant"
 }
 
 # Setup ethernet connection
 setup_ethernet() {
-    info "Setting up ethernet connection..."
+    log_info "Setting up ethernet connection..."
     
     # Get ethernet interface
     local interface=$(ip link show | grep -E '^[0-9]+: e' | cut -d':' -f2 | xargs | head -n1)
     if [[ -z "$interface" ]]; then
-        warn "No ethernet interface found"
+        log_warn "No ethernet interface found"
         return 1
     fi
     
-    info "Using ethernet interface: $interface"
+    log_info "Using ethernet interface: $interface"
     
     # Bring interface up
     sudo ip link set "$interface" up
@@ -211,33 +192,33 @@ setup_ethernet() {
     # Try NetworkManager first
     if command -v nmcli >/dev/null 2>&1; then
         nmcli device connect "$interface" 2>/dev/null || {
-            info "NetworkManager failed, trying DHCP directly"
-            sudo dhclient "$interface" || warn "DHCP failed for ethernet"
+            log_info "NetworkManager failed, trying DHCP directly"
+            sudo dhclient "$interface" || log_warn "DHCP failed for ethernet"
         }
     else
         # Manual DHCP
-        sudo dhclient "$interface" || warn "DHCP failed for ethernet"
+        sudo dhclient "$interface" || log_warn "DHCP failed for ethernet"
     fi
     
     # Check if we got an IP
     if ip addr show "$interface" | grep -q "inet "; then
-        success "Ethernet connected successfully"
+        log_success "Ethernet connected successfully"
         return 0
     else
-        warn "Ethernet connection failed"
+        log_warn "Ethernet connection failed"
         return 1
     fi
 }
 
 # Test internet connectivity
 test_connectivity() {
-    info "Testing internet connectivity..."
+    log_info "Testing internet connectivity..."
     
     local test_hosts=("archlinux.org" "google.com" "1.1.1.1")
     
     for host in "${test_hosts[@]}"; do
         if ping -c 3 -W 5 "$host" >/dev/null 2>&1; then
-            success "Internet connectivity confirmed (via $host)"
+            log_success "Internet connectivity confirmed (via $host)"
             return 0
         fi
     done
@@ -247,11 +228,11 @@ test_connectivity() {
 
 # Setup DNS
 setup_dns() {
-    info "Setting up DNS configuration..."
+    log_info "Setting up DNS configuration..."
     
     # Use systemd-resolved if available
     if systemctl is-active --quiet systemd-resolved 2>/dev/null; then
-        info "Using systemd-resolved for DNS"
+        log_info "Using systemd-resolved for DNS"
         return 0
     fi
     
@@ -273,12 +254,12 @@ setup_dns() {
     
     sudo mv /etc/resolv.conf.new /etc/resolv.conf
     
-    success "DNS configuration updated"
+    log_success "DNS configuration updated"
 }
 
 # Configure network profiles
 configure_network_profiles() {
-    info "Configuring network profiles..."
+    log_info "Configuring network profiles..."
     
     local wifi_enabled=$(parse_nested_config "network" "enabled")
     local wifi_ssid=$(parse_nested_config "network" "ssid")
@@ -286,20 +267,20 @@ configure_network_profiles() {
     
     if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ "$auto_connect_wifi" == "true" ]]; then
         if command -v nmcli >/dev/null 2>&1; then
-            info "Configuring WiFi profile for auto-connect..."
+            log_info "Configuring WiFi profile for auto-connect..."
             
             # Set connection to auto-connect
-            nmcli connection modify "$wifi_ssid" connection.autoconnect yes 2>/dev/null || warn "Failed to set auto-connect"
-            nmcli connection modify "$wifi_ssid" connection.autoconnect-priority 100 2>/dev/null || warn "Failed to set priority"
+            nmcli connection modify "$wifi_ssid" connection.autoconnect yes 2>/dev/null || log_warn "Failed to set auto-connect"
+            nmcli connection modify "$wifi_ssid" connection.autoconnect-priority 100 2>/dev/null || log_warn "Failed to set priority"
             
-            success "WiFi profile configured for auto-connect"
+            log_success "WiFi profile configured for auto-connect"
         fi
     fi
 }
 
 # Setup network monitoring
 setup_network_monitoring() {
-    info "Setting up network monitoring..."
+    log_info "Setting up network monitoring..."
     
     # Create network status script
     local script_path="$HOME/.local/bin/network-status"
@@ -359,12 +340,12 @@ fi
 EOF
     
     chmod +x "$script_path"
-    success "Network monitoring script created: $script_path"
+    log_success "Network monitoring script created: $script_path"
 }
 
 # Main network setup function
 setup_network() {
-    info "Starting automated network setup..."
+    log_info "Starting automated network setup..."
     
     # Load configuration
     local wifi_enabled=$(parse_nested_config "network" "enabled")
@@ -382,15 +363,15 @@ setup_network() {
     # Setup ethernet first (usually more reliable)
     if [[ "$ethernet_enabled" == "true" ]] || [[ -z "$ethernet_enabled" ]]; then
         if setup_ethernet; then
-            info "Ethernet connection established"
+            log_info "Ethernet connection established"
         else
-            info "Ethernet setup failed or not available"
+            log_info "Ethernet setup failed or not available"
         fi
     fi
     
     # Setup WiFi if configured
     if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ -n "$wifi_password" ]]; then
-        info "Setting up WiFi connection..."
+        log_info "Setting up WiFi connection..."
         
         if [[ "$nm_available" == true ]]; then
             setup_wifi_networkmanager "$wifi_ssid" "$wifi_password" "$wifi_security"
@@ -400,7 +381,7 @@ setup_network() {
             setup_wifi_manual "$wifi_ssid" "$wifi_password"
         fi
     elif [[ "$wifi_enabled" == "true" ]]; then
-        warn "WiFi enabled but SSID or password not configured"
+        log_warn "WiFi enabled but SSID or password not configured"
     fi
     
     # Test connectivity
@@ -415,16 +396,16 @@ setup_network() {
     # Setup monitoring
     setup_network_monitoring
     
-    success "Network setup completed successfully"
+    log_success "Network setup completed successfully"
 }
 
 # Quick connectivity check function
 quick_connect() {
-    info "Running quick connectivity check and setup..."
+    log_info "Running quick connectivity check and setup..."
     
     # Test current connectivity
     if ping -c 1 -W 3 google.com >/dev/null 2>&1; then
-        success "Already connected to internet"
+        log_success "Already connected to internet"
         return 0
     fi
     
@@ -434,18 +415,18 @@ quick_connect() {
 
 # Emergency network recovery
 network_recovery() {
-    warn "Running network recovery procedures..."
+    log_warn "Running network recovery procedures..."
     
     # Restart NetworkManager
     if systemctl is-active --quiet NetworkManager; then
-        info "Restarting NetworkManager..."
+        log_info "Restarting NetworkManager..."
         sudo systemctl restart NetworkManager
         sleep 5
     fi
     
     # Reset network interfaces
     for interface in $(ip link show | grep -E '^[0-9]+: (wl|en)' | cut -d':' -f2 | xargs); do
-        info "Resetting interface: $interface"
+        log_info "Resetting interface: $interface"
         sudo ip link set "$interface" down
         sleep 1
         sudo ip link set "$interface" up
@@ -474,7 +455,7 @@ main() {
             if [[ -x "$HOME/.local/bin/network-status" ]]; then
                 "$HOME/.local/bin/network-status"
             else
-                info "Network status script not found, showing basic info..."
+                log_info "Network status script not found, showing basic info..."
                 ip addr show | grep -E '^[0-9]+:|inet '
             fi
             ;;

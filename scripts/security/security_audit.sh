@@ -5,11 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPORT_FILE="/var/log/security-audit-$(date +%Y%m%d-%H%M%S).log"
-
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$REPORT_FILE"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
 }
+
+# Create audit-specific report file
+REPORT_FILE="$LOG_DIR/security-audit-$(date +%Y%m%d-%H%M%S).log"
 
 header() {
     echo "" | tee -a "$REPORT_FILE"
@@ -33,19 +35,19 @@ check_status() {
     fi
 }
 
-log "Starting security audit"
+log_info "Starting security audit"
 
 header "SYSTEM INFORMATION"
-log "Hostname: $(hostname)"
-log "Kernel: $(uname -r)"
-log "Distribution: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
-log "Uptime: $(uptime -p)"
-log "Last boot: $(who -b | awk '{print $3, $4}')"
+log_info "Hostname: $(hostname)"
+log_info "Kernel: $(uname -r)"
+log_info "Distribution: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
+log_info "Uptime: $(uptime -p)"
+log_info "Last boot: $(who -b | awk '{print $3, $4}')"
 
 header "USER ACCOUNTS AUDIT"
 
 # Check for accounts with UID 0
-log "Checking for accounts with UID 0..."
+log_info "Checking for accounts with UID 0..."
 uid_0_accounts=$(awk -F: '$3 == 0 {print $1}' /etc/passwd)
 if [[ "$uid_0_accounts" == "root" ]]; then
     check_status "PASS" "Only root account has UID 0"
@@ -54,7 +56,7 @@ else
 fi
 
 # Check for accounts without passwords
-log "Checking for accounts without passwords..."
+log_info "Checking for accounts without passwords..."
 no_password=$(awk -F: '$2 == "" {print $1}' /etc/shadow 2>/dev/null | wc -l)
 if [[ $no_password -eq 0 ]]; then
     check_status "PASS" "No accounts without passwords"
@@ -63,7 +65,7 @@ else
 fi
 
 # Check for inactive users
-log "Checking for user activity..."
+log_info "Checking for user activity..."
 while IFS=: read -r username _ uid _ _ home shell; do
     if [[ $uid -ge 1000 && $uid -lt 65534 ]]; then
         last_login=$(last -1 "$username" 2>/dev/null | head -1 | awk '{print $4, $5, $6}')
@@ -76,7 +78,7 @@ done < /etc/passwd
 header "PASSWORD POLICY AUDIT"
 
 # Check password aging
-log "Checking password aging policies..."
+log_info "Checking password aging policies..."
 max_days=$(grep "^PASS_MAX_DAYS" /etc/login.defs | awk '{print $2}')
 min_days=$(grep "^PASS_MIN_DAYS" /etc/login.defs | awk '{print $2}')
 warn_days=$(grep "^PASS_WARN_AGE" /etc/login.defs | awk '{print $2}')
@@ -96,7 +98,7 @@ fi
 header "SSH CONFIGURATION AUDIT"
 
 # Check SSH configuration
-log "Auditing SSH configuration..."
+log_info "Auditing SSH configuration..."
 
 if systemctl is-active --quiet sshd; then
     check_status "INFO" "SSH service is running"
@@ -131,7 +133,7 @@ fi
 header "FIREWALL AUDIT"
 
 # Check UFW status
-log "Checking firewall status..."
+log_info "Checking firewall status..."
 if command -v ufw >/dev/null 2>&1; then
     if ufw status | grep -q "Status: active"; then
         check_status "PASS" "UFW firewall is active"
@@ -173,7 +175,7 @@ fi
 header "FILE PERMISSIONS AUDIT"
 
 # Check critical file permissions
-log "Checking critical file permissions..."
+log_info "Checking critical file permissions..."
 
 critical_files=(
     "/etc/passwd:644"
@@ -204,7 +206,7 @@ done
 header "SUID/SGID AUDIT"
 
 # Check for unusual SUID/SGID files
-log "Checking for SUID/SGID files..."
+log_info "Checking for SUID/SGID files..."
 suid_count=$(find / -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null | wc -l)
 check_status "INFO" "Found $suid_count SUID/SGID files"
 
@@ -220,7 +222,7 @@ fi
 header "NETWORK SECURITY AUDIT"
 
 # Check listening services
-log "Checking listening services..."
+log_info "Checking listening services..."
 listening_services=$(netstat -tuln 2>/dev/null | grep LISTEN | wc -l)
 check_status "INFO" "$listening_services services listening on network"
 
@@ -230,7 +232,7 @@ netstat -tuln 2>/dev/null | grep LISTEN | while read line; do
 done
 
 # Check for promiscuous network interfaces
-log "Checking for promiscuous network interfaces..."
+log_info "Checking for promiscuous network interfaces..."
 promiscuous=$(ip link show | grep PROMISC | wc -l)
 if [[ $promiscuous -eq 0 ]]; then
     check_status "PASS" "No promiscuous network interfaces"
@@ -241,7 +243,7 @@ fi
 header "SYSTEM INTEGRITY AUDIT"
 
 # Check for world-writable files
-log "Checking for world-writable files..."
+log_info "Checking for world-writable files..."
 world_writable=$(find / -type f -perm -002 2>/dev/null | grep -v "/proc/" | grep -v "/sys/" | wc -l)
 if [[ $world_writable -eq 0 ]]; then
     check_status "PASS" "No world-writable files found"
@@ -250,7 +252,7 @@ else
 fi
 
 # Check for files without owner
-log "Checking for orphaned files..."
+log_info "Checking for orphaned files..."
 orphaned_files=$(find / -nouser -o -nogroup 2>/dev/null | grep -v "/proc/" | grep -v "/sys/" | wc -l)
 if [[ $orphaned_files -eq 0 ]]; then
     check_status "PASS" "No orphaned files found"
@@ -261,7 +263,7 @@ fi
 header "KERNEL SECURITY AUDIT"
 
 # Check kernel parameters
-log "Checking security-relevant kernel parameters..."
+log_info "Checking security-relevant kernel parameters..."
 
 security_params=(
     "net.ipv4.ip_forward:0"
@@ -311,17 +313,17 @@ total_pass=$(grep -c "[SUCCESS] PASS" "$REPORT_FILE")
 total_fail=$(grep -c "[ERROR] FAIL" "$REPORT_FILE")
 total_warn=$(grep -c "[WARNING]  WARN" "$REPORT_FILE")
 
-log "Security audit completed"
-log "Results: $total_pass PASS, $total_fail FAIL, $total_warn WARN"
+log_info "Security audit completed"
+log_info "Results: $total_pass PASS, $total_fail FAIL, $total_warn WARN"
 
 if [[ $total_fail -gt 0 ]]; then
-    log "CRITICAL: $total_fail security issues found that require immediate attention"
+    log_info "CRITICAL: $total_fail security issues found that require immediate attention"
     exit 1
 elif [[ $total_warn -gt 0 ]]; then
-    log "WARNING: $total_warn security issues found that should be reviewed"
+    log_info "WARNING: $total_warn security issues found that should be reviewed"
     exit 2
 else
-    log "All security checks passed"
+    log_info "All security checks passed"
     exit 0
 fi
 

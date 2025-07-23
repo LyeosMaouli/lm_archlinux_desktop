@@ -4,12 +4,11 @@
 
 set -euo pipefail
 
-# Configuration
+# Load common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_FILE="/var/log/firewall-setup.log"
-
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
 }
 
 # Check if running as root
@@ -18,20 +17,20 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-log "Starting UFW firewall setup"
+log_info "Starting UFW firewall setup"
 
 # Install UFW if not present
 if ! command -v ufw >/dev/null 2>&1; then
-    log "Installing UFW firewall"
+    log_info "Installing UFW firewall"
     pacman -S --noconfirm ufw
 fi
 
 # Reset UFW to defaults
-log "Resetting UFW to defaults"
+log_info "Resetting UFW to defaults"
 ufw --force reset
 
 # Set default policies (deny incoming, allow outgoing)
-log "Setting default policies"
+log_info "Setting default policies"
 ufw default deny incoming
 ufw default allow outgoing
 ufw default deny forward
@@ -42,12 +41,12 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "Enter SSH port (default 22): " ssh_port
     ssh_port=${ssh_port:-22}
-    log "Allowing SSH on port $ssh_port"
+    log_info "Allowing SSH on port $ssh_port"
     ufw allow "$ssh_port"/tcp comment "SSH"
 fi
 
 # Allow common desktop services
-log "Configuring desktop service rules"
+log_info "Configuring desktop service rules"
 
 # Allow loopback
 ufw allow in on lo
@@ -75,7 +74,7 @@ ufw allow out 465/tcp comment "SMTPS"
 ufw allow out 587/tcp comment "SMTP submission"
 
 # Block common attack vectors
-log "Configuring attack prevention rules"
+log_info "Configuring attack prevention rules"
 
 # Rate limiting for SSH
 if [[ -n "${ssh_port:-}" ]]; then
@@ -89,7 +88,7 @@ for port in "${MALICIOUS_PORTS[@]}"; do
 done
 
 # Configure advanced settings
-log "Configuring advanced UFW settings"
+log_info "Configuring advanced UFW settings"
 
 # Enable logging
 ufw logging medium
@@ -132,14 +131,14 @@ EOF
 
 # Apply IPv6 rules if enabled
 if [[ -f /proc/net/if_inet6 ]]; then
-    log "Configuring IPv6 rules"
+    log_info "Configuring IPv6 rules"
     ufw --force enable
     ufw default deny incoming
     ufw default allow outgoing
 fi
 
 # Enable UFW
-log "Enabling UFW firewall"
+log_info "Enabling UFW firewall"
 ufw --force enable
 
 # Configure automatic startup
@@ -147,7 +146,7 @@ systemctl enable ufw
 systemctl start ufw
 
 # Display status
-log "UFW setup completed. Current status:"
+log_info "UFW setup completed. Current status:"
 ufw status verbose | tee -a "$LOG_FILE"
 
 # Create monitoring script
@@ -187,6 +186,6 @@ EOF
 
 chmod +x /usr/local/bin/firewall-monitor.sh
 
-log "Firewall setup completed successfully"
+log_info "Firewall setup completed successfully"
 echo "Review the firewall rules with: ufw status verbose"
 echo "Monitor firewall logs with: journalctl -u ufw -f"

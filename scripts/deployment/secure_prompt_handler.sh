@@ -4,12 +4,12 @@
 
 set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../internal/common.sh" || {
+    echo "Error: Cannot load common.sh"
+    exit 1
+}
 
 # Global variables for storing secure data
 USER_PASSWORD=""
@@ -26,28 +26,28 @@ secure_password_prompt() {
     local password_confirm=""
     
     while true; do
-        echo -e "${BLUE}$prompt_text${NC}"
+        log_info "$prompt_text"
         read -s password
         echo
         
         # Check minimum length
         if [[ ${#password} -lt $min_length ]]; then
-            echo -e "${RED}[ERROR] Password must be at least $min_length characters${NC}"
+            log_error "Password must be at least $min_length characters"
             continue
         fi
         
         # Check password strength
         if [[ ${#password} -lt 12 ]]; then
-            echo -e "${YELLOW}[WARNING]  Warning: Password is short (less than 12 characters)${NC}"
+            log_warn "Warning: Password is short (less than 12 characters)"
         fi
         
         if [[ "$confirm_required" == "true" ]]; then
-            echo -e "${BLUE}Confirm password:${NC}"
+            log_info "Confirm password:"
             read -s password_confirm
             echo
             
             if [[ "$password" != "$password_confirm" ]]; then
-                echo -e "${RED}[ERROR] Passwords don't match, please try again${NC}"
+                log_error "Passwords don't match, please try again"
                 continue
             fi
         fi
@@ -65,7 +65,7 @@ wifi_credentials_prompt() {
     
     # Check if WiFi hardware exists
     if ! iwctl device list 2>/dev/null | grep -q "wlan"; then
-        echo -e "${YELLOW}[WARNING]  No WiFi hardware detected, skipping WiFi setup${NC}"
+        log_warn "No WiFi hardware detected, skipping WiFi setup"
         return 0
     fi
     
@@ -74,7 +74,7 @@ wifi_credentials_prompt() {
     wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
     
     if [[ -n "$wifi_device" ]]; then
-        echo -e "${BLUE}📶 Scanning for WiFi networks...${NC}"
+        log_info "📶 Scanning for WiFi networks..."
         iwctl station "$wifi_device" scan 2>/dev/null || true
         sleep 2
         
@@ -86,13 +86,13 @@ wifi_credentials_prompt() {
     read -p "WiFi network name (SSID) [press Enter to skip]: " ssid
     
     if [[ -n "$ssid" ]]; then
-        echo -e "${BLUE}Enter WiFi password for '$ssid':${NC}"
+        log_info "Enter WiFi password for '$ssid':"
         password=$(secure_password_prompt "WiFi password:" false 1)
         
         echo "wifi_ssid=\"$ssid\"" >> /tmp/wifi_config
         echo "wifi_password=\"$password\"" >> /tmp/wifi_config
         
-        echo -e "${GREEN}[SUCCESS] WiFi credentials saved${NC}"
+        log_success "WiFi credentials saved"
     else
         echo "Skipping WiFi setup - will use ethernet connection"
     fi
@@ -102,23 +102,23 @@ wifi_credentials_prompt() {
 user_account_prompt() {
     local username="$1"
     
-    echo -e "${BLUE}[USER] Setting up user account for '$username'${NC}"
+    log_info "Setting up user account for '$username'"
     echo
     
     USER_PASSWORD=$(secure_password_prompt "Enter password for user '$username':" true 8)
     
-    echo -e "${GREEN}[SUCCESS] User password set${NC}"
+    log_success "User password set"
 }
 
 # Root account setup
 root_account_prompt() {
-    echo -e "${BLUE}[PASSWORD] Setting up root account${NC}"
+    log_info "Setting up root account"
     echo "Root account is needed for system administration."
     echo
     
     ROOT_PASSWORD=$(secure_password_prompt "Enter root password:" true 8)
     
-    echo -e "${GREEN}[SUCCESS] Root password set${NC}"
+    log_success "Root password set"
 }
 
 # LUKS encryption setup
@@ -126,15 +126,15 @@ luks_encryption_prompt() {
     local encryption_enabled="$1"
     
     if [[ "$encryption_enabled" == "true" ]]; then
-        echo -e "${BLUE}[SECURE] Setting up disk encryption${NC}"
+        log_info "Setting up disk encryption"
         echo "Full disk encryption protects your data if the laptop is stolen."
         echo "[WARNING]  Important: You'll need this passphrase every time you boot!"
         echo
         
         LUKS_PASSPHRASE=$(secure_password_prompt "Enter LUKS encryption passphrase:" true 12)
         
-        echo -e "${GREEN}[SUCCESS] Encryption passphrase set${NC}"
-        echo -e "${YELLOW}💡 Remember this passphrase - you can't boot without it!${NC}"
+        log_success "Encryption passphrase set"
+        log_warn "💡 Remember this passphrase - you can't boot without it!"
     else
         echo "Disk encryption disabled - skipping passphrase setup"
     fi
@@ -168,7 +168,7 @@ EOF
     export SECURE_CONFIG_DATA="$(cat "$temp_passwords")"
     rm -f "$temp_passwords"
     
-    echo -e "${GREEN}[SUCCESS] Secure configuration generated${NC}"
+    log_success "Secure configuration generated"
 }
 
 # Interactive credential collection
@@ -179,7 +179,7 @@ collect_all_credentials() {
     local username=$(grep -A5 "^user:" "$config_file" | grep -E "^\s*username:" | cut -d':' -f2 | xargs | tr -d '"')
     local encryption_enabled=$(grep -A5 "encryption:" "$config_file" | grep -E "^\s*enabled:" | cut -d':' -f2 | xargs | tr -d '"')
     
-    echo -e "${BLUE}[PASSWORD] Secure Credential Setup${NC}"
+    log_info "Secure Credential Setup"
     echo "We need to set up some passwords and credentials securely."
     echo "All passwords are encrypted and never stored in plain text."
     echo
@@ -200,7 +200,7 @@ collect_all_credentials() {
     # Generate final secure config
     generate_secure_config "$config_file" "/tmp/deployment_config_secure.yml"
     
-    echo -e "${GREEN}[COMPLETE] All credentials collected securely!${NC}"
+    log_success "All credentials collected securely!"
     echo "Deployment will now proceed automatically."
 }
 
@@ -233,7 +233,7 @@ main() {
     local config_file="${1:-}"
     
     if [[ -z "$config_file" ]] || [[ ! -f "$config_file" ]]; then
-        echo -e "${RED}[ERROR] Configuration file required${NC}"
+        log_error "Configuration file required"
         echo "Usage: $0 <config_file>"
         exit 1
     fi
