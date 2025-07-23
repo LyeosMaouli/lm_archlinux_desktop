@@ -11,20 +11,25 @@
 
 ### One Command, Complete Desktop
 ```bash
-# Complete deployment (replaces 5 different entry points)
+# Complete deployment with intelligent dependency installation
 ./scripts/deploy.sh full
 
 # Step-by-step deployment  
 ./scripts/deploy.sh install   # Base system
 ./scripts/deploy.sh desktop   # Desktop environment
 ./scripts/deploy.sh security  # Security hardening
+
+# Automatic configuration detection - supports all deployment methods
+./scripts/deploy.sh full --config config/deploy.conf
 ```
 
-### Dramatically Simplified Architecture
-- **Before**: Multiple confusing entry points, scattered functionality
-- **After**: Single unified `deploy.sh` interface with clear commands
-- **Same Power**: All functionality preserved and enhanced
-- **Cleaner Codebase**: Removed 12 deprecated scripts, consolidated password management
+### Revolutionary Improvements
+- ✅ **Auto-Dependency Installation**: Missing packages (ansible, cryptsetup) installed automatically
+- ✅ **Centralized Configuration**: Single `config/deploy.conf` for all settings
+- ✅ **Intelligent Path Resolution**: Works from USB, local, CI/CD environments
+- ✅ **Enhanced Logging**: Standardized logging across all 20+ scripts
+- ✅ **Unified Interface**: Single `deploy.sh` command replaces 5 different entry points
+- ✅ **Robust Error Handling**: Automatic recovery from common deployment issues
 
 ## ✨ Revolutionary Features
 
@@ -36,10 +41,11 @@
 - **Zero-Touch Deployment**: Complete automation from ISO to desktop
 
 ### 📱 **USB Deployment System** *(No More Typing Errors!)*
+- **Centralized Configuration**: Single `config/deploy.conf` file for all settings
 - **Pre-configured Scripts**: Edit settings on your main computer, deploy on target
 - **Zero Console Typing**: No long commands to type in Arch Linux console
 - **Error-Free Deployment**: Eliminates human error in manual command entry
-- **Multiple Password Modes**: Supports all password management methods
+- **Automatic Setup**: Downloads complete project structure and configuration
 
 ## 🚀 Features
 

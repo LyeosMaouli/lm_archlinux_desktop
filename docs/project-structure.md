@@ -37,7 +37,11 @@ lm_archlinux_desktop/
 │   └── 📂 plans/
 │       └── 📄 implementation-plan.md # Project completion status
 │
-├── 📂 configs/                      # 🔧 Configuration Management
+├── 📂 config/                       # 🎯 Centralized Configuration
+│   ├── 📄 deploy.conf               # Main deployment configuration (ALL SETTINGS)
+│   └── 📄 example.deploy.conf       # Example configuration with mock data
+│
+├── 📂 configs/                      # 🔧 Legacy Configuration Management
 │   └── 📂 ansible/                  # Ansible automation framework
 │       ├── 📄 ansible.cfg           # Ansible configuration
 │       ├── 📄 requirements.yml      # External role dependencies

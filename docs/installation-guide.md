@@ -6,23 +6,28 @@
 
 ### Single Command Deployment
 ```bash
-# Complete end-to-end deployment (replaces 5 different scripts)
+# Complete end-to-end deployment with automatic dependency installation
 ./scripts/deploy.sh full
 
-# Step-by-step deployment
+# Step-by-step deployment with centralized configuration
 ./scripts/deploy.sh install   # Base system installation
 ./scripts/deploy.sh desktop   # Desktop environment setup
 ./scripts/deploy.sh security  # Security hardening
+
+# Use custom configuration file
+./scripts/deploy.sh full --config config/deploy.conf
 
 # Get help and see all options
 ./scripts/deploy.sh help
 ```
 
-### Dramatically Simplified Architecture  
-- **Before**: Multiple confusing entry points and scattered functionality
-- **After**: Single unified `deploy.sh` interface with clear commands
-- **Result**: Same powerful functionality, dramatically easier to use!
-- **Cleaner**: Removed 12 deprecated scripts for streamlined codebase
+### Latest Revolutionary Improvements
+- ✅ **Auto-Dependency Installation**: Missing packages (ansible, cryptsetup, parted) installed automatically
+- ✅ **Centralized Configuration**: Single `config/deploy.conf` file replaces scattered settings
+- ✅ **Intelligent Path Resolution**: Works seamlessly from USB, local, or CI/CD environments
+- ✅ **Enhanced Error Handling**: Automatic recovery from common deployment issues
+- ✅ **Standardized Logging**: All 20+ scripts use consistent logging to `./logs` directory
+- ✅ **Unified Interface**: Single `deploy.sh` command replaces multiple entry points
 
 ## ✨ Revolutionary Features Overview
 
@@ -79,6 +84,33 @@ This revolutionary automation system transforms a minimal Arch Linux installatio
 - **Intel GPU Optimization** - Hardware-specific tuning
 - **Bluetooth Support** - Full audio and device support
 
+## 🔧 Configuration Setup
+
+### Centralized Configuration System
+All system settings are now managed through a single configuration file:
+
+```bash
+# Edit the main configuration file
+nano config/deploy.conf
+
+# Key settings to customize:
+USER_NAME="yourusername"           # Your primary user account
+HOSTNAME="your-hostname"           # System hostname  
+PASSWORD_MODE="generate"           # Password handling method
+PROFILE="work"                     # Deployment profile (work/personal/development)
+ENCRYPTION_ENABLED=true           # Enable disk encryption
+```
+
+### Configuration Examples
+```bash
+# Copy example configuration with sample settings
+cp config/example.deploy.conf config/deploy.conf
+
+# Or create from scratch using the template
+```
+
+**New**: The USB deployment script automatically loads this centralized configuration, eliminating duplicate settings and ensuring consistency across all deployment methods.
+
 ## Prerequisites
 
 ### Hardware Requirements
@@ -86,11 +118,13 @@ This revolutionary automation system transforms a minimal Arch Linux installatio
 - **RAM**: Minimum 8GB (16GB recommended)
 - **Storage**: 60GB available space
 - **Network**: Internet connection for package downloads
+- **Dependencies**: Automatically installed (ansible, cryptsetup, parted)
 
 ### Software Requirements
 - Arch Linux ISO (latest)
 - USB drive (8GB minimum)
 - Network credentials (WiFi SSID/password if needed)
+- Configuration file customized in `config/deploy.conf`
 - No SSH keys required (automatically generated)
 
 ## Installation Methods

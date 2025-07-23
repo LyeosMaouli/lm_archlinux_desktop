@@ -6,11 +6,13 @@ This folder contains everything you need to deploy Arch Linux Hyprland from a US
 
 ## 📋 What You Get
 
-- **One script to run everything** - No long command typing
-- **Pre-configured settings** - Edit once, deploy anywhere
+- **Centralized Configuration** - Single `config/deploy.conf` file for all settings
+- **One script to run everything** - No long command typing required
+- **Automatic Dependencies** - Missing packages installed automatically
+- **Complete Project Structure** - Downloads entire repository with all tools
 - **Multiple password modes** - Encrypted files, environment variables, or auto-generation
-- **Network auto-setup** - WiFi and ethernet configuration
-- **Error handling** - Validates everything before starting
+- **Intelligent Path Resolution** - Works seamlessly across different environments
+- **Enhanced Error Handling** - Automatic recovery from common issues
 
 ## 🎯 Quick Start
 
@@ -24,12 +26,18 @@ This folder contains everything you need to deploy Arch Linux Hyprland from a US
    └── README.md              (this file)
    ```
 
-2. **Edit `usb-deploy.sh`** with your settings:
+2. **Configure deployment settings**:
    ```bash
-   # Edit these lines in the script:
+   # Edit config/deploy.conf in your repository for main settings:
+   USER_NAME="yourusername"
+   HOSTNAME="your-hostname"
+   PASSWORD_MODE="generate"
+   PROFILE="work"
+   
+   # Edit usb-deploy.sh for USB-specific overrides:
    GITHUB_USERNAME="your-username"
    GITHUB_REPO="your-repo-name"
-   PASSWORD_MODE="file"  # or "env", "generate", "interactive"
+   PASSWORD_MODE=""  # Leave empty to use deploy.conf setting
    ```
 
 ### Step 2: Deploy on Target Computer
@@ -52,15 +60,32 @@ This folder contains everything you need to deploy Arch Linux Hyprland from a US
 
 That's it! The script handles everything else automatically.
 
-## ⚙️ Configuration Options
+## ⚙️ Configuration System
 
-Edit the **CONFIGURATION** section in `usb-deploy.sh`:
+### 🎯 New Centralized Configuration
+Main system settings are now in `config/deploy.conf` (automatically loaded):
 
-### Required Settings
 ```bash
+# Primary configuration in config/deploy.conf:
+USER_NAME="yourusername"            # System username
+HOSTNAME="your-hostname"            # System hostname  
+PASSWORD_MODE="generate"            # Password handling method
+PROFILE="work"                      # Deployment profile
+ENCRYPTION_ENABLED=true            # Disk encryption
+# ... and 100+ other settings
+```
+
+### USB-Specific Settings
+Edit the **CONFIGURATION** section in `usb-deploy.sh` for USB-only overrides:
+
+```bash
+# Required - GitHub repository details:
 GITHUB_USERNAME="your-username"     # Your GitHub username
 GITHUB_REPO="your-repo-name"        # Your repository name
-PASSWORD_MODE="file"                # Password method to use
+
+# Optional - Override deploy.conf settings:
+PASSWORD_MODE=""                    # Leave empty to use deploy.conf
+PASSWORD_FILE_NAME=""               # Leave empty to use deploy.conf
 ```
 
 ### Password Modes
@@ -93,11 +118,14 @@ PASSWORD_MODE="interactive"
 # Traditional prompts (original behavior)
 ```
 
-### System Configuration (Optional)
+### Legacy System Configuration (Deprecated)
+**Note**: These settings are now managed in `config/deploy.conf`. The USB script automatically loads the centralized configuration.
+
 ```bash
-TARGET_HOSTNAME="my-archlinux"     # System hostname
-TARGET_USERNAME="myuser"           # Main user account name
-TARGET_TIMEZONE="America/New_York" # System timezone
+# These settings are now in config/deploy.conf:
+# USER_NAME="myuser"                # Main user account name  
+# HOSTNAME="my-archlinux"           # System hostname
+# TIMEZONE="America/New_York"       # System timezone
 TARGET_KEYMAP="us"                 # Keyboard layout
 ENABLE_ENCRYPTION="true"           # Enable disk encryption
 ```
