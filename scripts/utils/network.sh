@@ -52,7 +52,7 @@ detect_network_interfaces() {
     # Find ethernet interfaces
     local ethernet_interfaces=()
     while IFS= read -r interface; do
-        if [[ -n "$interface" ]]; then
+        if [[ -n "${interface:-}" ]]; then
             ethernet_interfaces+=("$interface")
         fi
     done < <(ip link show | grep -E '^[0-9]+:.*:' | grep -v 'lo:' | grep -E '(en|eth)' | cut -d: -f2 | tr -d ' ')
@@ -60,7 +60,7 @@ detect_network_interfaces() {
     # Find WiFi interfaces
     local wifi_interfaces=()
     while IFS= read -r interface; do
-        if [[ -n "$interface" ]]; then
+        if [[ -n "${interface:-}" ]]; then
             wifi_interfaces+=("$interface")
         fi
     done < <(ip link show | grep -E '^[0-9]+:.*:' | grep -v 'lo:' | grep -E '(wl|wifi|wlan)' | cut -d: -f2 | tr -d ' ')
@@ -108,10 +108,10 @@ detect_network_interfaces() {
     fi
     
     log_info "Network interfaces detected:"
-    [[ -n "$ETHERNET_INTERFACE" ]] && log_info "  Ethernet: $ETHERNET_INTERFACE"
-    [[ -n "$WIFI_INTERFACE" ]] && log_info "  WiFi: $WIFI_INTERFACE"
+    [[ -n "${ETHERNET_INTERFACE:-}" ]] && log_info "  Ethernet: $ETHERNET_INTERFACE"
+    [[ -n "${WIFI_INTERFACE:-}" ]] && log_info "  WiFi: $WIFI_INTERFACE"
     
-    if [[ -z "$ETHERNET_INTERFACE" && -z "$WIFI_INTERFACE" ]]; then
+    if [[ -z "${ETHERNET_INTERFACE:-}" && -z "$WIFI_INTERFACE" ]]; then
         log_error "No network interfaces detected"
         return 1
     fi
@@ -151,7 +151,7 @@ check_interface_ip() {
     local ip_addr
     ip_addr=$(ip addr show "$interface" 2>/dev/null | grep -E 'inet [0-9]' | awk '{print $2}' | cut -d'/' -f1)
     
-    if [[ -n "$ip_addr" && "$ip_addr" != "127.0.0.1" ]]; then
+    if [[ -n "${ip_addr:-}" && "$ip_addr" != "127.0.0.1" ]]; then
         log_debug "Interface $interface has IP: $ip_addr"
         return 0
     fi
@@ -341,7 +341,7 @@ scan_wifi() {
             while IFS= read -r line; do
                 if [[ "$line" =~ ESSID:\"(.+)\" ]]; then
                     local ssid="${BASH_REMATCH[1]}"
-                    if [[ -n "$ssid" ]]; then
+                    if [[ -n "${ssid:-}" ]]; then
                         networks+=("$ssid")
                     fi
                 fi
@@ -354,7 +354,7 @@ scan_wifi() {
             while IFS= read -r line; do
                 if [[ "$line" =~ SSID:\ (.+)$ ]]; then
                     local ssid="${BASH_REMATCH[1]}"
-                    if [[ -n "$ssid" ]]; then
+                    if [[ -n "${ssid:-}" ]]; then
                         networks+=("$ssid")
                     fi
                 fi
@@ -420,7 +420,7 @@ connect_wifi_wpa_supplicant() {
     local config_file="/tmp/wpa_supplicant_$$.conf"
     
     # Create wpa_supplicant config
-    if [[ -n "$password" ]]; then
+    if [[ -n "${password:-}" ]]; then
         wpa_passphrase "$ssid" "$password" > "$config_file"
     else
         # Open network
@@ -468,7 +468,7 @@ connect_wifi_networkmanager() {
     local password="$2" 
     local interface="$3"
     
-    if [[ -n "$password" ]]; then
+    if [[ -n "${password:-}" ]]; then
         if nmcli dev wifi connect "$ssid" password "$password" ifname "$interface" 2>/dev/null; then
             log_info "WiFi connection successful with NetworkManager"
             return 0
@@ -558,7 +558,7 @@ setup_network_auto() {
     fi
     
     # Try ethernet first
-    if [[ -n "$ETHERNET_INTERFACE" ]]; then
+    if [[ -n "${ETHERNET_INTERFACE:-}" ]]; then
         log_info "Attempting ethernet configuration..."
         
         if setup_ethernet "$ETHERNET_INTERFACE"; then
@@ -575,14 +575,14 @@ setup_network_auto() {
     fi
     
     # Try WiFi if ethernet failed
-    if [[ -n "$WIFI_INTERFACE" ]]; then
+    if [[ -n "${WIFI_INTERFACE:-}" ]]; then
         log_info "Attempting WiFi configuration..."
         
         # Check for WiFi credentials in environment
         local wifi_ssid="${WIFI_SSID:-${DEPLOY_WIFI_SSID:-}}"
         local wifi_password="${WIFI_PASSWORD:-${DEPLOY_WIFI_PASSWORD:-}}"
         
-        if [[ -n "$wifi_ssid" ]]; then
+        if [[ -n "${wifi_ssid:-}" ]]; then
             log_info "Using WiFi credentials from configuration"
             if connect_wifi "$wifi_ssid" "$wifi_password" "$WIFI_INTERFACE"; then
                 if test_network_connectivity; then
@@ -613,8 +613,8 @@ setup_network_manual() {
     
     # Let user choose method
     echo "Available network interfaces:"
-    [[ -n "$ETHERNET_INTERFACE" ]] && echo "  1) Ethernet ($ETHERNET_INTERFACE)"
-    [[ -n "$WIFI_INTERFACE" ]] && echo "  2) WiFi ($WIFI_INTERFACE)"
+    [[ -n "${ETHERNET_INTERFACE:-}" ]] && echo "  1) Ethernet ($ETHERNET_INTERFACE)"
+    [[ -n "${WIFI_INTERFACE:-}" ]] && echo "  2) WiFi ($WIFI_INTERFACE)"
     echo "  3) Skip network setup"
     
     local choice
@@ -622,7 +622,7 @@ setup_network_manual() {
     
     case "$choice" in
         1)
-            if [[ -n "$ETHERNET_INTERFACE" ]]; then
+            if [[ -n "${ETHERNET_INTERFACE:-}" ]]; then
                 setup_ethernet "$ETHERNET_INTERFACE"
             else
                 log_error "No ethernet interface available"
@@ -630,7 +630,7 @@ setup_network_manual() {
             fi
             ;;
         2)
-            if [[ -n "$WIFI_INTERFACE" ]]; then
+            if [[ -n "${WIFI_INTERFACE:-}" ]]; then
                 setup_wifi_interactive "$WIFI_INTERFACE"
             else
                 log_error "No WiFi interface available"
@@ -687,7 +687,7 @@ show_network_status() {
     log_info "Network Status:"
     
     # Show interfaces
-    if [[ -n "$ETHERNET_INTERFACE" ]]; then
+    if [[ -n "${ETHERNET_INTERFACE:-}" ]]; then
         local eth_status="DOWN"
         local eth_ip=""
         
@@ -702,7 +702,7 @@ show_network_status() {
         log_info "  Ethernet ($ETHERNET_INTERFACE): $eth_status ${eth_ip:+- $eth_ip}"
     fi
     
-    if [[ -n "$WIFI_INTERFACE" ]]; then
+    if [[ -n "${WIFI_INTERFACE:-}" ]]; then
         local wifi_status="DOWN"
         local wifi_ssid=""
         local wifi_ip=""

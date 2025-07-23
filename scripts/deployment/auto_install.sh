@@ -125,7 +125,7 @@ setup_network() {
     fi
     
     # Connect to WiFi if configured
-    if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ -n "$wifi_password" ]]; then
+    if [[ "$wifi_enabled" == "true" ]] && [[ -n "${wifi_ssid:-}" ]] && [[ -n "${wifi_password:-}" ]]; then
         info "Connecting to WiFi network: $wifi_ssid"
         
         # Try NetworkManager first
@@ -266,7 +266,7 @@ detect_disk_device() {
     info "Config specified: '$config_device'" >&2
     
     # If device specified in config, use it
-    if [[ -n "$config_device" ]]; then
+    if [[ -n "${config_device:-}" ]]; then
         if [[ -b "$config_device" ]]; then
             info "Using config device: $config_device" >&2
             echo "$config_device"
@@ -601,7 +601,7 @@ except:
     sys.exit(1)
 " 2>/dev/null)
         
-        if [[ -n "$extracted_mirrors" ]]; then
+        if [[ -n "${extracted_mirrors:-}" ]]; then
             echo "$extracted_mirrors"
             return 0
         fi
@@ -644,7 +644,7 @@ EOF
         # Add mirrors (clean URLs only, validate format)
         local mirror_count=0
         while IFS= read -r mirror; do
-            if [[ -n "$mirror" && "$mirror" =~ ^https://[a-zA-Z0-9.-]+/ ]]; then
+            if [[ -n "${mirror:-}" && "$mirror" =~ ^https://[a-zA-Z0-9.-]+/ ]]; then
                 echo "Server = ${mirror}\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
                 info "  Added: $mirror"
                 mirror_count=$((mirror_count + 1))
@@ -751,7 +751,7 @@ install_base_system() {
     fi
     
     # Strategy 3: Use country-specific mirrors if specified
-    if ! $mirror_updated && [[ -n "$country" ]]; then
+    if ! $mirror_updated && [[ -n "${country:-}" ]]; then
         info "Attempting mirrors for country: $country"
         if timeout 20 reflector --country "$country" --protocol https --number 3 --save /etc/pacman.d/mirrorlist 2>/dev/null; then
             info "[OK] Country-specific mirrors configured"

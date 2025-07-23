@@ -176,7 +176,7 @@ detect_gpu() {
     if command_exists lspci; then
         gpu_info=$(lspci | grep -E "(VGA|3D|Display)" 2>/dev/null || echo "")
         
-        if [[ -n "$gpu_info" ]]; then
+        if [[ -n "${gpu_info:-}" ]]; then
             # Extract vendor
             if echo "$gpu_info" | grep -qi "intel"; then
                 gpu_vendor="intel"
@@ -213,7 +213,7 @@ detect_gpu() {
     
     # Detect multiple GPUs
     local gpu_count=0
-    if [[ -n "$gpu_info" ]]; then
+    if [[ -n "${gpu_info:-}" ]]; then
         gpu_count=$(echo "$gpu_info" | wc -l)
     fi
     HARDWARE_INFO["gpu_count"]="$gpu_count"

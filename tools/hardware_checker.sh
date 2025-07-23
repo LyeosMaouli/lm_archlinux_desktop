@@ -119,7 +119,7 @@ check_graphics() {
     if command -v lspci >/dev/null 2>&1; then
         gpu_info=$(lspci | grep -E "VGA|3D|Display")
         
-        if [[ -n "$gpu_info" ]]; then
+        if [[ -n "${gpu_info:-}" ]]; then
             check_info "Graphics hardware detected:"
             echo "$gpu_info" | while read line; do
                 echo "  $line"

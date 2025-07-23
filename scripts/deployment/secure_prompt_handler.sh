@@ -73,7 +73,7 @@ wifi_credentials_prompt() {
     local wifi_device
     wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
     
-    if [[ -n "$wifi_device" ]]; then
+    if [[ -n "${wifi_device:-}" ]]; then
         log_info "📶 Scanning for WiFi networks..."
         iwctl station "$wifi_device" scan 2>/dev/null || true
         sleep 2
@@ -85,7 +85,7 @@ wifi_credentials_prompt() {
     
     read -p "WiFi network name (SSID) [press Enter to skip]: " ssid
     
-    if [[ -n "$ssid" ]]; then
+    if [[ -n "${ssid:-}" ]]; then
         log_info "Enter WiFi password for '$ssid':"
         password=$(secure_password_prompt "WiFi password:" false 1)
         

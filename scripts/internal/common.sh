@@ -167,7 +167,7 @@ prompt_user() {
         read -rs response
         echo
     else
-        if [[ -n "$default_value" ]]; then
+        if [[ -n "${default_value:-}" ]]; then
             read -r -p "$prompt [$default_value]: " response
             response=${response:-$default_value}
         else

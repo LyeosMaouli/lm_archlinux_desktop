@@ -224,7 +224,7 @@ validate_audio() {
     # Check audio device detection
     if command -v pactl >/dev/null 2>&1; then
         local audio_info=$(pactl info 2>/dev/null | grep "Server Name" || echo "")
-        if [[ -n "$audio_info" ]]; then
+        if [[ -n "${audio_info:-}" ]]; then
             log_success "PulseAudio compatibility layer working"
         else
             log_warn "PulseAudio compatibility layer not working"
@@ -305,7 +305,7 @@ validate_aur() {
     
     # Check configured AUR packages
     local aur_packages=$(parse_nested_config "packages" "packages")
-    if [[ -n "$aur_packages" ]]; then
+    if [[ -n "${aur_packages:-}" ]]; then
         # Get list of AUR packages
         local installed_aur=$(yay -Qm | awk '{print $1}')
         

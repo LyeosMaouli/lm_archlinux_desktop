@@ -211,7 +211,7 @@ clean_system() {
     
     # Remove orphaned packages
     orphans=$(pacman -Qtdq 2>/dev/null || true)
-    if [[ -n "$orphans" ]]; then
+    if [[ -n "${orphans:-}" ]]; then
         log_info "Removing orphaned packages..."
         echo "$orphans" | sudo pacman -Rns --noconfirm -
         log_success "Orphaned packages removed"
@@ -319,7 +319,7 @@ restore_packages() {
     
     # Read packages and install
     while read -r package _; do
-        if [[ -n "$package" && ! "$package" =~ ^# ]]; then
+        if [[ -n "${package:-}" && ! "$package" =~ ^# ]]; then
             log_info "Installing $package..."
             install_packages "$package"
         fi

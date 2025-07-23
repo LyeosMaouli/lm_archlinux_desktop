@@ -384,12 +384,12 @@ parse_arguments() {
     done
     
     # Handle special modes
-    if [[ -n "$verify_file" ]]; then
+    if [[ -n "${verify_file:-}" ]]; then
         verify_existing_file "$verify_file"
         exit $?
     fi
     
-    if [[ -n "$example_config" ]]; then
+    if [[ -n "${example_config:-}" ]]; then
         generate_example_config "$example_config"
         exit 0
     fi
@@ -506,11 +506,11 @@ user_password: "$COLLECTED_USER_PASSWORD"
 root_password: "$COLLECTED_ROOT_PASSWORD"
 EOF
         
-        if [[ -n "$COLLECTED_LUKS_PASSPHRASE" ]]; then
+        if [[ -n "${COLLECTED_LUKS_PASSPHRASE:-}" ]]; then
             echo "luks_passphrase: \"$COLLECTED_LUKS_PASSPHRASE\"" >> "$OUTPUT_FILE"
         fi
         
-        if [[ -n "$COLLECTED_WIFI_PASSWORD" ]]; then
+        if [[ -n "${COLLECTED_WIFI_PASSWORD:-}" ]]; then
             echo "wifi_password: \"$COLLECTED_WIFI_PASSWORD\"" >> "$OUTPUT_FILE"
         fi
         

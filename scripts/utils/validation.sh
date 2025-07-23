@@ -346,21 +346,21 @@ validate_network_interfaces() {
     local wifi_devices="${HARDWARE_INFO[wifi_devices]:-}"
     
     # Ethernet interfaces
-    if [[ -n "$ethernet_devices" ]]; then
+    if [[ -n "${ethernet_devices:-}" ]]; then
         record_result "network" "ethernet_available" "pass" "Ethernet interfaces: $ethernet_devices"
     else
         record_result "network" "ethernet_available" "warn" "No ethernet interfaces detected"
     fi
     
     # WiFi interfaces  
-    if [[ -n "$wifi_devices" ]]; then
+    if [[ -n "${wifi_devices:-}" ]]; then
         record_result "network" "wifi_available" "pass" "WiFi interfaces: $wifi_devices"
     else
         record_result "network" "wifi_available" "warn" "No WiFi interfaces detected"
     fi
     
     # At least one network interface
-    if [[ -n "$ethernet_devices" || -n "$wifi_devices" ]]; then
+    if [[ -n "${ethernet_devices:-}" || -n "$wifi_devices" ]]; then
         record_result "network" "interface_available" "pass" "Network interfaces available"
     else
         record_result "network" "interface_available" "fail" "No network interfaces detected"

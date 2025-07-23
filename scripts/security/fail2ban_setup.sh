@@ -188,7 +188,7 @@ check_fail2ban_status() {
 report_bans() {
     local banned_ips
     banned_ips=$(fail2ban-client status | grep "Jail list:" | cut -d: -f2 | tr ',' '\n' | while read jail; do
-        if [[ -n "$jail" ]]; then
+        if [[ -n "${jail:-}" ]]; then
             fail2ban-client status "$jail" 2>/dev/null | grep "Currently banned:" | cut -d: -f2
         fi
     done | tr -d ' ' | sort -u | wc -l)

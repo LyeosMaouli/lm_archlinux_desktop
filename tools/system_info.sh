@@ -38,7 +38,7 @@ printf "%-20s: %s\n" "Current Frequency" "${cpu_freq} MHz"
 # CPU temperature if available
 if command -v sensors >/dev/null 2>&1; then
     temp=$(sensors 2>/dev/null | grep -E "Core|Package" | head -1 | awk '{print $3}' | tr -d '+°C')
-    if [[ -n "$temp" ]]; then
+    if [[ -n "${temp:-}" ]]; then
         printf "%-20s: %s\n" "CPU Temperature" "${temp}°C"
     fi
 fi
@@ -56,7 +56,7 @@ printf "%-20s: %s\n" "Available Memory" "$mem_available"
 
 # Swap information
 swap_info=$(free -h | grep "Swap:")
-if [[ -n "$swap_info" ]]; then
+if [[ -n "${swap_info:-}" ]]; then
     swap_total=$(echo "$swap_info" | awk '{print $2}')
     swap_used=$(echo "$swap_info" | awk '{print $3}')
     printf "%-20s: %s\n" "Swap Total" "$swap_total"
@@ -72,7 +72,7 @@ done
 echo -e "\n${YELLOW}Graphics:${NC}"
 if command -v lspci >/dev/null 2>&1; then
     gpu_info=$(lspci | grep -E "VGA|3D|Display" | cut -d: -f3 | sed 's/^ *//')
-    if [[ -n "$gpu_info" ]]; then
+    if [[ -n "${gpu_info:-}" ]]; then
         printf "%-20s: %s\n" "Graphics Card" "$gpu_info"
     fi
 fi
@@ -87,7 +87,7 @@ ip addr show | grep -E "^[0-9]+:" | while read line; do
     if [[ "$interface" != "lo" ]]; then
         # Get IP address
         ip_addr=$(ip addr show "$interface" 2>/dev/null | grep "inet " | awk '{print $2}' | cut -d/ -f1)
-        if [[ -n "$ip_addr" ]]; then
+        if [[ -n "${ip_addr:-}" ]]; then
             printf "  %-15s: %s (%s)\n" "$interface" "$ip_addr" "$state"
         else
             printf "  %-15s: No IP (%s)\n" "$interface" "$state"

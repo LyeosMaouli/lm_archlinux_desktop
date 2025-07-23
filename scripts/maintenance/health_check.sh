@@ -354,7 +354,7 @@ check_hardware() {
         local cpu_temp
         cpu_temp=$(sensors | grep -E "(Core|Package)" | head -1 | awk '{print $3}' | tr -d '+°C' || echo "0")
         
-        if [[ -n "$cpu_temp" ]] && [[ "$cpu_temp" != "0" ]]; then
+        if [[ -n "${cpu_temp:-}" ]] && [[ "$cpu_temp" != "0" ]]; then
             info_health "CPU temperature: ${cpu_temp}°C"
             
             if (( $(echo "$cpu_temp > 80" | bc -l) )); then

@@ -166,7 +166,7 @@ show_profile_info() {
     if grep -q "aur:" "$profile_vars"; then
         local apps
         apps=$(awk '/aur:/,/packages:/{if(/- /){print "  " $2}}' "$profile_vars" | head -5)
-        if [[ -n "$apps" ]]; then
+        if [[ -n "${apps:-}" ]]; then
             echo "$apps"
             local app_count
             app_count=$(awk '/aur:/,/packages:/{if(/- /){count++}} END{print count+0}' "$profile_vars")

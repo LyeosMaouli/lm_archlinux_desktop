@@ -141,7 +141,7 @@ setup_network() {
     done
     
     # Setup WiFi if configured
-    if [[ -n "$WIFI_SSID" ]]; then
+    if [[ -n "${WIFI_SSID:-}" ]]; then
         log_info "Connecting to WiFi network: $WIFI_SSID"
         
         if [[ -z "${WIFI_PASSWORD:-}" ]]; then
@@ -154,7 +154,7 @@ setup_network() {
         local wifi_device
         wifi_device=$(iwctl device list | grep wlan | awk '{print $1}' | head -1)
         
-        if [[ -n "$wifi_device" ]]; then
+        if [[ -n "${wifi_device:-}" ]]; then
             iwctl station "$wifi_device" scan
             sleep 2
             echo "$WIFI_PASSWORD" | iwctl --passphrase - station "$wifi_device" connect "$WIFI_SSID"
@@ -313,8 +313,8 @@ setup_environment() {
     # managed through the centralized config/deploy.conf file that gets loaded automatically
     
     # Set WiFi configuration if provided
-    [[ -n "$WIFI_SSID" ]] && export DEPLOY_WIFI_SSID="$WIFI_SSID"
-    [[ -n "$WIFI_PASSWORD" ]] && export DEPLOY_WIFI_PASSWORD="$WIFI_PASSWORD"
+    [[ -n "${WIFI_SSID:-}" ]] && export DEPLOY_WIFI_SSID="$WIFI_SSID"
+    [[ -n "${WIFI_PASSWORD:-}" ]] && export DEPLOY_WIFI_PASSWORD="$WIFI_PASSWORD"
     
     log_success "Environment configured"
 }

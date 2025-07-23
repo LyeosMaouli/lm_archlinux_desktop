@@ -439,7 +439,7 @@ load_file_passwords() {
     # Parse decrypted content
     while IFS='=' read -r key value; do
         # Skip empty lines and comments
-        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${key:-}" || "$key" =~ ^[[:space:]]*# ]] && continue
         
         # Clean up key and value
         key=$(echo "$key" | tr -d '[:space:]')
@@ -701,7 +701,7 @@ collect_passwords() {
                     fi
                     ;;
                 file)
-                    if [[ -n "$PASSWORD_FILE" ]] && load_file_passwords; then
+                    if [[ -n "${PASSWORD_FILE:-}" ]] && load_file_passwords; then
                         log_info "Successfully loaded passwords from file"
                         export_passwords
                         return 0
@@ -760,7 +760,7 @@ display_passwords() {
     echo "Password Status:"
     for type in user root luks; do
         local password="${SECURE_PASSWORDS[$type]}"
-        if [[ -n "$password" ]]; then
+        if [[ -n "${password:-}" ]]; then
             if [[ "$show_passwords" == "true" ]]; then
                 echo "  $type: $password"
             else
@@ -777,11 +777,11 @@ generate_password_hashes() {
     local user_password="${SECURE_PASSWORDS[user]}"
     local root_password="${SECURE_PASSWORDS[root]}"
     
-    if [[ -n "$user_password" ]]; then
+    if [[ -n "${user_password:-}" ]]; then
         echo "user_hash=$(openssl passwd -6 "$user_password")"
     fi
     
-    if [[ -n "$root_password" ]]; then
+    if [[ -n "${root_password:-}" ]]; then
         echo "root_hash=$(openssl passwd -6 "$root_password")"
     fi
 }

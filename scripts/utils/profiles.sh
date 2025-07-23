@@ -258,7 +258,7 @@ except:
     pass
 " 2>/dev/null)
             
-            if [[ -n "$hostname" ]]; then
+            if [[ -n "${hostname:-}" ]]; then
                 PROFILE_CONFIG["hostname"]="$hostname"
             fi
         fi
@@ -324,7 +324,7 @@ load_profile_packages() {
             # Remove quotes and comments
             package=$(echo "$package" | sed 's/['"'"'"]//g' | sed 's/#.*//' | xargs)
             
-            if [[ -n "$package" ]]; then
+            if [[ -n "${package:-}" ]]; then
                 case "$current_section" in
                     base_packages) 
                         PROFILE_PACKAGES["base"]+="$package "
@@ -459,7 +459,7 @@ list_profile_packages() {
         for cat in base user desktop aur development; do
             local packages
             packages=$(get_profile_packages "$cat")
-            if [[ -n "$packages" ]]; then
+            if [[ -n "${packages:-}" ]]; then
                 echo
                 echo "$cat packages:"
                 echo "$packages" | tr ' ' '\n' | sed 's/^/  - /'
@@ -468,7 +468,7 @@ list_profile_packages() {
     else
         local packages
         packages=$(get_profile_packages "$category")
-        if [[ -n "$packages" ]]; then
+        if [[ -n "${packages:-}" ]]; then
             echo
             echo "$category packages:"
             echo "$packages" | tr ' ' '\n' | sed 's/^/  - /'

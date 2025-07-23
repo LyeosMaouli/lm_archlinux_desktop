@@ -293,7 +293,7 @@ EOF
     local interfaces=($(ip link show | grep -E '^[0-9]+: (en|eth)' | cut -d':' -f2 | xargs))
     
     for interface in "${interfaces[@]}"; do
-        if [[ -n "$interface" ]]; then
+        if [[ -n "${interface:-}" ]]; then
             info "Attempting to configure interface: $interface"
             
             # Bring up interface

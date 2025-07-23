@@ -154,7 +154,7 @@ validate_inputs() {
         error "Either --download or --iso must be specified"
     fi
     
-    if [[ -n "$ISO_PATH" ]] && [[ ! -f "$ISO_PATH" ]]; then
+    if [[ -n "${ISO_PATH:-}" ]] && [[ ! -f "$ISO_PATH" ]]; then
         error "ISO file not found: $ISO_PATH"
     fi
 }

@@ -71,7 +71,7 @@ log_info "Checking for user activity..."
 while IFS=: read -r username _ uid _ _ home shell; do
     if [[ $uid -ge 1000 && $uid -lt 65534 ]]; then
         last_login=$(last -1 "$username" 2>/dev/null | head -1 | awk '{print $4, $5, $6}')
-        if [[ -z "$last_login" || "$last_login" == "wtmp" ]]; then
+        if [[ -z "${last_login:-}" || "$last_login" == "wtmp" ]]; then
             check_status "WARN" "User $username has never logged in"
         fi
     fi
@@ -214,7 +214,7 @@ check_status "INFO" "Found $suid_count SUID/SGID files"
 
 # List unusual SUID files
 unusual_suid=$(find / -type f -perm -4000 2>/dev/null | grep -vE "(sudo|su|ping|mount|umount|passwd|chsh|chfn|newgrp|gpasswd)" || true)
-if [[ -n "$unusual_suid" ]]; then
+if [[ -n "${unusual_suid:-}" ]]; then
     check_status "WARN" "Unusual SUID files found:"
     echo "$unusual_suid" | while read file; do
         echo "  - $file" | tee -a "$REPORT_FILE"

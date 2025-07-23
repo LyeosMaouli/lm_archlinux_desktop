@@ -265,7 +265,7 @@ configure_network_profiles() {
     local wifi_ssid=$(parse_nested_config "network" "ssid")
     local auto_connect_wifi=$(parse_nested_config "network" "auto_connect")
     
-    if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ "$auto_connect_wifi" == "true" ]]; then
+    if [[ "$wifi_enabled" == "true" ]] && [[ -n "${wifi_ssid:-}" ]] && [[ "$auto_connect_wifi" == "true" ]]; then
         if command -v nmcli >/dev/null 2>&1; then
             log_info "Configuring WiFi profile for auto-connect..."
             
@@ -370,7 +370,7 @@ setup_network() {
     fi
     
     # Setup WiFi if configured
-    if [[ "$wifi_enabled" == "true" ]] && [[ -n "$wifi_ssid" ]] && [[ -n "$wifi_password" ]]; then
+    if [[ "$wifi_enabled" == "true" ]] && [[ -n "${wifi_ssid:-}" ]] && [[ -n "${wifi_password:-}" ]]; then
         log_info "Setting up WiFi connection..."
         
         if [[ "$nm_available" == true ]]; then
