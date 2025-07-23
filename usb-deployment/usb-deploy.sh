@@ -304,12 +304,8 @@ setup_environment() {
     export DEPLOY_GITHUB_REPO="$GITHUB_REPO"
     export DEPLOY_GITHUB_BRANCH="$GITHUB_BRANCH"
     
-    # Set system configuration if provided
-    [[ -n "$TARGET_HOSTNAME" ]] && export DEPLOY_HOSTNAME="$TARGET_HOSTNAME"
-    [[ -n "$TARGET_USERNAME" ]] && export DEPLOY_USERNAME="$TARGET_USERNAME"
-    [[ -n "$TARGET_TIMEZONE" ]] && export DEPLOY_TIMEZONE="$TARGET_TIMEZONE"
-    [[ -n "$TARGET_KEYMAP" ]] && export DEPLOY_KEYMAP="$TARGET_KEYMAP"
-    [[ -n "$ENABLE_ENCRYPTION" ]] && export DEPLOY_ENABLE_ENCRYPTION="$ENABLE_ENCRYPTION"
+    # Note: System configuration (hostname, username, encryption, etc.) is now
+    # managed through the centralized config/deploy.conf file that gets loaded automatically
     
     # Set WiFi configuration if provided
     [[ -n "$WIFI_SSID" ]] && export DEPLOY_WIFI_SSID="$WIFI_SSID"
