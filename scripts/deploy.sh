@@ -75,6 +75,10 @@ DEFAULT_HOSTNAME="phoenix"
 DEFAULT_USER="lyeosmaouli"
 DEFAULT_ENCRYPTION="true"
 
+# Project structure
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG_DIR="$PROJECT_ROOT/config"
+
 # Configuration variables (can be overridden by CLI or config file)
 PROFILE="$DEFAULT_PROFILE"
 PASSWORD_MODE="$DEFAULT_PASSWORD_MODE"
@@ -229,17 +233,40 @@ load_configuration() {
             exit $EXIT_CONFIG_ERROR
         fi
     else
-        # Try default config file
-        load_config "$CONFIG_DIR/deploy.conf" || true
+        # Try multiple paths for default config file
+        local config_paths=(
+            "$CONFIG_DIR/deploy.conf"                    # Standard project structure
+            "$PROJECT_ROOT/config/deploy.conf"           # Alternative path
+            "$SCRIPT_DIR/../config/deploy.conf"          # When in scripts directory
+            "$SCRIPT_DIR/../../config/deploy.conf"       # When in scripts/internal
+        )
+        
+        local config_loaded=false
+        for config_path in "${config_paths[@]}"; do
+            if [[ -f "$config_path" ]]; then
+                log_info "Loading configuration from: $config_path"
+                if load_config "$config_path"; then
+                    config_loaded=true
+                    break
+                fi
+            fi
+        done
+        
+        if [[ "$config_loaded" != "true" ]]; then
+            log_warn "Configuration file not found, using defaults"
+            log_info "Searched paths: ${config_paths[*]}"
+        fi
     fi
     
-    # Override with any values from config
-    PROFILE="${PROFILE:-$(get_config "PROFILE" "$DEFAULT_PROFILE")}"
-    PASSWORD_MODE="${PASSWORD_MODE:-$(get_config "PASSWORD_MODE" "$DEFAULT_PASSWORD_MODE")}"
-    NETWORK_MODE="${NETWORK_MODE:-$(get_config "NETWORK_MODE" "$DEFAULT_NETWORK_MODE")}"
-    HOSTNAME="${HOSTNAME:-$(get_config "HOSTNAME" "$DEFAULT_HOSTNAME")}"
-    USER_NAME="${USER_NAME:-$(get_config "USER_NAME" "$DEFAULT_USER")}"
-    ENCRYPTION_ENABLED="${ENCRYPTION_ENABLED:-$(get_config "ENCRYPTION_ENABLED" "$DEFAULT_ENCRYPTION")}"
+    # Override with any values from config (using get_config function if available)
+    if command -v get_config >/dev/null 2>&1; then
+        PROFILE="${PROFILE:-$(get_config "PROFILE" "$DEFAULT_PROFILE")}"
+        PASSWORD_MODE="${PASSWORD_MODE:-$(get_config "PASSWORD_MODE" "$DEFAULT_PASSWORD_MODE")}"
+        NETWORK_MODE="${NETWORK_MODE:-$(get_config "NETWORK_MODE" "$DEFAULT_NETWORK_MODE")}"
+        HOSTNAME="${HOSTNAME:-$(get_config "HOSTNAME" "$DEFAULT_HOSTNAME")}"
+        USER_NAME="${USER_NAME:-$(get_config "USER_NAME" "$DEFAULT_USER")}"
+        ENCRYPTION_ENABLED="${ENCRYPTION_ENABLED:-$(get_config "ENCRYPTION_ENABLED" "$DEFAULT_ENCRYPTION")}"
+    fi
 }
 
 parse_arguments() {

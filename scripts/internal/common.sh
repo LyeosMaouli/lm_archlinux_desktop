@@ -239,12 +239,82 @@ validate_deps() {
     done
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
-        log_error "Missing required dependencies: ${missing_deps[*]}"
-        log_info "Please install the missing dependencies and try again"
-        return $EXIT_DEPENDENCY_ERROR
+        log_warn "Missing required dependencies: ${missing_deps[*]}"
+        
+        # Try to install missing dependencies automatically
+        if install_missing_deps "${missing_deps[@]}"; then
+            log_success "Successfully installed missing dependencies"
+            return 0
+        else
+            log_error "Failed to install dependencies: ${missing_deps[*]}"
+            log_info "Please install the missing dependencies manually and try again"
+            return $EXIT_DEPENDENCY_ERROR
+        fi
     fi
     
     return 0
+}
+
+# Install missing dependencies
+install_missing_deps() {
+    local deps=("$@")
+    local packages_to_install=()
+    
+    log_info "Attempting to install missing dependencies..."
+    
+    # Map command names to package names
+    for dep in "${deps[@]}"; do
+        case "$dep" in
+            "ansible-playbook")
+                packages_to_install+=("ansible")
+                ;;
+            "mkfs.ext4")
+                packages_to_install+=("e2fsprogs")
+                ;;
+            "cryptsetup")
+                packages_to_install+=("cryptsetup")
+                ;;
+            "parted")
+                packages_to_install+=("parted")
+                ;;
+            *)
+                packages_to_install+=("$dep")
+                ;;
+        esac
+    done
+    
+    # Check if we can install packages (need pacman and sudo)
+    if ! command_exists "pacman"; then
+        log_error "pacman not found - cannot install dependencies automatically"
+        return 1
+    fi
+    
+    if ! command_exists "sudo"; then
+        log_error "sudo not found - cannot install dependencies automatically"
+        return 1
+    fi
+    
+    # Install packages
+    log_info "Installing packages: ${packages_to_install[*]}"
+    if sudo pacman -S --needed --noconfirm "${packages_to_install[@]}" 2>/dev/null; then
+        # Verify installation
+        local failed_deps=()
+        for dep in "${deps[@]}"; do
+            if ! command_exists "$dep"; then
+                failed_deps+=("$dep")
+            fi
+        done
+        
+        if [[ ${#failed_deps[@]} -eq 0 ]]; then
+            return 0
+        else
+            log_error "Some dependencies still missing after installation: ${failed_deps[*]}"
+            return 1
+        fi
+    else
+        log_error "Package installation failed"
+        return 1
+    fi
 }
 
 # Check network connectivity

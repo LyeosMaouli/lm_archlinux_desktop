@@ -17,34 +17,23 @@ set -euo pipefail
 # CONFIGURATION - EDIT THIS SECTION
 # =====================================
 
-# Your GitHub repository details
-GITHUB_USERNAME="YOUR_USERNAME"
-GITHUB_REPO="YOUR_REPO_NAME"
+# Your GitHub repository details (required)
+GITHUB_USERNAME="LyeosMaouli"
+GITHUB_REPO="lm_archlinux_desktop"
 GITHUB_BRANCH="main"
 
-# Deployment method (choose one):
-# "file" - Use encrypted password file (passwords.enc must be on USB)
-# "env" - Set environment variables (will prompt for passwords)
-# "generate" - Auto-generate secure passwords
-# "interactive" - Traditional prompts (original behavior)
-PASSWORD_MODE="file"
+# USB-specific overrides (optional - defaults will be loaded from deploy.conf)
+# Only set these if you need to override the main configuration for USB deployment
+PASSWORD_MODE=""           # Override password mode (empty = use deploy.conf)
+PASSWORD_FILE_NAME=""      # Override password file name (empty = use deploy.conf)
+USE_GITHUB_RELEASE=false   # Download password file from GitHub release instead of USB
 
-# Password file settings (only for file mode)
-PASSWORD_FILE_NAME="passwords.enc"  # Name of encrypted file on USB
-# If using GitHub releases instead of USB file:
-USE_GITHUB_RELEASE=false
-GITHUB_RELEASE_TAG="latest"  # or specific tag like "v1.0"
-
-# System configuration (optional - leave empty for auto-detection)
-TARGET_HOSTNAME=""        # e.g., "my-archlinux" (empty = prompt)
-TARGET_USERNAME=""        # e.g., "myuser" (empty = prompt)
-TARGET_TIMEZONE=""        # e.g., "America/New_York" (empty = auto-detect)
-TARGET_KEYMAP=""          # e.g., "us" (empty = auto-detect)
-ENABLE_ENCRYPTION=""      # "true", "false", or empty = prompt
-
-# Network configuration
-WIFI_SSID=""              # WiFi network name (empty = skip/prompt)
+# Network configuration for initial setup
+WIFI_SSID=""              # WiFi network name (empty = skip/prompt if needed)
 WIFI_PASSWORD=""          # WiFi password (empty = prompt if SSID set)
+
+# NOTE: System configuration (hostname, username, encryption, etc.) is now
+# centralized in config/deploy.conf. Edit that file instead of this script.
 
 # =====================================
 # SCRIPT STARTS HERE - DO NOT EDIT
@@ -329,14 +318,47 @@ setup_environment() {
     log_success "Environment configured"
 }
 
+# Load configuration from deploy.conf
+load_deploy_config() {
+    local project_dir="$USB_DIR/lm_archlinux_desktop"
+    local config_file="$project_dir/config/deploy.conf"
+    
+    if [[ -f "$config_file" ]]; then
+        log_info "Loading configuration from deploy.conf..."
+        
+        # Source the config file to load variables
+        source "$config_file" 2>/dev/null || {
+            log_warn "Failed to load deploy.conf, using defaults"
+            return 1
+        }
+        
+        # Apply USB-specific overrides if provided
+        [[ -z "$PASSWORD_MODE" ]] && PASSWORD_MODE="${PASSWORD_MODE:-generate}"
+        [[ -z "$PASSWORD_FILE_NAME" ]] && PASSWORD_FILE_NAME="${PASSWORD_FILE_NAME:-passwords.enc}"
+        
+        log_success "Configuration loaded from deploy.conf"
+        return 0
+    else
+        log_warn "No deploy.conf found, using USB script defaults"
+        # Set fallback defaults
+        PASSWORD_MODE="${PASSWORD_MODE:-generate}"
+        PASSWORD_FILE_NAME="${PASSWORD_FILE_NAME:-passwords.enc}"
+        return 1
+    fi
+}
+
 # Run deployment
 run_deployment() {
     log_info "Starting Arch Linux deployment..."
+    
+    # Load configuration from deploy.conf (this replaces individual parameters)
+    load_deploy_config
     
     echo -e "${YELLOW}Deployment Configuration:${NC}"
     echo "  Password Mode: $PASSWORD_MODE"
     echo "  GitHub Repo: $GITHUB_USERNAME/$GITHUB_REPO"
     echo "  USB Directory: $USB_DIR"
+    echo "  Configuration: Using centralized deploy.conf"
     
     if [[ "$PASSWORD_MODE" == "file" ]]; then
         echo "  Password File: $PASSWORD_FILE_NAME"
@@ -358,25 +380,26 @@ run_deployment() {
     local project_dir="$USB_DIR/lm_archlinux_desktop"
     cd "$project_dir"
     
-    # Run deployment with appropriate parameters
+    # Run deployment with configuration file (deploy.conf will be automatically loaded)
+    local deploy_args=("full")
+    
+    # Add password-specific arguments
     case "$PASSWORD_MODE" in
         "file")
-            ./scripts/deploy.sh full --password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME"
+            deploy_args+=(--password file --password-file "$USB_DIR/$PASSWORD_FILE_NAME")
             ;;
-        "env")
-            ./scripts/deploy.sh full --password env
-            ;;
-        "generate")
-            ./scripts/deploy.sh full --password generate
-            ;;
-        "interactive")
-            ./scripts/deploy.sh full --password interactive
+        "env"|"generate"|"interactive")
+            deploy_args+=(--password "$PASSWORD_MODE")
             ;;
         *)
             log_error "Unknown password mode: $PASSWORD_MODE"
             return 1
             ;;
     esac
+    
+    # Run the deployment script (it will load deploy.conf automatically)
+    log_info "Executing: ./scripts/deploy.sh ${deploy_args[*]}"
+    ./scripts/deploy.sh "${deploy_args[@]}"
 }
 
 # Show help
@@ -385,19 +408,23 @@ show_help() {
 USB Deployment Script for Arch Linux Hyprland
 
 This script automates the deployment of Arch Linux with Hyprland desktop
-from a USB stick with pre-configured settings.
+from a USB stick with centralized configuration management.
 
 Configuration:
-Edit the CONFIGURATION section at the top of this script with:
-- Your GitHub username and repository name
-- Desired password mode (file/env/generate/interactive)
-- System settings (hostname, username, timezone, etc.)
-- Network settings (WiFi SSID and password)
+1. Primary configuration is in config/deploy.conf (downloaded automatically)
+2. USB-specific overrides can be set in this script's CONFIGURATION section:
+   - GitHub repository details (required)
+   - Password mode override (optional)
+   - WiFi credentials for initial setup (optional)
+
+Main system settings (hostname, username, encryption, etc.) are now 
+centralized in config/deploy.conf for consistency across all deployment methods.
 
 Usage:
-1. Edit the configuration section in this script
-2. Copy this script to USB stick
-3. For file mode: copy passwords.enc to USB stick
+1. Edit config/deploy.conf in your repository for main settings
+2. Edit the CONFIGURATION section in this script for USB-specific overrides
+3. Copy this script to USB stick
+4. For file mode: copy passwords.enc to USB stick
 4. Boot from Arch Linux ISO
 5. Mount USB stick: mount /dev/sdX1 /mnt/usb
 6. Run: cd /mnt/usb && ./usb-deploy.sh
