@@ -10,11 +10,12 @@
 ## 🎯 New Simplified Interface
 
 ### One Command, Complete Desktop
+
 ```bash
 # Complete deployment with intelligent dependency installation
 ./scripts/deploy.sh full
 
-# Step-by-step deployment  
+# Step-by-step deployment
 ./scripts/deploy.sh install   # Base system
 ./scripts/deploy.sh desktop   # Desktop environment
 ./scripts/deploy.sh security  # Security hardening
@@ -24,6 +25,7 @@
 ```
 
 ### Revolutionary Improvements
+
 - ✅ **Auto-Dependency Installation**: Missing packages (ansible, cryptsetup) installed automatically
 - ✅ **Centralized Configuration**: Single `config/deploy.conf` for all settings
 - ✅ **Intelligent Path Resolution**: Works from USB, local, CI/CD environments
@@ -34,13 +36,15 @@
 ## ✨ Revolutionary Features
 
 ### 🔒 **Advanced Hybrid Password Management System**
+
 - **4 Secure Methods**: Environment variables, encrypted files, auto-generation, interactive
 - **Enterprise CI/CD Integration**: GitHub Actions workflow templates
 - **AES-256 Encryption**: PBKDF2 key derivation for password files
 - **Email & QR Delivery**: Multiple secure password delivery methods
 - **Zero-Touch Deployment**: Complete automation from ISO to desktop
 
-### 📱 **USB Deployment System** *(No More Typing Errors!)*
+### 📱 **USB Deployment System** _(No More Typing Errors!)_
+
 - **Centralized Configuration**: Single `config/deploy.conf` file for all settings
 - **Pre-configured Scripts**: Edit settings on your main computer, deploy on target
 - **Zero Console Typing**: No long commands to type in Arch Linux console
@@ -50,6 +54,7 @@
 ## 🚀 Features
 
 ### 🖥️ Desktop Environment
+
 - **Hyprland** - Modern Wayland compositor with intelligent tiling
 - **Waybar** - Highly customizable status bar
 - **Wofi** - Application launcher with search
@@ -58,6 +63,7 @@
 - **SDDM** - Display manager with Wayland support
 
 ### 🔒 Security & Hardening
+
 - **UFW Firewall** - Configured with restrictive defaults
 - **fail2ban** - Intrusion prevention system
 - **Audit System** - Comprehensive security logging
@@ -66,29 +72,34 @@
 - **SSH Hardening** - Secure remote access configuration
 
 ### 📦 Package Management
+
 - **Pacman** - Official Arch repositories with fastest mirrors
 - **Yay** - Secure AUR helper with verification
 - **Security Scanning** - Package integrity verification
 - **Auto-Updates** - Optional automated update system
 
 ### 🎵 Audio & Media
+
 - **PipeWire** - Modern audio system with low latency
 - **Bluetooth** - Full Bluetooth audio support
 - **Hardware Acceleration** - Intel GPU optimization
 
 ### 🛠️ Development Tools
+
 - **Visual Studio Code** - Modern code editor
 - **Git Configuration** - Development workflow setup
 - **Language Support** - Python, Node.js, Rust, Go ready
 - **Terminal Tools** - Enhanced CLI experience
 
 ### ⚡ Power Management & Performance
+
 - **TLP** - Advanced laptop power management
 - **Intel GPU Optimization** - Hardware-specific tuning
 - **CPU Frequency Scaling** - Performance and power balance
 - **Thermal Management** - Temperature monitoring and control
 
 ### 🔧 System Tools & Utilities
+
 - **Comprehensive Hardware Validation** - Compatibility checking
 - **Backup & Restore System** - Full system backup with verification
 - **Package Management Tools** - Unified pacman/AUR interface
@@ -97,6 +108,7 @@
 ## 📋 System Requirements
 
 ### Hardware
+
 - **CPU**: x86_64 architecture (Intel/AMD)
 - **RAM**: 8GB minimum, 16GB recommended
 - **Storage**: 60GB available space
@@ -104,10 +116,12 @@
 - **Network**: Internet connection for initial setup
 
 ### Software
+
 - Arch Linux ISO (latest)
 - **No SSH keys required** - Automatically generated during setup
 
 ### Target Configuration
+
 - **Bootloader**: systemd-boot (UEFI)
 - **Filesystem**: ext4 with optional LUKS encryption
 - **Swap**: Hybrid zram + hibernation swapfile
@@ -117,9 +131,11 @@
 ## 🚀 Quick Start
 
 ### 🌟 **Simplified Zero-Touch Installation**
+
 **NOW EVEN EASIER**: The easiest way to get Arch Linux + Hyprland with enterprise-grade security!
 
 #### **Method 1: USB Deployment (🔥 GAME CHANGER - No Typing!)**
+
 ```bash
 # STEP 1: On your main computer
 # - Download usb-deployment/ folder to USB stick
@@ -136,6 +152,7 @@
 ```
 
 #### **Method 2: Direct Clone and Deploy (Recommended)**
+
 ```bash
 # 1. Boot from Arch Linux ISO
 # 2. Clone and deploy with unified interface:
@@ -146,7 +163,7 @@ cd lm_archlinux_desktop
 
 # Answer just 3 questions:
 # 👤 Your username
-# 💻 Computer name  
+# 💻 Computer name
 # 🔒 Enable encryption? (Y/n)
 #
 # Everything else is auto-detected!
@@ -155,6 +172,7 @@ cd lm_archlinux_desktop
 ```
 
 #### **Method 3: GitHub CI/CD Pipeline (Enterprise)**
+
 ```bash
 # Use GitHub Secrets for secure deployment
 # Perfect for enterprise environments and remote deployment
@@ -163,10 +181,11 @@ cd lm_archlinux_desktop
 ```
 
 **🎯 What makes it revolutionary:**
+
 - ✅ **USB Deployment**: Edit config on main PC, deploy on target with zero typing
 - ✅ **Advanced Password Management**: 4 secure methods with encryption
 - ✅ **Auto-detects Everything**: Timezone, keyboard, best disk, hardware
-- ✅ **Smart Networking**: Ethernet auto-connect, WiFi setup if needed  
+- ✅ **Smart Networking**: Ethernet auto-connect, WiFi setup if needed
 - ✅ **Enterprise Ready**: CI/CD integration, encrypted storage, audit logging
 - ✅ **Zero Configuration**: No YAML files to edit manually
 - ✅ **Complete Automation**: From ISO to desktop in one command
@@ -174,6 +193,7 @@ cd lm_archlinux_desktop
 ### 🤖 Advanced Password Management Options
 
 **🔐 Method 1: Environment Variables (CI/CD Integration)**
+
 ```bash
 export DEPLOY_USER_PASSWORD="secure_password"
 export DEPLOY_ROOT_PASSWORD="secure_password"
@@ -182,6 +202,7 @@ export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
 ```
 
 **🗃️ Method 2: Encrypted Password File (AES-256)**
+
 ```bash
 # Create encrypted file with PBKDF2 key derivation
 ./scripts/utils/passwords.sh create-file passwords.enc mypassphrase user123 root456 luks789
@@ -191,6 +212,7 @@ export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
 ```
 
 **🎲 Method 3: Auto-Generated Passwords (Cryptographically Secure)**
+
 ```bash
 # Generate cryptographically secure passwords automatically
 ./scripts/deploy.sh full --password generate
@@ -200,12 +222,14 @@ export DEPLOY_LUKS_PASSPHRASE="encryption_passphrase"
 ```
 
 **💬 Method 4: Interactive Mode (Traditional)**
+
 ```bash
 # Interactive prompts for manual password entry
 ./scripts/deploy.sh full --password interactive
 ```
 
 **Advanced/Custom (manual config):**
+
 ```bash
 # Clone repository and use custom configuration
 git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
@@ -216,8 +240,9 @@ cp config/deploy.conf my_config.conf
 ```
 
 **Features:**
+
 - 🔧 **Zero configuration** - Smart defaults for everything
-- 🌐 **Automatic network** - WiFi/Ethernet auto-detection  
+- 🌐 **Automatic network** - WiFi/Ethernet auto-detection
 - 💾 **Automated partitioning** - Disk setup with encryption
 - 🎨 **Complete desktop** - Hyprland + all applications
 - 🔒 **Security hardening** - Firewall, fail2ban, audit
@@ -226,6 +251,7 @@ cp config/deploy.conf my_config.conf
 ### ⚡ Alternative Methods
 
 **Option 1: Semi-Automated (Manual base + Auto desktop)**
+
 ```bash
 # Install base Arch manually, then run:
 git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
@@ -234,6 +260,7 @@ cd lm_archlinux_desktop
 ```
 
 **Option 2: Traditional Approach (Advanced users)**
+
 ```bash
 git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
 cd lm_archlinux_desktop
@@ -242,6 +269,7 @@ make full-install   # Deploy complete system
 ```
 
 **Option 3: VirtualBox Testing (Fully Automated)**
+
 ```bash
 # Boot VM from Arch ISO, then run:
 curl -fsSL https://raw.githubusercontent.com/LyeosMaouli/lm_archlinux_desktop/main/scripts/testing/auto_vm_test.sh -o vm_test.sh
@@ -252,6 +280,7 @@ chmod +x vm_test.sh
 ## 📖 Documentation
 
 ### 📚 Quick Links
+
 - **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions
 - **[Password Management](docs/password-management.md)** - Advanced password system documentation
 - **[GitHub Password Storage](docs/github-password-storage.md)** - Step-by-step guide for storing passwords in GitHub
@@ -263,6 +292,7 @@ chmod +x vm_test.sh
 - **[Security Policy](SECURITY.md)** - Security guidelines and best practices
 
 ### 🎯 Available Make Targets
+
 ```bash
 make help           # Show all available targets
 make install        # Install Ansible and dependencies
@@ -279,6 +309,7 @@ make clean          # Clean temporary files
 ## 🏗️ Architecture
 
 ### 📁 Directory Structure
+
 ```
 lm_archlinux_desktop/
 ├── configs/ansible/          # Ansible configuration
@@ -309,6 +340,7 @@ lm_archlinux_desktop/
 ### 🔧 Core Components
 
 #### Ansible Roles
+
 - **base_system** - Locale, packages, services, bootloader, swap
 - **users_security** - User creation, SSH hardening, PAM configuration
 - **hyprland_desktop** - Complete Wayland desktop with applications
@@ -317,18 +349,21 @@ lm_archlinux_desktop/
 - **power_management** - TLP, thermal management, Intel GPU optimization
 
 #### Unified Deployment System
+
 - **deploy.sh** - Single unified deployment entry point (replaces 5 scripts)
 - **utils/** - Specialized utilities (passwords, network, hardware, validation, profiles)
 - **internal/common.sh** - Shared functions library (400+ lines)
 - **config/deploy.conf** - Comprehensive configuration (38+ options)
 
 #### Password Management System
+
 - **passwords.sh** (in utils/) - Unified password management system
 - **validation.sh** (in utils/) - System validation and health checks
 - **create_password_file.sh** - Legacy password file utility (use `passwords.sh create-file`)
 - **GitHub CI/CD Integration** - Enterprise deployment workflows
 
 #### Playbooks
+
 - **local.yml** - Main playbook with interactive prompts
 - **bootstrap.yml** - Initial system configuration
 - **desktop.yml** - Desktop environment deployment
@@ -338,6 +373,7 @@ lm_archlinux_desktop/
 ## 🎮 Desktop Experience
 
 ### ⌨️ Key Bindings
+
 ```bash
 Super + T           # Terminal (Kitty)
 Super + R           # Application launcher (Wofi)
@@ -350,6 +386,7 @@ Super + Shift + 1-9 # Move window to workspace
 ```
 
 ### 🎨 Theming
+
 - **GTK Theme**: Adwaita Dark
 - **Icon Theme**: Papirus Dark
 - **Cursor Theme**: Bibata
@@ -359,18 +396,21 @@ Super + Shift + 1-9 # Move window to workspace
 ## 🔒 Security Features
 
 ### 🛡️ Network Security
+
 - UFW firewall with deny-by-default policy
 - fail2ban monitoring SSH, HTTP, and custom services
 - Network security kernel parameters
 - Secure SSH configuration
 
 ### 📊 System Monitoring
+
 - Comprehensive audit logging
 - File integrity monitoring
 - SUID/SGID file tracking
 - Security audit scripts
 
 ### 🔐 Access Control
+
 - Restricted sudo configuration
 - Secure file permissions
 - PAM security policies
@@ -379,12 +419,14 @@ Super + Shift + 1-9 # Move window to workspace
 ## 🧪 Testing
 
 ### Pre-Production Testing
+
 1. **VirtualBox VM** - Safe testing environment
 2. **Component Testing** - Individual role validation
 3. **Integration Testing** - Full system deployment
 4. **Security Testing** - Hardening verification
 
 ### Validation Scripts
+
 ```bash
 /usr/local/bin/ufw-status           # Firewall status
 /usr/local/bin/fail2ban-status      # Intrusion prevention
@@ -395,6 +437,7 @@ Super + Shift + 1-9 # Move window to workspace
 ## 🔧 Maintenance
 
 ### Regular Maintenance
+
 ```bash
 # System updates
 sudo pacman -Syu                    # Official packages
@@ -410,6 +453,7 @@ make backup                        # Configuration backup
 ```
 
 ### AUR Package Management
+
 ```bash
 ~/.local/bin/aur-backup            # Backup AUR packages
 ~/.local/bin/aur-cleanup           # Clean package cache
@@ -419,6 +463,7 @@ make backup                        # Configuration backup
 ## 🤝 Contributing
 
 ### Development Setup
+
 ```bash
 git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
 cd lm_archlinux_desktop
@@ -427,6 +472,7 @@ make lint          # Run code quality checks
 ```
 
 ### Contribution Guidelines
+
 1. Test changes in VirtualBox VM first
 2. Follow Ansible best practices
 3. Update documentation for new features
@@ -446,11 +492,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 ### Getting Help
+
 - **Documentation**: Check `docs/` directory
 - **Issues**: Create GitHub issue with logs and system info
 - **Testing**: Use VirtualBox testing guide for safe experimentation
 
 ### Useful Resources
+
 - [Arch Linux Wiki](https://wiki.archlinux.org/)
 - [Hyprland Documentation](https://hyprland.org/)
 - [Ansible Documentation](https://docs.ansible.com/)
@@ -458,3 +506,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Transform your Arch Linux installation into a modern, secure, and beautiful desktop environment with just a few commands!** 🚀
+
+---
+
+**Lyeos Maouli**
