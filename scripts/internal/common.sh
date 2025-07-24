@@ -255,14 +255,16 @@ validate_deps() {
     return 0
 }
 
-# Install missing dependencies
+# Install missing dependencies with enhanced error handling
 install_missing_deps() {
     local deps=("$@")
     local packages_to_install=()
+    local max_retries=3
+    local retry_delay=2
     
-    log_info "Attempting to install missing dependencies..."
+    log_info "Attempting to install missing dependencies: ${deps[*]}"
     
-    # Map command names to package names
+    # Enhanced command-to-package mapping
     for dep in "${deps[@]}"; do
         case "$dep" in
             "ansible-playbook")
@@ -277,7 +279,14 @@ install_missing_deps() {
             "parted")
                 packages_to_install+=("parted")
                 ;;
+            "git")
+                packages_to_install+=("git")
+                ;;
+            "curl")
+                packages_to_install+=("curl")
+                ;;
             *)
+                # For unknown commands, assume package name matches command name
                 packages_to_install+=("$dep")
                 ;;
         esac
@@ -286,33 +295,123 @@ install_missing_deps() {
     # Check if we can install packages (need pacman and sudo)
     if ! command_exists "pacman"; then
         log_error "pacman not found - cannot install dependencies automatically"
+        log_info "Please install pacman or run this script on an Arch Linux system"
         return 1
     fi
     
     if ! command_exists "sudo"; then
         log_error "sudo not found - cannot install dependencies automatically"
+        log_info "Please install sudo or run as root: su -c './deploy.sh [args]'"
         return 1
     fi
     
-    # Install packages
-    log_info "Installing packages: ${packages_to_install[*]}"
-    if sudo pacman -S --needed --noconfirm "${packages_to_install[@]}" 2>/dev/null; then
-        # Verify installation
-        local failed_deps=()
-        for dep in "${deps[@]}"; do
-            if ! command_exists "$dep"; then
-                failed_deps+=("$dep")
+    # Update package database first
+    log_info "Updating package database..."
+    if ! sudo pacman -Sy --noconfirm 2>/dev/null; then
+        log_warn "Failed to update package database - proceeding with installation anyway"
+    fi
+    
+    # Remove duplicates from packages list
+    local unique_packages=($(printf '%s\n' "${packages_to_install[@]}" | sort -u))
+    
+    # Try installation with retry logic
+    local attempt=1
+    local install_success=false
+    
+    while [[ $attempt -le $max_retries ]]; do
+        log_info "Installation attempt $attempt/$max_retries - Installing packages: ${unique_packages[*]}"
+        
+        # Capture both stdout and stderr for better error diagnosis
+        local pacman_output
+        pacman_output=$(sudo pacman -S --needed --noconfirm "${unique_packages[@]}" 2>&1)
+        local pacman_exit_code=$?
+        
+        if [[ $pacman_exit_code -eq 0 ]]; then
+            log_success "Package installation completed successfully"
+            install_success=true
+            break
+        else
+            log_warn "Package installation failed (attempt $attempt/$max_retries)"
+            log_debug "Pacman output: $pacman_output"
+            
+            # Analyze common error patterns and provide specific guidance
+            if echo "$pacman_output" | grep -q "target not found"; then
+                log_error "Some packages were not found in repositories"
+                log_info "This might be due to:"
+                log_info "  - Outdated package database (try: sudo pacman -Sy)"
+                log_info "  - Package name mismatch"
+                log_info "  - Package moved to AUR"
+            elif echo "$pacman_output" | grep -q "conflicting dependencies"; then
+                log_error "Package conflicts detected"
+                log_info "Manual intervention may be required to resolve conflicts"
+            elif echo "$pacman_output" | grep -q "failed to synchronize"; then
+                log_error "Network connectivity issues detected"
+                log_info "Please check your internet connection and try again"
+            fi
+            
+            if [[ $attempt -lt $max_retries ]]; then
+                log_info "Retrying in ${retry_delay} seconds..."
+                sleep $retry_delay
+                retry_delay=$((retry_delay * 2))  # Exponential backoff
+            fi
+        fi
+        
+        ((attempt++))
+    done
+    
+    if [[ "$install_success" != "true" ]]; then
+        log_error "Failed to install packages after $max_retries attempts"
+        log_error "Last pacman output:"
+        echo "$pacman_output" | while IFS= read -r line; do
+            log_error "  $line"
+        done
+        
+        # Provide manual installation instructions
+        log_info ""
+        log_info "Manual installation required:"
+        log_info "Please run the following commands manually:"
+        log_info "  sudo pacman -Sy  # Update package database"
+        log_info "  sudo pacman -S ${unique_packages[*]}"
+        log_info ""
+        log_info "If packages are not found, they might be available in AUR:"
+        for pkg in "${unique_packages[@]}"; do
+            log_info "  yay -S $pkg  # or use your preferred AUR helper"
+        done
+        
+        return 1
+    fi
+    
+    # Verify installation success by checking if commands are now available
+    log_info "Verifying installation..."
+    local failed_deps=()
+    for dep in "${deps[@]}"; do
+        if ! command_exists "$dep"; then
+            failed_deps+=("$dep")
+        fi
+    done
+    
+    if [[ ${#failed_deps[@]} -eq 0 ]]; then
+        log_success "All dependencies successfully installed and verified"
+        return 0
+    else
+        log_error "Some dependencies still missing after installation: ${failed_deps[*]}"
+        log_info "This could indicate:"
+        log_info "  - Package was installed but provides a different command name"
+        log_info "  - Package installation succeeded but PATH needs updating"
+        log_info "  - Additional configuration required"
+        
+        # Try to find installed packages that might provide the missing commands
+        for failed_dep in "${failed_deps[@]}"; do
+            log_info "Searching for package that provides '$failed_dep'..."
+            if command_exists "pkgfile"; then
+                local providing_pkg
+                providing_pkg=$(pkgfile -q "$failed_dep" 2>/dev/null | head -1)
+                if [[ -n "$providing_pkg" ]]; then
+                    log_info "  Command '$failed_dep' might be provided by package: $providing_pkg"
+                fi
             fi
         done
         
-        if [[ ${#failed_deps[@]} -eq 0 ]]; then
-            return 0
-        else
-            log_error "Some dependencies still missing after installation: ${failed_deps[*]}"
-            return 1
-        fi
-    else
-        log_error "Package installation failed"
         return 1
     fi
 }
