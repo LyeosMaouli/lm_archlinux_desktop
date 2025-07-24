@@ -74,7 +74,7 @@ RUN git config --system --add safe.directory '*'
 USER devuser
 WORKDIR /home/devuser
 
-RUN pip install --user --no-cache-dir \
+RUN pip install --user --no-cache-dir --break-system-packages \
     ansible-core \
     ansible-runner \
     molecule \
@@ -146,7 +146,7 @@ RUN pacman -S --noconfirm \
 USER devuser
 
 # Install additional development Python packages
-RUN pip install --user --no-cache-dir \
+RUN pip install --user --no-cache-dir --break-system-packages \
     black \
     flake8 \
     mypy \
