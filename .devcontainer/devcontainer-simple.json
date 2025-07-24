@@ -1,0 +1,24 @@
+{
+    "name": "Arch Linux Desktop Automation (Simple)",
+    "image": "archlinux:latest",
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopContainer",
+    "remoteUser": "root",
+    
+    "postCreateCommand": "pacman -Sy --noconfirm && pacman -S --noconfirm git python python-pip ansible base-devel && mkdir -p /workspace",
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.vscode-yaml",
+                "redhat.ansible",
+                "ms-python.python",
+                "timonwong.shellcheck"
+            ]
+        }
+    },
+    
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ]
+}
