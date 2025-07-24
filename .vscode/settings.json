@@ -24,5 +24,6 @@
     "titleBar.activeBackground": "#7A1356",
     "titleBar.activeForeground": "#FFFCFE"
   },
-  "makefile.configureOnOpen": true
+  "makefile.configureOnOpen": true,
+  "claudeCodeChat.permissions.yoloMode": true
 }
