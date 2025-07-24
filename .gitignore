@@ -96,3 +96,6 @@ htmlcov/
 # Documentation build
 docs/_build/
 site/
+
+# Claude specific
+claude-code-chat-images/
