@@ -508,5 +508,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Transform your Arch Linux installation into a modern, secure, and beautiful desktop environment with just a few commands!** 🚀
 
 ---
-
-**Lyeos Maouli**
