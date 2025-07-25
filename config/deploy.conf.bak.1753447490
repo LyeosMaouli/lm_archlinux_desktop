@@ -23,7 +23,7 @@ PASSWORD_MODE="file"
 
 # Path to encrypted password file (required if PASSWORD_MODE=file)
 # Use scripts/utils/passwords.sh create-file to generate encrypted password files
-PASSWORD_FILE="passwords.enc"
+PASSWORD_FILE="../passwords.enc"
 
 # Deployment profile - Determines which packages and configurations to install
 # Options: work, personal, development
