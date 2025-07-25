@@ -45,7 +45,6 @@ services:
     ports:
       - "8080:8080" # Development server
       - "9000:9000" # Testing server
-      - "8000:8000" # Documentation server
 
     # Working directory
     working_dir: /workspace
