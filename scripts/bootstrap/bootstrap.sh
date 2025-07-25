@@ -277,11 +277,11 @@ setup_python_environment() {
     source "$venv_dir/bin/activate"
     
     # Upgrade pip
-    pip install --upgrade pip
+    pip install --break-system-packages --upgrade pip
     
     # Install Python requirements if they exist
     if [[ -f "$INSTALL_DIR/requirements.txt" ]]; then
-        pip install -r "$INSTALL_DIR/requirements.txt"
+        pip install --break-system-packages -r "$INSTALL_DIR/requirements.txt"
     fi
     
     # Install Ansible collections

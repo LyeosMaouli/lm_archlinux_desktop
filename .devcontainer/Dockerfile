@@ -44,7 +44,7 @@ RUN pacman -S --noconfirm \
     gnupg \
     # Container and virtualization
     docker \
-    docker compose \
+    docker-compose \
     # Documentation
     man-db \
     man-pages \
@@ -133,7 +133,7 @@ RUN pacman -S --noconfirm \
     dive \
     # Network tools
     nmap \
-    netcat \
+    gnu-netcat \
     # Performance tools
     perf \
     # Additional utilities

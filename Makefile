@@ -23,7 +23,7 @@ help:
 install:
 	@echo "Installing Ansible and dependencies..."
 	sudo pacman -Sy --needed python python-pip
-	pip install --user -r requirements.txt
+	pip install --user --break-system-packages -r requirements.txt
 	ansible-galaxy install -r configs/ansible/requirements.yml
 
 # Bootstrap system
@@ -76,7 +76,7 @@ clean:
 # Development helpers
 dev-setup:
 	@echo "Setting up development environment..."
-	pip install --user ansible-lint yamllint molecule
+	pip install --user --break-system-packages ansible-lint yamllint molecule
 
 # Check system status
 status:
