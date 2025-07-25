@@ -136,7 +136,7 @@ USER $USERNAME
 WORKDIR /home/$USERNAME
 
 # Install Python packages for development
-RUN pip install --user --no-cache-dir \
+RUN pip install --user --no-cache-dir --break-system-packages \
     # Core Ansible
     ansible-core \
     ansible-runner \
