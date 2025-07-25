@@ -48,7 +48,7 @@ main() {
     # Install Python requirements
     if [[ -f "requirements.txt" ]]; then
         log_info "Installing Python requirements..."
-        pip install --user -r requirements.txt || {
+        pip install --user --break-system-packages -r requirements.txt || {
             log_warn "Failed to install some Python requirements"
         }
     fi
