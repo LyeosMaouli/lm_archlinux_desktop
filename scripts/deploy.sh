@@ -163,7 +163,8 @@ draw_box() {
                 content_padding=0
             fi
             
-            printf "${BLUE}%s${NC} %s" "$v" "$line"
+            printf "${BLUE}%s${NC} " "$v"
+            printf "%b" "$line"
             printf " %.0s" $(seq 1 $content_padding)
             printf " ${BLUE}%s${NC}\n" "$v"
         done <<< "$content"

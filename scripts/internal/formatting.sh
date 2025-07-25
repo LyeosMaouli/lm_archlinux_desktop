@@ -70,7 +70,7 @@ draw_box() {
         
         printf "${BLUE}%s${NC}" "$v"
         printf " %.0s" $(seq 1 $padding)
-        printf "${BOLD}%s${NC}" "$title"
+        printf "%b" "${BOLD}$title${NC}"
         printf " %.0s" $(seq 1 $right_padding)
         printf "${BLUE}%s${NC}\n" "$v"
         
@@ -101,7 +101,8 @@ draw_box() {
                 content_padding=0
             fi
             
-            printf "${BLUE}%s${NC} %s" "$v" "$line"
+            printf "${BLUE}%s${NC} " "$v"
+            printf "%b" "$line"
             printf " %.0s" $(seq 1 $content_padding)
             printf " ${BLUE}%s${NC}\n" "$v"
         done <<< "$content"
