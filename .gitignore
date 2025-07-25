@@ -99,3 +99,6 @@ site/
 
 # Claude specific
 claude-code-chat-images/
+
+# Deployment configuration
+deployment_config.yml

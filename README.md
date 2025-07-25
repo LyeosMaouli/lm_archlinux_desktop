@@ -196,17 +196,17 @@ docker compose --profile testing up test
 
 ```bash
 # STEP 1: On your main computer
-# - Download usb-deployment/ folder to USB stick
-# - Edit usb-deploy.sh configuration section with your preferences
-# - Save and safely eject USB
+ - Download usb-deployment/ folder to USB stick
+ - Edit usb-deploy.sh configuration section with your preferences
+ - Save and safely eject USB
 
 # STEP 2: On target computer
-# - Boot from Arch Linux ISO
-# - Mount USB: mount /dev/sdX1 /mnt/usb && cd /mnt/usb
-# - Run: ./usb-deploy.sh
+ - Boot from Arch Linux ISO
+ - Mount USB: mount /dev/sdX1 /mnt/usb && cd /mnt/usb
+ - Run: ./usb-deploy.sh
 
 # THAT'S IT! Zero typing errors, zero command memorization!
-# 30-60 minutes later: Complete modern desktop ready!
+ 30-60 minutes later: Complete modern desktop ready!
 ```
 
 #### **Method 2: Direct Clone and Deploy (Recommended)**
