@@ -44,7 +44,7 @@ RUN pacman -S --noconfirm \
     gnupg \
     # Container and virtualization
     docker \
-    docker-compose \
+    docker compose \
     # Documentation
     man-db \
     man-pages \

@@ -179,17 +179,17 @@ dev-lint                   # Code quality checks
 
 ```bash
 # Start development environment
-docker-compose up -d dev docs
+docker compose up -d dev docs
 
 # Access development container
-docker-compose exec dev bash
+docker compose exec dev bash
 
 # Access documentation at http://localhost:8000
 # Test deployments in isolated environment
 ./scripts/deploy.sh full --dry-run --verbose
 
 # Run tests in isolated container
-docker-compose --profile testing up test
+docker compose --profile testing up test
 ```
 
 #### **Method 1: USB Deployment (🔥 GAME CHANGER - No Typing!)**
@@ -374,10 +374,10 @@ make dev-clean      # Clean development environment
 
 ```bash
 # Start development environment
-docker-compose up -d dev docs redis
+docker compose up -d dev docs redis
 
 # Access development container
-docker-compose exec dev bash
+docker compose exec dev bash
 
 # Inside container - enhanced development commands
 dev-deploy --dry-run full    # Test deployment with detailed logging
@@ -388,15 +388,15 @@ dev-docs-build              # Build documentation
 dev-monitor                  # Monitor deployment performance
 
 # Run isolated tests
-docker-compose --profile testing up test
-docker-compose exec test ./scripts/testing/test_installation.sh
+docker compose --profile testing up test
+docker compose exec test ./scripts/testing/test_installation.sh
 
 # Documentation server (auto-reload)
 # Access at http://localhost:8000
-docker-compose up docs
+docker compose up docs
 
 # Database development (optional)
-docker-compose --profile database up postgres
+docker compose --profile database up postgres
 ```
 
 ## 🏗️ Architecture
@@ -440,7 +440,7 @@ lm_archlinux_desktop/
 ├── templates/             # Jinja2 configuration templates
 ├── files/                 # Static files and assets
 ├── examples/              # CI/CD and configuration examples
-├── docker-compose.yml     # 🆕 Development services configuration
+├── docker compose.yml     # 🆕 Development services configuration
 └── Dockerfile.dev         # 🆕 Development environment image
 ```
 
@@ -598,8 +598,8 @@ git clone https://github.com/LyeosMaouli/lm_archlinux_desktop.git
 cd lm_archlinux_desktop
 
 # Start development environment
-docker-compose up -d dev docs
-docker-compose exec dev bash
+docker compose up -d dev docs
+docker compose exec dev bash
 
 # Inside container
 dev-setup           # Additional development setup

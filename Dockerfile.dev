@@ -90,7 +90,7 @@ RUN pacman -S --noconfirm \
     nethogs \
     # Container tools
     docker \
-    docker-compose \
+    docker compose \
     # Documentation
     man-db \
     man-pages \

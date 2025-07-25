@@ -15,7 +15,7 @@ system:
 # User Configuration
 user:
   username: "{{ user_username | default('user') }}"
-  shell: "/bin/zsh"  # Developer preference
+  shell: "/bin/zsh" # Developer preference
   groups:
     - wheel
     - audio
@@ -59,7 +59,7 @@ security:
     enabled: true
     default_policy: "deny"
     allow_ssh: true
-    custom_ports: [3000, 8080, 5432, 3306]  # Development ports
+    custom_ports: [3000, 8080, 5432, 3306] # Development ports
   fail2ban:
     enabled: true
     ssh_protection: true
@@ -76,7 +76,7 @@ security:
 # Power Management (Performance focused)
 power_management:
   enabled: true
-  tlp_enabled: false  # Disable for consistent performance
+  tlp_enabled: false # Disable for consistent performance
   cpu_governor_ac: "performance"
   cpu_governor_battery: "performance"
   wifi_powersave: false
@@ -96,7 +96,7 @@ development:
     - htop
     - tree
     - docker
-    - docker-compose
+    - docker compose
     - kubectl
     - helm
     - terraform
@@ -170,4 +170,4 @@ automation:
   skip_confirmations: true
   auto_reboot: false
   backup_configs: true
-  log_level: "debug"  # More verbose for development
+  log_level: "debug" # More verbose for development

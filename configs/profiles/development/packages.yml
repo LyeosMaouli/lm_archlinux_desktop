@@ -49,7 +49,7 @@ database_tools:
 # Containerization and virtualization
 container_tools:
   - docker
-  - docker-compose
+  - docker compose
   - podman
   - buildah
   - skopeo

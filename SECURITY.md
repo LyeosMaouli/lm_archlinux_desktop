@@ -19,7 +19,7 @@ This repository has been designed with **next-generation security practices** in
 ### 🚫 What's NOT in This Repository
 
 - Private SSH keys
-- GitHub deploy keys  
+- GitHub deploy keys
 - Personal credentials
 - API tokens or secrets
 - Hardcoded passwords
@@ -54,7 +54,7 @@ If you prefer to manage SSH keys manually:
 # In deployment_config.yml
 development:
   ssh_keys:
-    generate: false  # Disable automatic generation
+    generate: false # Disable automatic generation
 ```
 
 Then manually configure keys after installation.
@@ -91,15 +91,15 @@ services:
   dev:
     # Security constraints
     cap_drop: [ALL]
-    cap_add: [SYS_PTRACE]  # Only for debugging
+    cap_add: [SYS_PTRACE] # Only for debugging
     security_opt:
       - no-new-privileges:true
       - seccomp:unconfined
-    
+
     # Resource limits
     mem_limit: 2g
     cpus: 2.0
-    
+
     # Read-only mounts where possible
     volumes:
       - .:/workspace:cached
@@ -195,8 +195,8 @@ dev-validate-config   # Validate configuration security
 dev-monitor-performance # Monitor for security-relevant performance issues
 
 # Container security validation
-docker-compose exec dev security-check
-docker-compose logs dev | grep "security"
+docker compose exec dev security-check
+docker compose logs dev | grep "security"
 ```
 
 ### Configuration Security
@@ -204,12 +204,12 @@ docker-compose logs dev | grep "security"
 ```yaml
 # Secure configuration example
 user:
-  password: ""  # Leave empty - will prompt securely
+  password: "" # Leave empty - will prompt securely
 
 disk:
   encryption:
     enabled: true
-    passphrase: ""  # Leave empty - will prompt securely
+    passphrase: "" # Leave empty - will prompt securely
 
 security:
   firewall:
@@ -220,12 +220,13 @@ security:
     enabled: true
 
 automation:
-  skip_confirmations: false  # Keep prompts for security
+  skip_confirmations: false # Keep prompts for security
 ```
 
 ## 📋 Security Checklist
 
 ### Pre-Deployment
+
 - [ ] Configuration file reviewed
 - [ ] Strong passwords planned
 - [ ] Encryption enabled
@@ -234,6 +235,7 @@ automation:
 - [ ] 🆕 Container security profiles reviewed
 
 ### Post-Deployment
+
 - [ ] SSH keys added to required services
 - [ ] Firewall status verified: `sudo ufw status`
 - [ ] fail2ban status checked: `sudo fail2ban-client status`
@@ -244,6 +246,7 @@ automation:
 - [ ] 🆕 Container security verified: `dev-security-scan`
 
 ### 🆕 Development Security Checklist
+
 - [ ] DevContainer configuration reviewed
 - [ ] All secrets managed via environment variables
 - [ ] Container isolation verified

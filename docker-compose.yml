@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 # Docker Compose configuration for Arch Linux Desktop Automation development
 # This provides a complete development environment with all necessary services
@@ -16,7 +16,7 @@ services:
       target: development
     container_name: arch-desktop-dev
     hostname: arch-dev-container
-    
+
     # Environment variables
     environment:
       - WORKSPACE_ROOT=/workspace
@@ -30,7 +30,7 @@ services:
       - DEVELOPMENT_MODE=true
       - PYTHONUNBUFFERED=1
       - TERM=xterm-256color
-    
+
     # Volume mounts
     volumes:
       # Mount project source code
@@ -43,30 +43,30 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # SSH keys for Git operations (optional)
       - ~/.ssh:/home/developer/.ssh:ro
-    
+
     # Port mappings for development servers
     ports:
-      - "8080:8080"   # Development server
-      - "9000:9000"   # Testing server
-      - "8000:8000"   # Documentation server
-    
+      - "8080:8080" # Development server
+      - "9000:9000" # Testing server
+      - "8000:8000" # Documentation server
+
     # Working directory
     working_dir: /workspace
-    
+
     # Keep container running
     tty: true
     stdin_open: true
-    
+
     # Security settings
     cap_add:
-      - SYS_PTRACE  # For debugging
+      - SYS_PTRACE # For debugging
     security_opt:
       - seccomp:unconfined
-    
+
     # Resource limits
     mem_limit: 2g
     cpus: 2.0
-    
+
     # Health check
     healthcheck:
       test: ["CMD", "python", "-c", "import ansible; print('OK')"]
@@ -74,11 +74,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    
+
     # Networks
     networks:
       - dev-network
-    
+
     # Dependencies
     depends_on:
       - redis
@@ -89,25 +89,25 @@ services:
     image: redis:7-alpine
     container_name: arch-desktop-redis
     hostname: redis-dev
-    
+
     # Persistent storage
     volumes:
       - redis-data:/data
-    
+
     # Configuration
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    
+
     # Health check
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
-    
+
     # Networks
     networks:
       - dev-network
-    
+
     # Resource limits
     mem_limit: 512m
     cpus: 0.5
@@ -120,23 +120,23 @@ services:
       target: development
     container_name: arch-desktop-docs
     hostname: docs-server
-    
+
     # Environment for documentation
     environment:
       - WORKSPACE_ROOT=/workspace
-    
+
     # Volume mounts
     volumes:
       - .:/workspace:cached
       - docs-build:/workspace/.docs-build
-    
+
     # Port for documentation server
     ports:
       - "8000:8000"
-    
+
     # Working directory
     working_dir: /workspace
-    
+
     # Command to serve documentation
     command: >
       sh -c "
@@ -147,11 +147,11 @@ services:
           python -m http.server 8000 --directory docs
         fi
       "
-    
+
     # Networks
     networks:
       - dev-network
-    
+
     # Resource limits
     mem_limit: 512m
     cpus: 0.5
@@ -164,7 +164,7 @@ services:
       target: development
     container_name: arch-desktop-test
     hostname: test-container
-    
+
     # Environment variables for testing
     environment:
       - WORKSPACE_ROOT=/workspace
@@ -173,33 +173,33 @@ services:
       - ANSIBLE_INVENTORY=/workspace/configs/ansible/inventory
       - TESTING_MODE=true
       - PYTHONUNBUFFERED=1
-    
+
     # Volume mounts (read-only source)
     volumes:
       - .:/workspace:ro
       - test-logs:/workspace/logs
       - /var/run/docker.sock:/var/run/docker.sock
-    
+
     # Working directory
     working_dir: /workspace
-    
+
     # Default command for testing
     command: >
       sh -c "
         echo 'Testing environment ready. Run tests with:'
-        echo '  docker-compose exec test ./scripts/testing/test_installation.sh'
-        echo '  docker-compose exec test molecule test'
+        echo '  docker compose exec test ./scripts/testing/test_installation.sh'
+        echo '  docker compose exec test molecule test'
         tail -f /dev/null
       "
-    
+
     # Networks
     networks:
       - dev-network
-    
+
     # Resource limits
     mem_limit: 1g
     cpus: 1.0
-    
+
     # Only start when explicitly requested
     profiles:
       - testing
@@ -209,38 +209,38 @@ services:
     image: postgres:15-alpine
     container_name: arch-desktop-postgres
     hostname: postgres-dev
-    
+
     # Environment
     environment:
       - POSTGRES_DB=arch_automation_dev
       - POSTGRES_USER=developer
       - POSTGRES_PASSWORD=devpassword
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
-    
+
     # Persistent storage
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./dev/database/init:/docker-entrypoint-initdb.d:ro
-    
+
     # Port mapping
     ports:
       - "5432:5432"
-    
+
     # Health check
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U developer -d arch_automation_dev"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
     # Networks
     networks:
       - dev-network
-    
+
     # Resource limits
     mem_limit: 512m
     cpus: 0.5
-    
+
     # Only start when explicitly requested
     profiles:
       - database
@@ -250,27 +250,27 @@ volumes:
   dev-cache:
     driver: local
     name: arch-desktop-dev-cache
-  
+
   dev-ansible:
     driver: local
     name: arch-desktop-dev-ansible
-  
+
   dev-local:
     driver: local
     name: arch-desktop-dev-local
-  
+
   redis-data:
     driver: local
     name: arch-desktop-redis-data
-  
+
   docs-build:
     driver: local
     name: arch-desktop-docs-build
-  
+
   test-logs:
     driver: local
     name: arch-desktop-test-logs
-  
+
   postgres-data:
     driver: local
     name: arch-desktop-postgres-data

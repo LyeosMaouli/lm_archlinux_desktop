@@ -7,11 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **next-generation, enterprise-grade Arch Linux desktop automation system** built with modern DevOps practices, featuring **container-based development environments**, **performance optimizations**, **structured logging**, and **comprehensive monitoring**. The system transforms minimal Arch installations into fully-configured Hyprland desktop environments with **advanced deployment automation**, **comprehensive security hardening**, and **flexible configuration management**.
 
 ### 🎯 **Core Mission**
+
 Transform a minimal Arch Linux installation into a fully-configured, secure Hyprland desktop environment using **modern automation technologies** and **enterprise-grade security practices**.
 
 ### ✨ **Key Features**
 
 #### 🔧 **Advanced Deployment System**
+
 - **Unified CLI Interface**: Single `deploy.sh` script with subcommands for all operations
 - **Multiple Password Modes**: Environment variables, encrypted files, auto-generation, interactive prompts
 - **Profile-Based Deployment**: Work, personal, and development configurations
@@ -20,7 +22,8 @@ Transform a minimal Arch Linux installation into a fully-configured, secure Hypr
 - **Performance Optimizations**: Parallel processing and intelligent caching for 3x faster deployments
 - **Structured Logging**: JSON-based logging with correlation IDs and deployment tracking
 
-#### 🐳 **Container Development Environment** *(NEW)*
+#### 🐳 **Container Development Environment** _(NEW)_
+
 - **DevContainers Support**: Full VSCode Dev Containers integration with automated setup
 - **Docker Compose Stack**: Multi-service development environment (dev, docs, redis, postgres)
 - **Isolated Testing**: Container-based testing environments for safe development
@@ -29,18 +32,21 @@ Transform a minimal Arch Linux installation into a fully-configured, secure Hypr
 - **Performance Monitoring**: Built-in deployment analytics and optimization tracking
 
 #### 🔒 **Security-First Architecture**
+
 - **System Hardening**: UFW firewall, fail2ban, audit logging, SSH hardening
 - **Kernel Security**: Optimized sysctl parameters and security configurations
 - **User Management**: Secure user creation with proper group memberships
 - **Permission Management**: Strict file and directory permissions
 
 #### 🏗️ **Ansible-Based Infrastructure**
+
 - **Modular Roles**: Base system, desktop, security, power management, AUR packages
 - **Idempotent Operations**: Safe to re-run multiple times
 - **Template System**: Dynamic configuration generation
 - **Handler System**: Proper service restart handling
 
 #### 🖥️ **Modern Desktop Environment**
+
 - **Hyprland Wayland**: Modern compositor with hardware acceleration
 - **Audio System**: PipeWire with low-latency support
 - **Complete Toolchain**: Waybar, wofi, mako, kitty, thunar
@@ -59,7 +65,7 @@ lm_archlinux_desktop/
 ├── 📄 deployment_config.yml         # Main deployment configuration template
 ├── 📄 example_deployment_config.yml # Example configuration file
 ├── 📄 requirements.txt              # Python/Ansible dependencies
-├── 📄 docker-compose.yml            # 🆕 Development services configuration
+├── 📄 docker compose.yml            # 🆕 Development services configuration
 ├── 📄 Dockerfile.dev                # 🆕 Development environment image
 │
 ├── 📂 .devcontainer/                # 🆕 VSCode DevContainers configuration
@@ -192,6 +198,7 @@ lm_archlinux_desktop/
 ## 🎯 **Key Architecture Decisions**
 
 ### Target System Configuration
+
 - **Hardware**: Work laptop with Intel GPU (optimized for business use)
 - **Bootloader**: systemd-boot (modern UEFI, NOT GRUB)
 - **Filesystem**: ext4 with LUKS encryption (security + performance)
@@ -201,6 +208,7 @@ lm_archlinux_desktop/
 - **Network**: NetworkManager (enterprise-grade networking)
 
 ### Localization Standards
+
 - **Region**: Auto-detected fastest package mirrors (configurable by country)
 - **Locale**: English (en_US.UTF-8) - configurable
 - **Keyboard**: French AZERTY layout (fr keymap) - configurable
@@ -210,12 +218,14 @@ lm_archlinux_desktop/
 ## 📦 **Critical Package Requirements**
 
 ### Core Hyprland Ecosystem (NOT KDE/Plasma)
+
 - **Desktop Components**: `hyprland`, `waybar`, `wofi`, `mako`, `kitty`, `thunar`
 - **Wayland Support**: `xdg-desktop-portal-hyprland`, `qt5-wayland`, `qt6-wayland`
 - **Graphics**: `mesa`, `intel-media-driver`, `vulkan-intel`
 - **Audio**: `pipewire`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber`
 
 ### Essential Applications
+
 - **AUR Packages**: `visual-studio-code-bin`, `discord`, `zoom`, `hyprpaper`
 - **Development**: Git, Python, Node.js, Docker support
 - **Security**: UFW, fail2ban, audit tools
@@ -225,6 +235,7 @@ lm_archlinux_desktop/
 ### Container-Based Development (NEW & RECOMMENDED)
 
 #### 1. VSCode DevContainers (PREFERRED FOR DEVELOPMENT)
+
 ```bash
 # 1. Install VSCode and Dev Containers extension
 # 2. Clone repository and open in VSCode
@@ -244,27 +255,29 @@ dev-monitor                  # Monitor deployment performance and analytics
 ```
 
 #### 2. Docker Compose Development Stack
+
 ```bash
 # Start complete development environment
-docker-compose up -d dev docs redis
+docker compose up -d dev docs redis
 
 # Access development container
-docker-compose exec dev bash
+docker compose exec dev bash
 
 # Run isolated tests in separate container
-docker-compose --profile testing up test
-docker-compose exec test ./scripts/testing/test_installation.sh
+docker compose --profile testing up test
+docker compose exec test ./scripts/testing/test_installation.sh
 
 # Documentation server with live reload (http://localhost:8000)
-docker-compose up docs
+docker compose up docs
 
 # Database development (optional)
-docker-compose --profile database up postgres
+docker compose --profile database up postgres
 ```
 
 ### Primary Deployment Methods
 
 #### 3. Unified Deploy Script (PRODUCTION DEPLOYMENT)
+
 ```bash
 # Complete automated deployment
 ./scripts/deploy.sh full
@@ -279,6 +292,7 @@ docker-compose --profile database up postgres
 ```
 
 #### 2. Makefile Interface
+
 ```bash
 # Install dependencies
 make install
@@ -297,6 +311,7 @@ make status
 ```
 
 #### 3. Direct Ansible (Advanced Users)
+
 ```bash
 # Full system deployment
 ansible-playbook -i configs/ansible/inventory/localhost.yml local.yml
@@ -307,6 +322,7 @@ ansible-playbook -i configs/ansible/inventory/localhost.yml configs/ansible/play
 ```
 
 #### 4. USB Deployment
+
 ```bash
 # Edit usb-deployment/usb-deploy.sh configuration
 # Copy to USB stick, boot target computer from Arch ISO
@@ -315,6 +331,7 @@ mount /dev/sdX1 /mnt/usb && cd /mnt/usb
 ```
 
 ### Password Management Commands
+
 ```bash
 # Create encrypted password file
 ./scripts/utils/passwords.sh create-file passwords.enc
@@ -327,6 +344,7 @@ mount /dev/sdX1 /mnt/usb && cd /mnt/usb
 ```
 
 ### Testing and Validation
+
 ```bash
 # Run comprehensive validation
 ./scripts/testing/test_installation.sh
@@ -342,6 +360,7 @@ make test
 ```
 
 ### Configuration Management
+
 ```bash
 # Use custom configuration file
 ./scripts/deploy.sh full --config /path/to/custom.conf
@@ -356,6 +375,7 @@ make test
 ## 🔒 **Security Framework**
 
 ### Multi-Layered Security Implementation
+
 - **LUKS Full Disk Encryption**: Strong data protection with configurable passphrases
 - **UFW Firewall**: Restrictive defaults with intelligent rules via `system_hardening` role
 - **fail2ban**: Intrusion prevention system with SSH protection
@@ -365,6 +385,7 @@ make test
 - **User Security**: Proper group memberships and permission management
 
 ### Password Security Standards
+
 - **Environment Variables**: Secure for CI/CD environments (`DEPLOY_USER_PASSWORD`)
 - **Encrypted Files**: AES-256 encryption with secure key derivation
 - **Auto-Generation**: Cryptographically secure password generation
@@ -374,6 +395,7 @@ make test
 ## 🎨 **Template System**
 
 ### Dynamic Configuration Management
+
 - **Systemd Templates**: `templates/systemd/` - Service and timer files
 - **Desktop Templates**: Role-specific templates for Hyprland, Waybar, Kitty, etc.
 - **Security Templates**: Firewall rules, fail2ban, and audit configurations
@@ -385,6 +407,7 @@ make test
 ## 🔄 **Development Guidelines**
 
 ### Modern Development Standards
+
 - **Container-First Development**: Use DevContainers or Docker Compose for all development
 - **Performance Monitoring**: Monitor and optimize deployment performance
 - **Structured Logging**: Use JSON-based logging with correlation IDs
@@ -392,6 +415,7 @@ make test
 - **Documentation as Code**: Maintain live, interactive documentation
 
 ### Code Quality Standards
+
 - **Idempotency**: All roles must be safe to re-run multiple times
 - **Error Handling**: Comprehensive error handling in all scripts
 - **Ansible Handlers**: Proper service restart handling
@@ -403,6 +427,7 @@ make test
 - **Container Testing**: Test in isolated container environments before VM testing
 
 ### Security Requirements
+
 - **No Hardcoded Secrets**: Use password management system
 - **Secure Defaults**: All configurations use security-first approach
 - **File Permissions**: Proper permissions on all created files
@@ -412,6 +437,7 @@ make test
 ## 🎯 **Interactive Features**
 
 ### Automated Prompting System
+
 - **LUKS Encryption**: Secure passphrase prompting
 - **User Passwords**: Secure password configuration
 - **Root Password**: Administrative access setup
@@ -421,11 +447,13 @@ make test
 ## 📋 **Profile Management System**
 
 ### Available Profiles
+
 - **work/**: Work laptop configuration with business applications
 - **personal/**: Personal system setup with multimedia focus
 - **development/**: Development environment with full toolchain
 
 ### Profile Components
+
 - **archinstall.json**: Profile-specific installation configuration
 - **ansible-vars.yml**: Environment-specific variables
 - **packages.yml**: Profile-specific package lists
@@ -433,12 +461,14 @@ make test
 ## 🔧 **System Tools & Utilities**
 
 ### Management Tools (`tools/`)
+
 - **system_info.sh**: Comprehensive system information display
 - **package_manager.sh**: Unified pacman/AUR package management
 - **hardware_checker.sh**: Hardware compatibility validation
 - **backup_manager.sh**: Complete backup and restore system
 
 ### Core Utilities (`scripts/utils/`)
+
 - **hardware.sh**: Hardware detection and validation utilities
 - **network.sh**: Network configuration and connectivity utilities
 - **passwords.sh**: Password management and encryption utilities
@@ -446,9 +476,11 @@ make test
 - **validation.sh**: System validation and verification utilities
 
 ### Maintenance Scripts (`scripts/maintenance/`)
+
 - **health_check.sh**: System health monitoring and diagnostics
 
 ### Utility Scripts (`scripts/utilities/`)
+
 - **analyze_logs.sh**: Log analysis and error extraction
 - **create_password_file.sh**: Encrypted password file creation
 - **hardware_validation.sh**: Hardware compatibility checking
@@ -458,6 +490,7 @@ make test
 ## 🚀 **Automation Philosophy**
 
 ### Core Principles
+
 - **Minimal User Interaction**: Configurable automation with sensible defaults
 - **Error Prevention**: Comprehensive validation and error handling
 - **Security First**: Security hardening integrated into all deployment phases
@@ -465,6 +498,7 @@ make test
 - **Flexibility**: Multiple deployment methods and configuration options
 
 ### Implementation Standards
+
 - **Ansible-Driven**: Infrastructure as Code with idempotent operations
 - **Configuration Management**: YAML-based configuration with template generation
 - **Profile Support**: Environment-specific configurations (work/personal/development)
@@ -475,6 +509,7 @@ make test
 ## 📚 **Documentation Standards**
 
 ### Current Documentation (`docs/`)
+
 - **README.md**: Documentation index and overview
 - **installation-guide.md**: Complete deployment methods and workflows
 - **password-management.md**: Password system documentation
@@ -485,12 +520,14 @@ make test
 - **development-instructions.md**: Development environment setup
 
 ### Key Dependencies and Requirements
+
 - **Python Requirements** (`requirements.txt`): Ansible >= 8.0.0, community collections
 - **Ansible Collections** (`configs/ansible/requirements.yml`): community.general, ansible.posix, community.crypto
 - **System Requirements**: Arch Linux, UEFI boot mode, x86_64 architecture
 - **Network Requirements**: Internet connectivity for package downloads
 
 ### Documentation Requirements
+
 - **Keep Updated**: Always reflect current project capabilities
 - **Security Focus**: Emphasize security features and best practices
 - **Clear Examples**: Provide working examples for all features
@@ -499,6 +536,7 @@ make test
 ## ⚡ **Performance & Power Management**
 
 ### Laptop Optimization
+
 - **TLP Integration**: Advanced power management
 - **Intel GPU Optimization**: Hardware-specific tuning
 - **Thermal Management**: Temperature monitoring and control
@@ -507,12 +545,14 @@ make test
 ## 🔍 **Troubleshooting Guidelines**
 
 ### Common Issues
+
 - **Network Configuration**: Auto-detection and fallback mechanisms
 - **Hardware Compatibility**: Validation scripts for compatibility checking
 - **Password Management**: Multiple secure methods for different scenarios
 - **VM Testing**: Safe testing environment for validation
 
 ### Support Resources
+
 - **VirtualBox Testing**: Complete VM testing framework
 - **Log Analysis**: Automated log analysis and error extraction
 - **Hardware Validation**: Comprehensive compatibility checking
@@ -521,6 +561,7 @@ make test
 ## 🎯 **Current Project Status**
 
 ### Implementation Status: **NEXT-GENERATION READY**
+
 - ✅ **Core Infrastructure**: Ansible-based automation framework complete
 - ✅ **Deployment System**: Unified CLI with multiple deployment modes
 - ✅ **Security Implementation**: Comprehensive hardening and audit system
@@ -537,6 +578,7 @@ make test
 - 🆕 **Monitoring & Analytics**: Deployment performance tracking and optimization
 
 ### Architecture Highlights
+
 - **Main Entry Point**: `local.yml` - Ansible playbook for ansible-pull deployment
 - **Unified CLI**: `scripts/deploy.sh` - Single script for all deployment operations
 - **Configuration**: `deployment_config.yml` - Main configuration template
@@ -544,6 +586,7 @@ make test
 - **Template-Driven**: Jinja2 templates for dynamic configuration generation
 
 ### Ready For
+
 - ✅ **Production Deployment**: Stable, tested automation system
 - ✅ **Development**: Modular architecture for easy extension
 - ✅ **Educational Use**: Well-documented learning resource

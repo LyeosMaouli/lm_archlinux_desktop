@@ -15,46 +15,51 @@ This directory contains development environment configuration and helper scripts
 
 ```bash
 # Start the development environment
-docker-compose up -d dev
+docker compose up -d dev
 
 # Access the development container
-docker-compose exec dev bash
+docker compose exec dev bash
 
 # Run tests
-docker-compose exec dev ./scripts/testing/test_installation.sh
+docker compose exec dev ./scripts/testing/test_installation.sh
 
 # Start documentation server
-docker-compose up docs
+docker compose up docs
 # Access at http://localhost:8000
 
 # Start testing environment
-docker-compose --profile testing up test
+docker compose --profile testing up test
 ```
 
 ## Development Services
 
 ### Main Development Container (`dev`)
+
 - **Purpose**: Primary development environment with all tools
-- **Access**: `docker-compose exec dev bash`
+- **Access**: `docker compose exec dev bash`
 - **Ports**: 8080 (dev server), 9000 (testing)
 - **Features**: Ansible, Python, testing tools, code quality tools
 
 ### Documentation Server (`docs`)
+
 - **Purpose**: Serves project documentation
 - **Access**: http://localhost:8000
 - **Auto-reload**: Yes (when using MkDocs)
 
 ### Testing Environment (`test`)
+
 - **Purpose**: Isolated testing environment
-- **Access**: `docker-compose exec test bash`
+- **Access**: `docker compose exec test bash`
 - **Features**: Read-only source mount, separate log volume
 
 ### Redis (`redis`)
+
 - **Purpose**: Caching and task queues for development
 - **Access**: `redis://localhost:6379`
 - **Data**: Persistent in named volume
 
-### PostgreSQL (`postgres`) 
+### PostgreSQL (`postgres`)
+
 - **Purpose**: Database for development (optional)
 - **Access**: `postgresql://developer:devpassword@localhost:5432/arch_automation_dev`
 - **Profile**: `database` (start with `--profile database`)
@@ -85,20 +90,20 @@ dev-info
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Start with specific profiles
-docker-compose --profile testing --profile database up -d
+docker compose --profile testing --profile database up -d
 
 # View logs
-docker-compose logs -f dev
+docker compose logs -f dev
 
 # Rebuild development image
-docker-compose build dev
+docker compose build dev
 
 # Clean up everything
-docker-compose down -v
-docker-compose build --no-cache
+docker compose down -v
+docker compose build --no-cache
 ```
 
 ## Directory Structure
@@ -124,7 +129,7 @@ The development environment supports these variables:
 ```bash
 # User configuration
 USER_UID=1000                 # Your user ID
-USER_GID=1000                 # Your group ID  
+USER_GID=1000                 # Your group ID
 USERNAME=developer            # Container username
 
 # Development settings
@@ -141,6 +146,7 @@ ANSIBLE_INVENTORY=/workspace/configs/ansible/inventory
 ## Features
 
 ### Code Quality
+
 - **Pre-commit hooks**: Automatic code formatting and linting
 - **Shellcheck**: Shell script analysis
 - **Ansible-lint**: Ansible playbook validation
@@ -148,12 +154,14 @@ ANSIBLE_INVENTORY=/workspace/configs/ansible/inventory
 - **Yamllint**: YAML file validation
 
 ### Testing
+
 - **Molecule**: Ansible role testing framework
 - **Pytest**: Python testing framework
 - **Bats**: Bash testing framework
 - **Integration tests**: Full deployment testing
 
 ### Development Tools
+
 - **Modern CLI tools**: bat, exa, fd, ripgrep, fzf
 - **Git integration**: Pre-configured with aliases
 - **Documentation**: MkDocs with Material theme
@@ -162,6 +170,7 @@ ANSIBLE_INVENTORY=/workspace/configs/ansible/inventory
 ## Troubleshooting
 
 ### Container Won't Start
+
 ```bash
 # Check Docker daemon
 sudo systemctl status docker
@@ -170,27 +179,30 @@ sudo systemctl status docker
 netstat -tulpn | grep -E ':(8000|8080|9000|5432|6379)'
 
 # Rebuild without cache
-docker-compose build --no-cache dev
+docker compose build --no-cache dev
 ```
 
 ### Permission Issues
+
 ```bash
 # Set proper user IDs
 export USER_UID=$(id -u)
 export USER_GID=$(id -g)
-docker-compose build dev
+docker compose build dev
 ```
 
 ### Missing Tools
+
 ```bash
 # Reinstall development packages
-docker-compose exec dev sudo pacman -S --needed base-devel
+docker compose exec dev sudo pacman -S --needed base-devel
 ```
 
 ### Volume Issues
+
 ```bash
 # Reset all volumes
-docker-compose down -v
+docker compose down -v
 docker volume prune
 ```
 
@@ -214,6 +226,6 @@ When contributing to the development environment:
 ## Performance Tips
 
 - Use volume caching for better performance
-- Limit resource usage in docker-compose.yml
+- Limit resource usage in docker compose.yml
 - Use multi-stage builds to reduce image size
 - Clean up unused volumes regularly
