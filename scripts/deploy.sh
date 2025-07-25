@@ -113,44 +113,66 @@ draw_box() {
         tl="+" tr="+" bl="+" br="+" h="-" v="|" cross="+" rcross="+"
     fi
     
+    # Function to strip ANSI color codes for length calculation
+    strip_ansi() {
+        echo "$1" | sed 's/\x1b\[[0-9;]*m//g'
+    }
+    
     # Top border
-    echo -ne "${BLUE}$tl"
+    printf "${BLUE}%s" "$tl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    echo "$tr${NC}"
+    printf "%s${NC}\n" "$tr"
     
     # Title
     if [[ -n "$title" ]]; then
-        local title_len=${#title}
+        local title_clean=$(strip_ansi "$title")
+        local title_len=${#title_clean}
         local padding=$(( (width - title_len - 4) / 2 ))
-        echo -ne "${BLUE}$v${NC}"
+        local right_padding=$((width - title_len - padding - 3))
+        
+        printf "${BLUE}%s${NC}" "$v"
         printf " %.0s" $(seq 1 $padding)
-        echo -ne "${BOLD}$title${NC}"
-        printf " %.0s" $(seq 1 $((width - title_len - padding - 3)))
-        echo -e "${BLUE}$v${NC}"
+        printf "${BOLD}%s${NC}" "$title"
+        printf " %.0s" $(seq 1 $right_padding)
+        printf "${BLUE}%s${NC}\n" "$v"
         
         # Separator
-        echo -ne "${BLUE}$cross"
+        printf "${BLUE}%s" "$cross"
         printf "${h}%.0s" $(seq 1 $((width - 2)))
-        echo "$rcross${NC}"
+        printf "%s${NC}\n" "$rcross"
     fi
     
     # Content
     if [[ -n "$content" ]]; then
-        echo "$content" | while IFS= read -r line; do
+        while IFS= read -r line; do
+            # Handle empty lines
+            if [[ -z "$line" ]]; then
+                printf "${BLUE}%s${NC}" "$v"
+                printf " %.0s" $(seq 1 $((width - 2)))
+                printf "${BLUE}%s${NC}\n" "$v"
+                continue
+            fi
+            
             # Strip color codes for length calculation
-            local line_clean=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g')
+            local line_clean=$(strip_ansi "$line")
             local line_len=${#line_clean}
-            echo -ne "${BLUE}$v${NC} "
-            echo -ne "$line"
-            printf " %.0s" $(seq 1 $((width - line_len - 4)))
-            echo -e " ${BLUE}$v${NC}"
-        done
+            local content_padding=$((width - line_len - 4))
+            
+            # Ensure padding is not negative
+            if [[ $content_padding -lt 0 ]]; then
+                content_padding=0
+            fi
+            
+            printf "${BLUE}%s${NC} %s" "$v" "$line"
+            printf " %.0s" $(seq 1 $content_padding)
+            printf " ${BLUE}%s${NC}\n" "$v"
+        done <<< "$content"
     fi
     
     # Bottom border
-    echo -ne "${BLUE}$bl"
+    printf "${BLUE}%s" "$bl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    echo "$br${NC}"
+    printf "%s${NC}\n" "$br"
 }
 
 show_banner() {

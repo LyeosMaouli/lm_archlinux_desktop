@@ -11,6 +11,10 @@ source "$SCRIPT_DIR/../scripts/internal/common.sh" || {
     echo "Error: Cannot load common.sh"
     exit 1
 }
+source "$SCRIPT_DIR/../scripts/internal/formatting.sh" || {
+    echo "Error: Cannot load formatting.sh"
+    exit 1
+}
 
 # System Information
 log_info "Starting system information collection"
@@ -156,9 +160,11 @@ for service in "${services[@]}"; do
     if systemctl list-unit-files | grep -q "^$service.service"; then
         status=$(systemctl is-active "$service" 2>/dev/null || echo "inactive")
         if [[ "$status" == "active" ]]; then
-            printf "%-20s: ${GREEN}%s${NC}\n" "$service" "$status"
+            printf "%-20s: " "$service"
+            printf "${GREEN}%s${NC}\n" "$status"
         else
-            printf "%-20s: ${RED}%s${NC}\n" "$service" "$status"
+            printf "%-20s: " "$service"
+            printf "${RED}%s${NC}\n" "$status"
         fi
     fi
 done

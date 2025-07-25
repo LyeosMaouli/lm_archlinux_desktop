@@ -149,13 +149,16 @@ show_spinner() {
     local delay=0.1
     local spinstr='|/-\'
     
+    # Strip ANSI codes for accurate length calculation
+    local message_clean=$(echo "$message" | sed 's/\x1b\[[0-9;]*m//g')
+    
     while kill -0 "$pid" 2>/dev/null; do
         local temp=${spinstr#?}
         printf "\r${YELLOW}%s... %c${NC}" "$message" "$spinstr"
         spinstr=$temp${spinstr%"$temp"}
         sleep $delay
     done
-    printf "\r%*s\r" $((${#message} + 10)) ""
+    printf "\r%*s\r" $((${#message_clean} + 10)) ""
 }
 
 #

@@ -29,14 +29,14 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source formatting library
+source "$PROJECT_ROOT/scripts/internal/formatting.sh"
+
 DEV_DIR="$PROJECT_ROOT/dev"
 
 main() {
-    echo -e "${BLUE}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}${BOLD}║${NC}          ${GREEN}Arch Linux Desktop Automation${NC}                    ${BLUE}${BOLD}║${NC}"
-    echo -e "${BLUE}${BOLD}║${NC}              ${YELLOW}Development Environment Setup${NC}                 ${BLUE}${BOLD}║${NC}"
-    echo -e "${BLUE}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
-    echo
+    draw_banner "Arch Linux Desktop Automation" "Development Environment Setup"
     
     log_info "Setting up development environment..."
     
@@ -90,7 +90,7 @@ check_prerequisites() {
                 docker)
                     echo "  Docker: https://docs.docker.com/get-docker/"
                     ;;
-                docker compose)
+                "docker compose")
                     echo "  Docker Compose: https://docs.docker.com/compose/install/"
                     ;;
                 git)
