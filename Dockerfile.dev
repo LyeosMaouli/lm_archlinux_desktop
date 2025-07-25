@@ -90,7 +90,7 @@ RUN pacman -S --noconfirm \
     nethogs \
     # Container tools
     docker \
-    docker compose \
+    docker-compose \
     # Documentation
     man-db \
     man-pages \
@@ -108,7 +108,7 @@ RUN pacman -S --noconfirm \
     fzf \
     # Network debugging
     nmap \
-    netcat \
+    gnu-netcat \
     tcpdump \
     # Process tools
     lsof \
