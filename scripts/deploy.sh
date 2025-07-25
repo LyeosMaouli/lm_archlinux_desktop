@@ -900,10 +900,13 @@ check_system_requirements() {
         exit $EXIT_VALIDATION_ERROR
     fi
     
-    # Check UEFI boot mode
-    if [[ ! -d /sys/firmware/efi ]]; then
+    # Check UEFI boot mode (skip in development/container environments)
+    if [[ -n "${DEVELOPMENT_MODE:-}" ]] || [[ -f /.dockerenv ]]; then
+        log_info "Skipping UEFI check (development/container environment detected)"
+    elif [[ ! -d /sys/firmware/efi ]]; then
         log_error "UEFI boot mode required"
         log_error "This script requires UEFI boot mode, not legacy BIOS"
+        log_error "For development/testing, set DEVELOPMENT_MODE=true to skip this check"
         exit $EXIT_VALIDATION_ERROR
     fi
     
