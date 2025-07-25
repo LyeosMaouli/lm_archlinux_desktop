@@ -124,11 +124,11 @@ RUN useradd -m -G wheel temp_user && \
         cd /tmp/yay && \
         makepkg -si --noconfirm\
     " && \
-    su - temp_user -c "
+    su - temp_user -c "\
         yay -S --noconfirm \
             dive \
             hadolint-bin \
-            shellcheck-bin
+            shellcheck-bin\
     " || true && \
     userdel -r temp_user && \
     sed -i '/temp_user/d' /etc/sudoers
