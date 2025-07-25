@@ -119,17 +119,8 @@ RUN pacman -S --noconfirm \
 # Install additional tools from AUR (using a temporary user)
 RUN useradd -m -G wheel temp_user && \
     echo "temp_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    su - temp_user -c "\
-        git clone https://aur.archlinux.org/yay.git /tmp/yay && \
-        cd /tmp/yay && \
-        makepkg -si --noconfirm\
-    " && \
-    su - temp_user -c "\
-        yay -S --noconfirm \
-            dive \
-            hadolint-bin \
-            shellcheck-bin\
-    " || true && \
+    su - temp_user -c "git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg -si --noconfirm" && \
+    su - temp_user -c "yay -S --noconfirm dive hadolint-bin shellcheck-bin" || true && \
     userdel -r temp_user && \
     sed -i '/temp_user/d' /etc/sudoers
 
