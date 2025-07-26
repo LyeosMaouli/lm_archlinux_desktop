@@ -194,21 +194,26 @@ echo -e "\n${YELLOW}Firewall:${NC}"
 if command -v ufw >/dev/null 2>&1; then
     ufw_status=$(ufw status | head -1 | awk '{print $2}')
     if [[ "$ufw_status" == "active" ]]; then
-        printf "%-20s: ${GREEN}%s${NC}\n" "UFW Status" "Active"
+        printf "%-20s: " "UFW Status"
+        printf "${GREEN}%s${NC}\n" "Active"
     else
-        printf "%-20s: ${RED}%s${NC}\n" "UFW Status" "Inactive"
+        printf "%-20s: " "UFW Status"
+        printf "${RED}%s${NC}\n" "Inactive"
     fi
 else
-    printf "%-20s: ${RED}%s${NC}\n" "UFW Status" "Not installed"
+    printf "%-20s: " "UFW Status"
+    printf "${RED}%s${NC}\n" "Not installed"
 fi
 
 echo -e "\n${YELLOW}Fail2ban:${NC}"
 if systemctl is-active --quiet fail2ban 2>/dev/null; then
     banned_ips=$(fail2ban-client status 2>/dev/null | grep "Currently banned:" | awk '{print $3}' || echo "0")
-    printf "%-20s: ${GREEN}%s${NC}\n" "Fail2ban Status" "Active"
+    printf "%-20s: " "Fail2ban Status"
+    printf "${GREEN}%s${NC}\n" "Active"
     printf "%-20s: %s\n" "Currently Banned IPs" "$banned_ips"
 else
-    printf "%-20s: ${RED}%s${NC}\n" "Fail2ban Status" "Inactive"
+    printf "%-20s: " "Fail2ban Status"
+    printf "${RED}%s${NC}\n" "Inactive"
 fi
 
 echo -e "\n${YELLOW}System Integrity:${NC}"

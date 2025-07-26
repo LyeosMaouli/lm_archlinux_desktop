@@ -535,10 +535,10 @@ EOF
     echo -e "${GREEN}[COMPLETE] Password file creation completed!${NC}"
     echo
     echo -e "${BLUE}Next Steps:${NC}"
-    echo "1. Keep the password file secure: ${YELLOW}$OUTPUT_FILE${NC}"
+    echo -e "1. Keep the password file secure: ${YELLOW}$OUTPUT_FILE${NC}"
     echo "2. Remember your encryption passphrase"
     echo "3. Use with deployment:"
-    echo "   ${YELLOW}./zero_touch_deploy.sh --password-mode file --password-file $OUTPUT_FILE${NC}"
+    echo -e "   ${YELLOW}./zero_touch_deploy.sh --password-mode file --password-file $OUTPUT_FILE${NC}"
     echo
     echo -e "${YELLOW}[WARNING]  Security Reminder:${NC}"
     echo "- Store the password file securely"

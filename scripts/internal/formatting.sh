@@ -59,7 +59,7 @@ draw_box() {
     # Top border
     printf "${BLUE}%s" "$tl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    printf "%s${NC}\n" "$tr"
+    printf "%b\n" "$tr${NC}"
     
     # Title
     if [[ -n "$title" ]]; then
@@ -70,14 +70,14 @@ draw_box() {
         
         printf "${BLUE}%s${NC}" "$v"
         printf " %.0s" $(seq 1 $padding)
-        printf "${BOLD}%s${NC}" "$title"
+        printf "%b" "${BOLD}$title${NC}"
         printf " %.0s" $(seq 1 $right_padding)
-        printf "${BLUE}%s${NC}\n" "$v"
+        printf "%b\n" "${BLUE}$v${NC}"
         
         # Separator
         printf "${BLUE}%s" "$cross"
         printf "${h}%.0s" $(seq 1 $((width - 2)))
-        printf "%s${NC}\n" "$rcross"
+        printf "%b\n" "$rcross${NC}"
     fi
     
     # Content
@@ -87,7 +87,7 @@ draw_box() {
             if [[ -z "$line" ]]; then
                 printf "${BLUE}%s${NC}" "$v"
                 printf " %.0s" $(seq 1 $((width - 2)))
-                printf "${BLUE}%s${NC}\n" "$v"
+                printf "%b\n" "${BLUE}$v${NC}"
                 continue
             fi
             
@@ -101,16 +101,17 @@ draw_box() {
                 content_padding=0
             fi
             
-            printf "${BLUE}%s${NC} %s" "$v" "$line"
+            printf "${BLUE}%s${NC} " "$v"
+            printf "%b" "$line"
             printf " %.0s" $(seq 1 $content_padding)
-            printf " ${BLUE}%s${NC}\n" "$v"
+            printf " %b\n" "${BLUE}$v${NC}"
         done <<< "$content"
     fi
     
     # Bottom border
     printf "${BLUE}%s" "$bl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    printf "%s${NC}\n" "$br"
+    printf "%b\n" "$br${NC}"
 }
 
 # Draw a simple banner

@@ -154,7 +154,7 @@ show_spinner() {
     
     while kill -0 "$pid" 2>/dev/null; do
         local temp=${spinstr#?}
-        printf "\r${YELLOW}%s... %c${NC}" "$message" "$spinstr"
+        printf "\r%b... %c%b" "${YELLOW}$message" "$spinstr" "${NC}"
         spinstr=$temp${spinstr%"$temp"}
         sleep $delay
     done

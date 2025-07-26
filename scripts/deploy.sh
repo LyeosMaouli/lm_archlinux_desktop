@@ -121,7 +121,7 @@ draw_box() {
     # Top border
     printf "${BLUE}%s" "$tl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    printf "%s${NC}\n" "$tr"
+    printf "%b\n" "$tr${NC}"
     
     # Title
     if [[ -n "$title" ]]; then
@@ -132,14 +132,14 @@ draw_box() {
         
         printf "${BLUE}%s${NC}" "$v"
         printf " %.0s" $(seq 1 $padding)
-        printf "${BOLD}%s${NC}" "$title"
+        printf "%b" "${BOLD}$title${NC}"
         printf " %.0s" $(seq 1 $right_padding)
-        printf "${BLUE}%s${NC}\n" "$v"
+        printf "%b\n" "${BLUE}$v${NC}"
         
         # Separator
         printf "${BLUE}%s" "$cross"
         printf "${h}%.0s" $(seq 1 $((width - 2)))
-        printf "%s${NC}\n" "$rcross"
+        printf "%b\n" "$rcross${NC}"
     fi
     
     # Content
@@ -163,7 +163,8 @@ draw_box() {
                 content_padding=0
             fi
             
-            printf "${BLUE}%s${NC} %s" "$v" "$line"
+            printf "${BLUE}%s${NC} " "$v"
+            printf "%b" "$line"
             printf " %.0s" $(seq 1 $content_padding)
             printf " ${BLUE}%s${NC}\n" "$v"
         done <<< "$content"
@@ -172,7 +173,7 @@ draw_box() {
     # Bottom border
     printf "${BLUE}%s" "$bl"
     printf "${h}%.0s" $(seq 1 $((width - 2)))
-    printf "%s${NC}\n" "$br"
+    printf "%b\n" "$br${NC}"
 }
 
 show_banner() {
@@ -204,7 +205,7 @@ show_enhanced_progress() {
     local empty=$((width - filled))
     
     # Use different characters for filled/empty parts
-    printf "\r${BOLD}%s:${NC} [${GREEN}" "$description"
+    printf "\r%b: [%b" "${BOLD}$description${NC}" "${GREEN}"
     printf "█%.0s" $(seq 1 $filled)
     printf "${DIM}░%.0s" $(seq 1 $empty)
     printf "${NC}] ${CYAN}%d%%${NC} (${YELLOW}%d${NC}/${YELLOW}%d${NC})" $percentage $current $total
@@ -224,7 +225,7 @@ show_enhanced_spinner() {
     
     while kill -0 "$pid" 2>/dev/null; do
         local char=${chars:$((i % ${#chars})):1}
-        printf "\r${CYAN}%s${NC} %s..." "$char" "$message"
+        printf "\r%b %s..." "${CYAN}$char${NC}" "$message"
         sleep $delay
         i=$((i + 1))
     done
