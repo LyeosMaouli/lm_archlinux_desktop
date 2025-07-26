@@ -102,3 +102,4 @@ claude-code-chat-images/
 
 # Deployment configuration
 deployment_config.yml
+deploy.conf.bak*
