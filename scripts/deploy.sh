@@ -156,17 +156,22 @@ draw_box() {
             # Strip color codes for length calculation
             local line_clean=$(strip_ansi "$line")
             local line_len=${#line_clean}
-            local content_padding=$((width - line_len - 4))
+            local content_width=$((width - 4))  # Account for borders and padding
+            local content_padding=$((content_width - line_len))
             
             # Ensure padding is not negative
             if [[ $content_padding -lt 0 ]]; then
+                content_padding=0
+                # Truncate line if too long
+                line_clean="${line_clean:0:$content_width}"
+                line_len=$content_width
                 content_padding=0
             fi
             
             printf "${BLUE}%s${NC} " "$v"
             printf "%b" "$line"
             printf " %.0s" $(seq 1 $content_padding)
-            printf " ${BLUE}%s${NC}\n" "$v"
+            printf "${BLUE}%s${NC}\n" "$v"
         done <<< "$content"
     fi
     
