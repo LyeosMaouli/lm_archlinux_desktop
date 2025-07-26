@@ -57,16 +57,29 @@
 
 ## 🚀 Features
 
-### 🔧 **New Development Features**
+### 🐳 **Container Development Environment**
 
-- **DevContainers Support** - Full VSCode Dev Containers integration with pre-configured development environment
-- **Docker Compose Stack** - Multi-service development environment with Redis, PostgreSQL, and documentation server
-- **Performance Optimizations** - Parallel processing and intelligent caching for 3x faster deployments
-- **Rich Terminal UI** - Enhanced CLI with progress bars, interactive menus, and real-time status updates
-- **Structured Logging** - JSON-based logging with correlation tracking and deployment monitoring
-- **Container Testing** - Isolated testing environments with Docker for safe development and validation
-- **Documentation Server** - Live documentation server with auto-reload and interactive features
-- **Code Quality Tools** - Pre-commit hooks, automated linting, and code formatting
+Our **next-generation container-based development platform** provides a complete, isolated, and reproducible development ecosystem:
+
+- **🎯 DevContainers Support** - Full VSCode Dev Containers integration with automated setup and pre-configured tools
+- **🚀 Docker Compose Stack** - Multi-service development environment:
+  - **Development Container** (`dev`) - Complete Arch Linux environment with all development tools
+  - **Documentation Server** (`docs`) - Live documentation at http://localhost:8000 with auto-reload
+  - **Testing Environment** (`test`) - Isolated testing with read-only source mounts
+  - **Redis Cache** (`redis`) - High-performance caching and task queues
+  - **PostgreSQL Database** (`postgres`) - Optional database for development data
+- **⚡ Performance Optimizations** - Parallel processing and intelligent caching for 3x faster deployments
+- **🎨 Rich Terminal UI** - Enhanced CLI with progress bars, interactive menus, and real-time status updates
+- **📊 Structured Logging** - JSON-based logging with correlation tracking and deployment monitoring
+- **🧪 Container Testing** - Isolated testing environments with Docker for safe development and validation
+- **📚 Interactive Documentation** - Live documentation server with MkDocs integration and auto-reload
+- **🔧 Code Quality Tools** - Pre-commit hooks, automated linting, code formatting, and security scanning
+
+**Why Container Development?**
+- **Consistency** - Identical environment across all development machines
+- **Isolation** - Safe testing without affecting host systems  
+- **Speed** - Fast setup with `docker compose up`
+- **Scalability** - Easy addition of new services and tools
 
 ### 🖥️ Desktop Environment
 
@@ -339,15 +352,22 @@ chmod +x vm_test.sh
 
 ### 📚 Quick Links
 
-- **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions
-- **[Password Management](docs/password-management.md)** - Advanced password system documentation
-- **[GitHub Password Storage](docs/github-password-storage.md)** - Step-by-step guide for storing passwords in GitHub
-- **[Target Computer Deployment](docs/target-computer-deployment.md)** - How to deploy on your actual computer using GitHub passwords
+#### 🚀 **Getting Started**
+- **[Installation Guide](docs/installation-guide.md)** - Complete deployment instructions for all methods
+- **[Docker Compose Development](docs/docker-compose-development.md)** - 🆕 **Container development environment guide**
 - **[USB Deployment Guide](usb-deployment/README.md)** - Easy USB stick deployment with no typing required
 - **[VirtualBox Testing](docs/virtualbox-testing-guide.md)** - Safe testing environment setup
-- **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
-- **[Project Structure](docs/project-structure.md)** - Complete codebase documentation
+
+#### 🔒 **Security & Configuration**  
+- **[Password Management](docs/password-management.md)** - Advanced password system documentation
+- **[GitHub Password Storage](docs/github-password-storage.md)** - Step-by-step guide for storing passwords in GitHub
 - **[Security Policy](SECURITY.md)** - Security guidelines and best practices
+
+#### 🛠️ **Development & Architecture**
+- **[Development Instructions](docs/development-instructions.md)** - Development environment setup
+- **[Target Computer Deployment](docs/target-computer-deployment.md)** - How to deploy on your actual computer
+- **[Project Structure](docs/project-structure.md)** - Complete codebase documentation
+- **[Implementation Plan](docs/implementation-plan.md)** - Project status and completion checklist
 
 ### 🎯 Available Make Targets
 
@@ -370,34 +390,52 @@ make dev-docs       # Start documentation server
 make dev-clean      # Clean development environment
 ```
 
-### 🐳 **NEW: Container Development Commands**
+### 🐳 **Container Development Commands**
 
 ```bash
-# Start development environment
-docker compose up -d dev docs redis
+# 🚀 Quick Start - Development Environment
+docker compose up -d dev docs redis        # Start core services
+docker compose exec dev bash               # Access development container
 
-# Access development container
-docker compose exec dev bash
+# 🎯 VSCode DevContainers (Recommended)
+# 1. Install "Dev Containers" extension in VSCode
+# 2. Open project: code lm_archlinux_desktop  
+# 3. Ctrl+Shift+P → "Dev Containers: Reopen in Container"
+# 4. Everything automatically configured!
 
-# Inside container - enhanced development commands
-dev-deploy --dry-run full    # Test deployment with detailed logging
-dev-test                     # Run comprehensive test suite
+# 🔧 Inside Development Container
+dev-deploy --dry-run full    # Test deployment with performance monitoring
+dev-test                     # Run comprehensive test suite with coverage
 dev-lint                     # Code quality checks with auto-fix
-dev-info                     # Show development environment info
-dev-docs-build              # Build documentation
-dev-monitor                  # Monitor deployment performance
+dev-info                     # Show development environment information
+dev-docs-build              # Build interactive documentation
+dev-monitor                  # Monitor deployment performance and analytics
 
-# Run isolated tests
-docker compose --profile testing up test
-docker compose exec test ./scripts/testing/test_installation.sh
+# 🧪 Testing Workflows
+docker compose --profile testing up test                    # Start testing environment
+docker compose exec test ./scripts/testing/test_installation.sh  # Run comprehensive tests
+docker compose exec test molecule test                      # Ansible role testing
 
-# Documentation server (auto-reload)
-# Access at http://localhost:8000
-docker compose up docs
+# 📚 Documentation Server (Live Reload)
+docker compose up docs                     # Start documentation server
+# Access at http://localhost:8000 - automatically reloads on changes
 
-# Database development (optional)
-docker compose --profile database up postgres
+# 🗄️ Database Development (Optional)
+docker compose --profile database up postgres              # Start PostgreSQL
+# Connection: postgresql://developer:devpassword@localhost:5432/arch_automation_dev
+
+# 🔄 Service Management
+docker compose --profile testing --profile database up -d  # Start all services
+docker compose logs -f dev                                 # View development logs
+docker compose down -v                                     # Clean shutdown with volumes
 ```
+
+**🎯 Why Use Container Development?**
+- **Zero Setup Time** - `docker compose up` and you're ready to develop
+- **Consistent Environment** - Same setup across all machines and team members
+- **Isolated Testing** - Test deployments safely without affecting your system
+- **All Tools Included** - Ansible, Python, testing frameworks, linting tools pre-installed
+- **Live Documentation** - Interactive docs server with auto-reload capabilities
 
 ## 🏗️ Architecture
 
@@ -446,13 +484,18 @@ lm_archlinux_desktop/
 
 ### 🔧 Core Components
 
-#### Development Environment
+#### 🐳 Container Development Environment
 
-- **DevContainers** - VSCode integration with automated setup
-- **Docker Compose** - Multi-service development stack (dev, docs, redis, postgres)
-- **Development Tools** - Pre-commit hooks, linting, testing frameworks
-- **Performance Monitoring** - Built-in deployment analytics and optimization
-- **Documentation Server** - Live documentation with MkDocs integration
+- **🎯 DevContainers** - VSCode integration with automated setup and pre-configured tools
+- **🚀 Docker Compose Stack** - Multi-service development environment:
+  - **Development Container** (`dev`) - Complete Arch Linux environment with all tools
+  - **Documentation Server** (`docs`) - Live docs at http://localhost:8000 with auto-reload  
+  - **Testing Environment** (`test`) - Isolated testing with read-only source mounts
+  - **Redis Cache** (`redis`) - High-performance caching and task queues
+  - **PostgreSQL Database** (`postgres`) - Optional database for development data
+- **🔧 Development Tools** - Pre-commit hooks, linting, testing frameworks, security scanning
+- **📊 Performance Monitoring** - Built-in deployment analytics and optimization tracking
+- **📚 Interactive Documentation** - Live documentation server with MkDocs integration and auto-reload
 
 #### Ansible Roles
 

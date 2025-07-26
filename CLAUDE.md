@@ -22,14 +22,46 @@ Transform a minimal Arch Linux installation into a fully-configured, secure Hypr
 - **Performance Optimizations**: Parallel processing and intelligent caching for 3x faster deployments
 - **Structured Logging**: JSON-based logging with correlation IDs and deployment tracking
 
-#### 🐳 **Container Development Environment** _(NEW)_
+#### 🐳 **Container Development Environment** _(NEXT-GENERATION)_
 
-- **DevContainers Support**: Full VSCode Dev Containers integration with automated setup
-- **Docker Compose Stack**: Multi-service development environment (dev, docs, redis, postgres)
-- **Isolated Testing**: Container-based testing environments for safe development
-- **Development Tools**: Pre-commit hooks, automated linting, code formatting
-- **Documentation Server**: Live documentation server with auto-reload and interactive features
-- **Performance Monitoring**: Built-in deployment analytics and optimization tracking
+Our **enterprise-grade container-based development platform** revolutionizes the development experience:
+
+- **🎯 DevContainers Integration**: Full VSCode Dev Containers support with:
+  - Automated environment setup and configuration
+  - Pre-installed development toolchain (Ansible, Python, testing frameworks)
+  - Integrated debugging and IntelliSense support
+  - One-click development environment activation
+
+- **🚀 Multi-Service Docker Compose Stack**:
+  - **Development Container** (`dev`): Complete Arch Linux environment with all tools
+  - **Documentation Server** (`docs`): Live documentation at http://localhost:8000 with MkDocs
+  - **Testing Environment** (`test`): Isolated testing with read-only source mounts
+  - **Redis Cache** (`redis`): High-performance caching and task queue system
+  - **PostgreSQL Database** (`postgres`): Optional database for development data storage
+
+- **🧪 Advanced Testing Infrastructure**:
+  - Isolated container-based testing environments
+  - Read-only source mounts prevent test contamination
+  - Comprehensive validation with molecule, pytest, and custom test suites
+  - Automated CI/CD testing workflows
+
+- **🔧 Comprehensive Development Toolchain**:
+  - Pre-commit hooks for automated code quality enforcement
+  - Integrated linting (ansible-lint, shellcheck, yamllint, black, flake8)
+  - Security scanning with bandit and safety
+  - Modern CLI tools (bat, exa, fd, ripgrep, fzf)
+
+- **📚 Interactive Documentation System**:
+  - Live documentation server with auto-reload capabilities
+  - MkDocs integration with Material theme
+  - Real-time documentation updates during development
+  - Interactive API documentation generation
+
+- **📊 Performance Monitoring & Analytics**:
+  - Built-in deployment performance tracking and optimization
+  - Resource usage monitoring and optimization suggestions
+  - Deployment analytics with correlation tracking
+  - Performance benchmarking and regression detection
 
 #### 🔒 **Security-First Architecture**
 
@@ -65,7 +97,7 @@ lm_archlinux_desktop/
 ├── 📄 deployment_config.yml         # Main deployment configuration template
 ├── 📄 example_deployment_config.yml # Example configuration file
 ├── 📄 requirements.txt              # Python/Ansible dependencies
-├── 📄 docker compose.yml            # 🆕 Development services configuration
+├── 📄 docker-compose.yml            # 🆕 Development services configuration
 ├── 📄 Dockerfile.dev                # 🆕 Development environment image
 │
 ├── 📂 .devcontainer/                # 🆕 VSCode DevContainers configuration
@@ -232,7 +264,7 @@ lm_archlinux_desktop/
 
 ## 🛠️ **Development Workflows**
 
-### Container-Based Development (NEW & RECOMMENDED)
+### 🐳 **Container-Based Development** _(NEXT-GENERATION & RECOMMENDED)_
 
 #### 1. VSCode DevContainers (PREFERRED FOR DEVELOPMENT)
 
@@ -406,13 +438,16 @@ make test
 
 ## 🔄 **Development Guidelines**
 
-### Modern Development Standards
+### 🐳 **Container-First Development Standards**
 
-- **Container-First Development**: Use DevContainers or Docker Compose for all development
-- **Performance Monitoring**: Monitor and optimize deployment performance
-- **Structured Logging**: Use JSON-based logging with correlation IDs
-- **Code Quality Automation**: Leverage pre-commit hooks and automated testing
-- **Documentation as Code**: Maintain live, interactive documentation
+- **DevContainers Priority**: Use VSCode DevContainers as the primary development method
+- **Docker Compose Integration**: Leverage multi-service development stack for comprehensive testing
+- **Isolated Testing**: Use container-based testing environments for safe validation
+- **Performance Monitoring**: Monitor and optimize deployment performance with built-in analytics
+- **Structured Logging**: Use JSON-based logging with correlation IDs for all development activities
+- **Code Quality Automation**: Leverage pre-commit hooks, automated testing, and integrated linting
+- **Interactive Documentation**: Maintain live, interactive documentation with auto-reload capabilities
+- **Container Security**: Follow container security best practices in development environments
 
 ### Code Quality Standards
 
@@ -425,6 +460,7 @@ make test
 - **Testing Required**: Test all changes with provided validation scripts
 - **Performance Testing**: Benchmark and optimize deployment performance
 - **Container Testing**: Test in isolated container environments before VM testing
+- **Development Environment Consistency**: Use DevContainers or Docker Compose for all development work
 
 ### Security Requirements
 
@@ -528,10 +564,11 @@ make test
 
 ### Documentation Requirements
 
-- **Keep Updated**: Always reflect current project capabilities
+- **Keep Updated**: Always reflect current project capabilities, especially container development features
 - **Security Focus**: Emphasize security features and best practices
-- **Clear Examples**: Provide working examples for all features
-- **Troubleshooting**: Include common issues and solutions
+- **Clear Examples**: Provide working examples for all features, including container workflows  
+- **Container Documentation**: Document all Docker Compose services and DevContainer configurations
+- **Troubleshooting**: Include common issues and solutions, especially container-related problems
 
 ## ⚡ **Performance & Power Management**
 
